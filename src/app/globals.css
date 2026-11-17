@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-obsidian: #0B0A09;
+  --bg-espresso: #141210;
+  --card-slate: #1C1916;
+  --accent-gold: #D49A3A;
+  --accent-sear: #B84A27;
+  --text-cream: #F5EFE6;
+  --text-stone: #9E9488;
+}
+
+body {
+  background-color: var(--bg-obsidian);
+  color: var(--text-cream);
+  font-family: 'Tajawal', 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}

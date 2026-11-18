@@ -3,7 +3,6 @@ import crypto from 'crypto';
 // ============================================================================
 // 0. ENVIRONMENT SECRET ENFORCEMENT (NO HARDCODED PRODUCTION DEFAULTS)
 // ============================================================================
-
 export function getRequiredEnvSecret(envVarName) {
   const val = process.env[envVarName];
   if (!val || typeof val !== 'string' || val.trim().length < 32) {
@@ -26,7 +25,6 @@ export function hashClientIdentifier(rawValue, secret) {
 // ============================================================================
 // 1. INITIAL CATALOG & BRANCH SEED DEFINITIONS
 // ============================================================================
-
 export const INITIAL_BRANCHES = [
   {
     id: 'br-jed-sultan',
@@ -248,7 +246,6 @@ export const INITIAL_BRANCH_OVERRIDES = [
   { branch_id: 'br-riy-tahlia', product_id: 'prd-truffle-swiss', is_available: true, custom_base_price: 56 }
 ];
 
-// Finding #10 Fix: Apple Pay & Online Cards are strictly disabled until a live payment gateway is integrated
 export const INITIAL_PAYMENT_METHODS = [
   {
     id: 'pay_at_pickup_card',
@@ -295,7 +292,6 @@ export const INITIAL_PAYMENT_METHODS = [
 // ============================================================================
 // 2. MULTI-BRANCH GEOLOCATION & OPERATING HOURS ENGINE
 // ============================================================================
-
 export function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (
     typeof lat1 !== 'number' || typeof lon1 !== 'number' ||
@@ -337,7 +333,6 @@ export function isBranchOpenAtTime(branch, dateObj = new Date()) {
   } else {
     isWithinHours = currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
   }
-
   if (!isWithinHours) {
     return { open: false, reason: 'OUTSIDE_OPERATING_HOURS' };
   }
@@ -346,7 +341,6 @@ export function isBranchOpenAtTime(branch, dateObj = new Date()) {
 
 export function resolveBranchesForCheckout(branches, userCoords = null, checkDate = new Date()) {
   const activeBranches = branches.filter((b) => b.is_active);
-
   const enriched = activeBranches.map((branch) => {
     const availability = isBranchOpenAtTime(branch, checkDate);
     const distanceKm =
@@ -374,7 +368,6 @@ export function resolveBranchesForCheckout(branches, userCoords = null, checkDat
       nearestOverall && nearestOpen && nearestOverall.id !== nearestOpen.id
         ? nearestOverall
         : null;
-
     return {
       geolocation_used: true,
       recommended_branch: nearestOpen,
@@ -382,7 +375,6 @@ export function resolveBranchesForCheckout(branches, userCoords = null, checkDat
       branches: enriched
     };
   }
-
   return {
     geolocation_used: false,
     recommended_branch: null,
@@ -394,7 +386,6 @@ export function resolveBranchesForCheckout(branches, userCoords = null, checkDat
 // ============================================================================
 // 3. ZERO-TRUST SERVER-SIDE PRICING & TAX ENGINE
 // ============================================================================
-
 export function calculateVerifiedOrderPricing({
   items,
   branchId,
@@ -410,7 +401,6 @@ export function calculateVerifiedOrderPricing({
   if (!branchId) {
     throw new Error('MISSING_BRANCH_ID: A valid pickup branch must be selected.');
   }
-
   let subtotal = 0;
   const verifiedItems = [];
 
@@ -419,19 +409,16 @@ export function calculateVerifiedOrderPricing({
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
       throw new Error('INVALID_ITEM_QUANTITY: Quantity must be an integer between 1 and 50.');
     }
-
     const product = products.find((p) => p.id === rawItem.product_id && p.is_active);
     if (!product) {
       throw new Error(`PRODUCT_NOT_FOUND_OR_INACTIVE: ${rawItem.product_id}`);
     }
-
     const override = branchOverrides.find(
       (o) => o.branch_id === branchId && o.product_id === product.id
     );
     if (override && override.is_available === false) {
       throw new Error(`PRODUCT_UNAVAILABLE_AT_BRANCH: ${product.name_en} is unavailable at branch ${branchId}`);
     }
-
     const unitBasePrice =
       override && typeof override.custom_base_price === 'number'
         ? Number(override.custom_base_price)
@@ -449,7 +436,6 @@ export function calculateVerifiedOrderPricing({
       }
       sizePriceDelta = Number(selectedSize.price_delta || 0);
     }
-
     const unitPriceWithSize = unitBasePrice + sizePriceDelta;
     if (unitPriceWithSize <= 0) {
       throw new Error(`INVALID_COMPUTED_UNIT_PRICE: ${product.id}`);
@@ -463,7 +449,6 @@ export function calculateVerifiedOrderPricing({
 
     let addonsUnitTotal = 0;
     const verifiedAddons = [];
-
     for (const [addonId, count] of Object.entries(addonCounts)) {
       if (!product.allowed_addon_ids.includes(addonId)) {
         throw new Error(`ADDON_NOT_ALLOWED_FOR_PRODUCT: Addon ${addonId} not allowed on ${product.id}`);
@@ -510,7 +495,6 @@ export function calculateVerifiedOrderPricing({
 
   const vatAmount = Number(((subtotal * Number(vatPercentage)) / 100).toFixed(2));
   const totalAmount = Number((subtotal + vatAmount).toFixed(2));
-
   const priceTampered =
     clientClaimedTotal !== null &&
     clientClaimedTotal !== undefined &&
@@ -529,14 +513,12 @@ export function calculateVerifiedOrderPricing({
 // ============================================================================
 // 4. PRODUCTION CRYPTOGRAPHIC TOKENS, CAPTCHA & PHONE VALIDATION
 // ============================================================================
-
 export function validateAndNormalizeSaudiPhone(rawPhone) {
   if (!rawPhone || typeof rawPhone !== 'string') {
     return { valid: false, reason: 'EMPTY_PHONE_NUMBER', normalized: null };
   }
   const digitsAndPlus = rawPhone.trim().replace(/[\s\-().]/g, '');
   let coreNineDigits = '';
-
   if (digitsAndPlus.startsWith('+9665') && digitsAndPlus.length === 13) {
     coreNineDigits = digitsAndPlus.slice(4);
   } else if (digitsAndPlus.startsWith('9665') && digitsAndPlus.length === 12) {
@@ -548,16 +530,13 @@ export function validateAndNormalizeSaudiPhone(rawPhone) {
   } else {
     return { valid: false, reason: 'INVALID_SAUDI_MOBILE_FORMAT', normalized: null };
   }
-
   if (!/^5[0-9]{8}$/.test(coreNineDigits)) {
     return { valid: false, reason: 'INVALID_SAUDI_MOBILE_DIGITS', normalized: null };
   }
-
   const subscriberDigits = coreNineDigits.slice(1);
-  if (/^(\d){6,}$/.test(subscriberDigits) || subscriberDigits === '12345678' || subscriberDigits === '87654321') {
+  if (/^(\d)\1{6,}$/.test(subscriberDigits) || subscriberDigits === '12345678' || subscriberDigits === '87654321') {
     return { valid: false, reason: 'SUSPICIOUS_FAKE_PHONE_PATTERN', normalized: null };
   }
-
   return {
     valid: true,
     reason: 'VALID',
@@ -579,7 +558,7 @@ export function generateUnguessableOrderCode() {
 
 export function generateTrackingToken(orderCode, phoneNormalized, explicitSecret) {
   const secret = explicitSecret || getRequiredEnvSecret('ORDER_HMAC_SECRET');
-  const randomEntropy = crypto.randomBytes(32).toString('hex'); // 256-bit cryptographic randomness
+  const randomEntropy = crypto.randomBytes(32).toString('hex');
   const mac = crypto
     .createHmac('sha256', secret)
     .update(`${orderCode}:${phoneNormalized}:${randomEntropy}`)
@@ -602,10 +581,6 @@ export function computePayloadDigest(payload) {
   return crypto.createHash('sha256').update(canonical).digest('hex');
 }
 
-/**
- * Signed, Nonce-Protected Stateless CAPTCHA Challenge (Requires CAPTCHA_SIGNING_SECRET from env)
- * Combined with database `consume_captcha_nonce` RPC so a solved token can NEVER be replayed across Vercel instances!
- */
 export function createAdaptiveCaptchaChallenge(explicitSecret) {
   const secret = explicitSecret || getRequiredEnvSecret('CAPTCHA_SIGNING_SECRET');
   const a = crypto.randomInt(4, 16);
@@ -658,16 +633,13 @@ export function verifyAdaptiveCaptchaSolution(token, userAnswer, explicitSecret,
 // ============================================================================
 // 5. IMAGE UPLOAD MAGIC-BYTE FILE SIGNATURE VERIFICATION
 // ============================================================================
-
 export function verifyImageMagicBytes(buffer, declaredMimeType) {
   if (!buffer || buffer.length < 12) {
     return { valid: false, reason: 'FILE_TOO_SMALL_OR_CORRUPT' };
   }
   const bytes = new Uint8Array(buffer.subarray ? buffer.subarray(0, 12) : buffer.slice(0, 12));
 
-  // JPEG: FF D8 FF
   const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
   const isPng =
     bytes[0] === 0x89 &&
     bytes[1] === 0x50 &&
@@ -677,7 +649,6 @@ export function verifyImageMagicBytes(buffer, declaredMimeType) {
     bytes[5] === 0x0a &&
     bytes[6] === 0x1a &&
     bytes[7] === 0x0a;
-  // WEBP: "RIFF" .... "WEBP"
   const isWebp =
     bytes[0] === 0x52 &&
     bytes[1] === 0x49 &&
@@ -701,7 +672,6 @@ export function verifyImageMagicBytes(buffer, declaredMimeType) {
 // ============================================================================
 // 6. ORDER STATE MACHINE & RBAC PERMISSIONS
 // ============================================================================
-
 export const ORDER_STATUS_META = {
   new: { label_ar: 'جديد', label_en: 'New', badge_color: 'amber', step: 1 },
   pending_confirmation: { label_ar: 'بانتظار التأكيد', label_en: 'Pending Confirmation', badge_color: 'yellow', step: 2 },

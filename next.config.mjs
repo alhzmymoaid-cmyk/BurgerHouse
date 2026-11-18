@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -27,6 +26,7 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+<<<<<<< HEAD
   },
   async headers() {
     return [
@@ -40,7 +40,9 @@ const nextConfig = {
         ],
       },
     ];
+=======
+>>>>>>> branch 'main' of https://github.com/alhzmymoaid-cmyk/BurgerHouse.git
   },
 };
 
-export default nextConfig;
+export default nextConfig ;

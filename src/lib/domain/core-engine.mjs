@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 
 // ============================================================================
 // 0. ENVIRONMENT SECRET ENFORCEMENT (NO HARDCODED PRODUCTION DEFAULTS)

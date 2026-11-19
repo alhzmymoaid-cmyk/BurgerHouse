@@ -73,9 +73,10 @@ function StaffAndAdminLoginContent() {
           </p>
         </div>
 
-        <a href="/" className="block text-center text-xs font-bold text-[#a65e36] underline underline-offset-4">العودة إلى واجهة العميل</a>\n        <form onSubmit={handleLogin} className="space-y-4">
+        <a href="/" className="block text-center text-xs font-bold text-[#a65e36] underline underline-offset-4">العودة إلى واجهة العميل</a>
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-[#9E9488] mb-1">البريد الإلكتروني الوظيفي</label>
+            <label className="block text-xs font-bold text-[#777064] mb-1">البريد الإلكتروني الوظيفي</label>
             <input type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="staff@burgerhouse.sa"
               className="w-full rounded-sm border border-[#d8d0c4] bg-white px-4 py-3 text-sm text-[#201e1a] focus:border-[#a65e36] focus:outline-none" />
@@ -105,7 +106,7 @@ function StaffAndAdminLoginContent() {
 
 export default function StaffAndAdminLoginPage() {
   return (
-    <Suspense fallback={<div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0B0A09] text-[#F5EFE6]">جاري التحميل...</div>}>
+    <Suspense fallback={<div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] text-[#201e1a]">جاري التحميل...</div>}>
       <StaffAndAdminLoginContent />
     </Suspense>
   );

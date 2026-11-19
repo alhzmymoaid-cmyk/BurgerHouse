@@ -29,7 +29,7 @@ type CartLine = {
 const ORDER_STATUS_LABELS: Record<string, string> = { new: 'بانتظار موافقة الفرع', pending_confirmation: 'بانتظار تأكيد الفرع', accepted: 'تم قبول طلبك', preparing: 'طلبك قيد التجهيز', ready_for_pickup: 'طلبك جاهز للاستلام', completed: 'تم استلام طلبك', rejected: 'تم رفض الطلب', cancelled: 'تم إلغاء الطلب' };
 const money = (value: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(value);
 const normalizePhone = (value: string) => {
-  const digits = value.replace(/\\D/g, '');
+  const digits = value.replace(/\D/g, '');
   if (digits.startsWith('966')) return '+' + digits;
   if (digits.startsWith('05')) return '+966' + digits.slice(1);
   if (digits.startsWith('5')) return '+966' + digits;

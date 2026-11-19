@@ -1,6 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import InstallPrompt from '@/components/install-prompt';
+
+export const viewport: Viewport = { themeColor: '#0b0c0b', colorScheme: 'dark' };
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',

@@ -4,28 +4,35 @@
 
 :root {
   color-scheme: light;
-  --paper: #f6f2ea;
-  --ink: #211e19;
-  --muted: #766d61;
-  --clay: #a84f32;
-  --line: #e1d9ce;
+  --bh-paper: #f4f5f2;
+  --bh-surface: #ffffff;
+  --bh-ink: #20251f;
+  --bh-muted: #777d73;
+  --bh-accent: #c65c34;
+  --bh-line: #e2e6de;
 }
 
 html { scroll-behavior: smooth; }
 body {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bh-paper);
+  color: var(--bh-ink);
   font-family: "Tajawal", "Cairo", sans-serif;
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4, .display-type { font-family: "Cairo", "Tajawal", sans-serif; }
 button, input, select, textarea { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
-::selection { background: #a84f32; color: #fff; }
-
-:focus-visible { outline: 2px solid #a84f32; outline-offset: 3px; }
-
+::selection { background: var(--bh-accent); color: #fff; }
+:focus-visible { outline: 2px solid var(--bh-accent); outline-offset: 3px; }
+* { scrollbar-width: thin; scrollbar-color: #c9cec4 transparent; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
 @media print {
+  body { background: #fff; }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 }

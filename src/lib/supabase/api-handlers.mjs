@@ -596,6 +596,89 @@ export async function handleOwnerAdminRequest({
     return { status: 200, body: { ok: true, staff: data } };
   }
 
+  if (action === 'UPSERT_CATEGORY') {
+    const category = body.category || {};
+    if (!category.id || !String(category.name_ar || '').trim() || !String(category.name_en || '').trim()) {
+      return { status: 400, body: { error: 'INVALID_CATEGORY_DATA' } };
+    }
+    const { data, error } = await serviceSupabase.from('categories')
+      .upsert(category, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_CATEGORY', target_type: 'category', target_id: data.id,
+      metadata: { name_ar: data.name_ar, is_active: data.is_active }
+    });
+    return { status: 200, body: { ok: true, category: data } };
+  }
+
+  if (action === 'UPSERT_ADDON') {
+    const addon = body.addon || {};
+    if (!addon.id || !String(addon.name_ar || '').trim() || Number(addon.price) < 0 || !Number.isFinite(Number(addon.price))) {
+      return { status: 400, body: { error: 'INVALID_ADDON_DATA' } };
+    }
+    const { data, error } = await serviceSupabase.from('product_addons')
+      .upsert(addon, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_ADDON', target_type: 'product_addon', target_id: data.id,
+      metadata: { name_ar: data.name_ar, price: data.price, is_active: data.is_active }
+    });
+    return { status: 200, body: { ok: true, addon: data } };
+  }
+
+  if (action === 'UPSERT_PROMOTION') {
+    const promotion = body.promotion || {};
+    if (!promotion.id || !String(promotion.title_ar || '').trim() || !String(promotion.title_en || '').trim()) {
+      return { status: 400, body: { error: 'INVALID_PROMOTION_DATA' } };
+    }
+    const { data, error } = await serviceSupabase.from('promotions')
+      .upsert(promotion, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_PROMOTION', target_type: 'promotion', target_id: data.id,
+      metadata: { title_ar: data.title_ar, is_active: data.is_active }
+    });
+    return { status: 200, body: { ok: true, promotion: data } };
+  }
+
+  if (action === 'TOGGLE_PROMOTION') {
+    const { promotion_id, is_active } = body;
+    const { data, error } = await serviceSupabase.from('promotions')
+      .update({ is_active: Boolean(is_active) }).eq('id', promotion_id).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'TOGGLE_PROMOTION', target_type: 'promotion', target_id: promotion_id,
+      metadata: { is_active: Boolean(is_active) }
+    });
+    return { status: 200, body: { ok: true, promotion: data } };
+  }
+
+  if (action === 'UPDATE_STORE_SETTINGS') {
+    const input = body.settings || {};
+    const allowed = ['vat_percentage', 'support_phone', 'support_whatsapp', 'brand_name_ar', 'brand_name_en'];
+    const patch = {};
+    for (const key of allowed) {
+      if (input[key] !== undefined) patch[key] = input[key];
+    }
+    if (patch.vat_percentage !== undefined && (!Number.isFinite(Number(patch.vat_percentage)) || Number(patch.vat_percentage) < 0 || Number(patch.vat_percentage) > 100)) {
+      return { status: 400, body: { error: 'INVALID_VAT_PERCENTAGE' } };
+    }
+    patch.updated_at = new Date().toISOString();
+    const { data, error } = await serviceSupabase.from('system_settings')
+      .update(patch).eq('id', 1).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPDATE_STORE_SETTINGS', target_type: 'system_settings', target_id: '1',
+      metadata: patch
+    });
+    return { status: 200, body: { ok: true, settings: data } };
+  }
+
   if (action === 'UPDATE_THEME_CONFIG') {
     const { draft_theme, publish_now } = body;
     const updateObj = { draft_theme, updated_at: new Date().toISOString() };

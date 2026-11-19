@@ -59,6 +59,12 @@ export default function StaffLiveOrdersPage() {
     fetchLiveOrders();
   }, [fetchLiveOrders]);
 
+  // Poll as a resilient fallback so orders still appear if a device/browser misses a Realtime event.
+  useEffect(() => {
+    const timer = window.setInterval(() => { fetchLiveOrders(); }, 10000);
+    return () => window.clearInterval(timer);
+  }, [fetchLiveOrders]);
+
   // Subscribe to Supabase Realtime on public.orders
   useEffect(() => {
     try {

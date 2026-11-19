@@ -372,6 +372,24 @@ export default function StorefrontPage() {
           </div>
         </section>
 
+        <section className="bh-signature-section mx-auto max-w-7xl px-4 pb-8 pt-5 lg:px-8">
+          <div className="bh-signature-heading">
+            <div><span>THE HOUSE SELECTION</span><h2>تجارب تستحق التجربة</h2><p>اختيارات البيت التي نبدأ بها معك.</p></div>
+            <button onClick={() => {setActiveCategory('all');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}}>استكشف القائمة <ArrowLeft size={15}/></button>
+          </div>
+          <div className="bh-signature-grid">
+            {products.filter(product => product.is_featured).slice(0,4).map((product,index) => {
+              const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
+              return <button type="button" key={product.id} onClick={()=>openProduct(product)} className={index===0?'bh-signature-card bh-signature-main':'bh-signature-card'}>
+                <img src={product.image_url || '/images/hero-wagyu-smash.jpg'} alt={product.name_ar} loading="lazy"/>
+                <span className="bh-signature-shade"/>
+                <span className="bh-signature-copy"><small>{index===0?'HOUSE SIGNATURE':'MADE FOR THE CRAVING'}</small><b>{product.name_ar}</b><em>من {money(Number(override?.custom_base_price ?? product.base_price))} ر.س</em></span>
+                <span className="bh-signature-plus"><Plus size={18}/></span>
+              </button>;
+            })}
+          </div>
+        </section>
+
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#777064]">اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.</p></div>

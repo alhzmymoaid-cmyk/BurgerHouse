@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         ? { latitude: body.latitude, longitude: body.longitude }
         : null;
 
-    const resolution = resolveBranchesForCheckout(branches || [], userCoords, new Date());
+    const resolution = resolveBranchesForCheckout(branches || [], userCoords as { latitude: number; longitude: number } | null, new Date());
     return NextResponse.json(resolution, { status: 200 });
   } catch (err: any) {
     return NextResponse.json(

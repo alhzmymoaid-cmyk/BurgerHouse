@@ -18,9 +18,12 @@ body {
   font-family: "Tajawal", "Cairo", sans-serif;
   overflow-x: hidden;
 }
-h1, h2, h3, h4, .display-type { font-family: "Cairo", "Tajawal", sans-serif; }\nbutton, input, select, textarea { font: inherit; }
+h1, h2, h3, h4, .display-type { font-family: "Cairo", "Tajawal", sans-serif; }
+button, input, select, textarea { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
-::selection { background: #a84f32; color: #fff; }\n\n:focus-visible { outline: 2px solid #a84f32; outline-offset: 3px; }
+::selection { background: #a84f32; color: #fff; }
+
+:focus-visible { outline: 2px solid #a84f32; outline-offset: 3px; }
 
 @media print {
   .no-print { display: none !important; }

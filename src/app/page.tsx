@@ -61,11 +61,8 @@ export default function StorefrontPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<any>(null);
   const [orderError, setOrderError] = useState('');
-  const [trackCode, setTrackCode] = useState('');
-  const [trackToken, setTrackToken] = useState('');
-  const [tracking, setTracking] = useState<any>(null);
-  const [trackingError, setTrackingError] = useState('');
-  const [activeView, setActiveView] = useState<'menu' | 'branches' | 'track'>('menu');
+
+  const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [captcha, setCaptcha] = useState<any>(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
@@ -246,36 +243,7 @@ export default function StorefrontPage() {
     } finally { setSubmitting(false); }
   };
 
-  const trackOrder = async () => {
-    setTrackingError(''); setTracking(null);
-    try {
-      const response = await fetch('/api/orders/track', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_code: trackCode.trim(), tracking_token: trackToken.trim() })
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message_ar || 'لم نتمكن من العثور على الطلب');
-      setTracking(result);
-    } catch (error: any) { setTrackingError(error.message || 'تعذر تتبع الطلب'); }
-  };
 
-  useEffect(() => {
-    if (activeView !== 'track' || !trackCode || !trackToken) return;
-    let active = true;
-    const refreshTracking = async () => {
-      try {
-        const response = await fetch('/api/orders/track', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_code: trackCode.trim(), tracking_token: trackToken.trim() }),
-          cache: 'no-store'
-        });
-        const result = await response.json();
-        if (active && response.ok) setTracking(result);
-      } catch { /* Keep the last confirmed order state visible */ }
-    };
-    const timer = window.setInterval(refreshTracking, 8000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [activeView, trackCode, trackToken]);
 
   const detectNearestBranch = () => {
     if (!navigator.geolocation) return;
@@ -442,16 +410,7 @@ export default function StorefrontPage() {
         </article>)}</div>
       </section>}
 
-      {activeView === 'track' && <section className="mx-auto min-h-[65vh] max-w-3xl px-4 py-16">
-        <div className="text-center"><PackageCheck className="mx-auto text-[#a65e36]" size={34}/><div className="mt-4 text-[10px] font-black tracking-[.24em] text-[#a65e36]">ORDER TRACKING</div><h1 className="mt-2 text-3xl font-black">تابع طلبك</h1><p className="mt-3 text-sm text-[#777064]">أدخل رقم الطلب ورمز التتبع الموجودين في تأكيد طلبك.</p></div>
-        <div className="mt-8 space-y-4 border border-[#ded8cd] bg-[#fbfaf7] p-6">
-          <label className="block text-xs font-bold">رقم الطلب<input value={trackCode} onChange={(e)=>setTrackCode(e.target.value)} placeholder="BH-XXXX-XXXX" className="mt-2 w-full border border-[#d8d0c4] bg-white px-4 py-3 text-sm outline-none focus:border-[#a65e36]" dir="ltr"/></label>
-          <label className="block text-xs font-bold">رمز التتبع<input value={trackToken} onChange={(e)=>setTrackToken(e.target.value)} placeholder="trk_..." className="mt-2 w-full border border-[#d8d0c4] bg-white px-4 py-3 text-sm outline-none focus:border-[#a65e36]" dir="ltr"/></label>
-          {trackingError&&<p className="text-xs font-bold text-red-700">{trackingError}</p>}
-          <button onClick={trackOrder} className="w-full bg-[#a65e36] py-3.5 text-sm font-bold text-white">عرض حالة الطلب</button>
-          {tracking&&<div className="border-t border-[#e4ded4] pt-5"><div className="text-[10px] font-black tracking-[.16em] text-[#a65e36]">LIVE ORDER STATUS</div><div className="mt-2 text-xl font-black">{ORDER_STATUS_LABELS[tracking.status] || tracking.status_ar || tracking.status || 'قيد المعالجة'}</div><p className="mt-2 text-xs leading-6 text-[#777064]">تتحدث حالة طلبك تلقائياً أثناء متابعة هذه الصفحة.</p><div className="mt-5 grid grid-cols-4 gap-2 text-center text-[10px]"><div className={['new','pending_confirmation','accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>استلام الطلب</div><div className={['accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>القبول</div><div className={['preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>التجهيز</div><div className={['ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>جاهز للاستلام</div></div>{tracking.rejected_reason&&<p className="mt-4 border border-red-200 bg-red-50 p-3 text-xs text-red-700">سبب الرفض: {tracking.rejected_reason}</p>}</div>}
-        </div>
-      </section>}
+
 
       <footer className="bg-[#20201c] text-[#d6d0c5]">
         <div className="mx-auto grid max-w-7xl gap-9 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">

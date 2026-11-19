@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const serviceSupabase = createSupabaseServiceRoleClient();
-    const [branchesRes, productsRes, overridesRes, paymentsRes, promosRes, staffRes, ordersRes, logsRes, settingsRes] =
+    const [branchesRes, productsRes, overridesRes, paymentsRes, promosRes, staffRes, ordersRes, logsRes, settingsRes, categoriesRes, addonsRes] =
       await Promise.all([
         serviceSupabase.from('branches').select('*').order('created_at', { ascending: true }),
         serviceSupabase.from('products').select('*, product_sizes(*)').order('sort_order', { ascending: true }),
@@ -22,12 +22,16 @@ export async function GET() {
         serviceSupabase.from('user_profiles').select('*').neq('role', 'super_admin'),
         serviceSupabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200),
         serviceSupabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100),
-        serviceSupabase.from('system_settings').select('*').eq('id', 1).single()
+        serviceSupabase.from('system_settings').select('*').eq('id', 1).single(),
+        serviceSupabase.from('categories').select('*').order('sort_order', { ascending: true }),
+        serviceSupabase.from('product_addons').select('*').order('name_ar', { ascending: true })
       ]);
 
     return NextResponse.json({
       profile: authCheck.profile,
       settings: settingsRes.data,
+      categories: categoriesRes.data || [],
+      addons: addonsRes.data || [],
       branches: branchesRes.data || [],
       products: productsRes.data || [],
       branch_overrides: overridesRes.data || [],

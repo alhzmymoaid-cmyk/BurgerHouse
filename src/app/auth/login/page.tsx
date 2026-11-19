@@ -61,7 +61,7 @@ function StaffAndAdminLoginContent() {
   };
 
   return (
-    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
+    <div dir="rtl" className="bh-staff-login flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
       <div className="w-full max-w-md rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-8 shadow-sm space-y-6">
         <div className="text-center space-y-2">
           <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="mx-auto h-16 w-16"/>

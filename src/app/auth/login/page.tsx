@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function StaffAndAdminLoginPage() {
+function StaffAndAdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/staff/orders';
@@ -23,7 +23,7 @@ export default function StaffAndAdminLoginPage() {
       const supabase = createSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password
+        password,
       });
 
       if (error || !data.user) {
@@ -76,27 +76,15 @@ export default function StaffAndAdminLoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[#9E9488] mb-1">البريد الإلكتروني الوظيفي</label>
-            <input
-              type="email"
-              required
-              dir="ltr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <input type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="staff@burgerhouse.sa"
-              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none"
-            />
+              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none" />
           </div>
           <div>
             <label className="block text-xs font-bold text-[#9E9488] mb-1">كلمة المرور</label>
-            <input
-              type="password"
-              required
-              dir="ltr"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <input type="password" required dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none"
-            />
+              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none" />
           </div>
 
           {errorMsg && (
@@ -105,15 +93,20 @@ export default function StaffAndAdminLoginPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-[#D49A3A] to-[#B84A27] py-3.5 text-sm font-black text-[#0B0A09] shadow-lg disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading}
+            className="w-full rounded-xl bg-gradient-to-r from-[#D49A3A] to-[#B84A27] py-3.5 text-sm font-black text-[#0B0A09] shadow-lg disabled:opacity-50">
             {loading ? 'جاري التحقق من الجلسة والصلاحيات...' : 'تسجيل الدخول الآمن'}
           </button>
         </form>
       </div>
     </div>
+  );
+}
+
+export default function StaffAndAdminLoginPage() {
+  return (
+    <Suspense fallback={<div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0B0A09] text-[#F5EFE6]">جاري التحميل...</div>}>
+      <StaffAndAdminLoginContent />
+    </Suspense>
   );
 }

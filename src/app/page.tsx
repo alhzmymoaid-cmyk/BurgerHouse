@@ -288,13 +288,96 @@ export default function StorefrontPage() {
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2 md:hidden" aria-label="فتح القائمة"><Menu size={18}/></button>
           </div>
         </div>
-        {mobileMenuOpen && <div className="border-t border-[#ded8cd] bg-[#f8f6f1] px-5 py-3 md:hidden">
-          <div className="flex justify-around text-sm font-bold">
-            <button onClick={() => {setActiveView('menu');setMobileMenuOpen(false);}}>المنيو</button>
-            <button onClick={() => {setActiveView('branches');setMobileMenuOpen(false);}}>فروعنا</button>
-            <a href="/account/orders" className="hover:text-[#a84f32]">طلباتي</a>
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex justify-end bg-black/75 backdrop-blur-sm"
+            role="presentation"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <aside
+              dir="rtl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="قائمة BURGER HOUSE"
+              onClick={(event) => event.stopPropagation()}
+              className="flex h-full w-full max-w-[420px] flex-col overflow-y-auto border-s border-[#34372d] bg-[#10110f] p-5 text-[#f5f0df] shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-[#292c24] pb-5">
+                <div className="flex items-center gap-3">
+                  <img src="/brand-mark.svg" alt="" className="h-11 w-11 object-contain" />
+                  <div>
+                    <p className="text-sm font-black tracking-[.14em]">BURGER HOUSE</p>
+                    <p className="mt-1 text-[10px] font-semibold tracking-[.16em] text-[#a1a1aa]">YOUR HOUSE. YOUR ORDERS.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="إغلاق القائمة" className="rounded-full border border-[#3b4033] bg-[#1b1e19] p-2.5 text-[#f5f0df]">
+                  <X size={19} />
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#5b4a18] bg-gradient-to-br from-[#282311] to-[#171812] p-4">
+                {customerLoggedIn ? (
+                  <>
+                    <p className="text-xs font-bold text-[#f5b800]">أهلًا بعودتك</p>
+                    <p className="mt-2 text-lg font-black text-[#fff8e6]">{customerName || 'عميلنا العزيز'}</p>
+                    <p className="mt-1 text-xs text-[#aaa48f]" dir="ltr">{customerPhone}</p>
+                    <a href="/account" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#ffc82c] px-4 text-xs font-black text-[#11120e]">إدارة حسابي <ArrowLeft size={15} className="ms-2" /></a>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-black text-[#fff8e6]">خلّ تجربتك أسهل في كل زيارة</p>
+                    <p className="mt-2 text-xs leading-6 text-[#b9b39f]">أنشئ حسابًا لتتابع طلباتك وتحفظ وجباتك المفضلة وتعيد طلبك بسرعة.</p>
+                    <div className="mt-4 flex gap-2">
+                      <a href="/account" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#ffc82c] px-3 text-xs font-black text-[#11120e]">تسجيل الدخول</a>
+                      <a href="/account" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#5b4a18] px-3 text-xs font-bold text-[#f5d66b]">إنشاء حساب</a>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#2d3028] bg-[#171a15] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[.12em] text-[#a1a1aa]">فرع الاستلام</p>
+                    <p className="mt-2 text-sm font-black">{activeBranch?.name_ar || 'اختر فرعك'}</p>
+                    <p className="mt-1 text-[11px] text-[#a1a1aa]">{activeBranch?.is_accepting_orders ? 'يستقبل الطلبات الآن' : 'تحقق من حالة الفرع قبل الطلب'}</p>
+                  </div>
+                  <span className={activeBranch?.is_accepting_orders ? 'mt-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]' : 'mt-1 h-2.5 w-2.5 rounded-full bg-amber-400'} />
+                </div>
+                <button type="button" onClick={() => { setActiveView('branches'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#3b4033] text-xs font-bold text-[#f5d66b]">
+                  تغيير الفرع <MapPin size={14} className="ms-2" />
+                </button>
+              </div>
+
+              <nav className="mt-5 space-y-1" aria-label="روابط المتجر">
+                <button type="button" onClick={() => { setActiveView('menu'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><Utensils size={17} className="text-[#ffc82c]" /> المنيو الكامل</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </button>
+                <button type="button" onClick={() => { setActiveView('branches'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><MapPin size={17} className="text-[#ffc82c]" /> فروعنا ومواقع الاستلام</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </button>
+                <a href="/account/orders" className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><PackageCheck size={17} className="text-[#ffc82c]" /> طلباتي وتتبع الطلب</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </a>
+                <a href="/account" className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><ShieldCheck size={17} className="text-[#ffc82c]" /> حسابي وبياناتي</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </a>
+                <button type="button" onClick={() => { setMobileMenuOpen(false); setCartOpen(true); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><ShoppingBag size={17} className="text-[#ffc82c]" /> سلة المشتريات</span><span className="rounded-full bg-[#ffc82c] px-2.5 py-1 text-[10px] font-black text-[#11120e]">{cartCount}</span>
+                </button>
+              </nav>
+
+              <div className="mt-auto border-t border-[#292c24] pt-5">
+                {catalog?.settings?.support_phone && (
+                  <a href={`tel:${catalog.settings.support_phone}`} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#3b4033] text-xs font-bold text-[#e8e2d0]">
+                    <Phone size={15} className="text-[#ffc82c]" /> تواصل مع المطعم
+                  </a>
+                )}
+                <p className="mt-4 text-center text-[10px] leading-6 text-[#777b69]">BURGER HOUSE · Crafted over fire</p>
+              </div>
+            </aside>
           </div>
-        </div>}
+        )}
       </header>
 
       <div className="bh-mobile-orderbar" dir="rtl">

@@ -146,3 +146,39 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline-color: var(
 .bh-install-action { display:flex; justify-content:center; align-items:center; gap:9px; min-height:48px; border-radius:12px; background:#a95436; color:white; font-size:12px; font-weight:900; }
 .bh-install-later { width:100%; margin-top:13px; padding:8px; color:#968678; font-size:10px; font-weight:800; }
 @media(min-width:700px) { .bh-install-backdrop { align-items:center; } }
+
+
+/* Menu, order history and operations dashboards */
+.bh-storefront { background:#f5efe6 !important; }
+.bh-storefront header { box-shadow:0 8px 26px #241b160a; }
+.bh-storefront #menu-section article { border-radius:20px; overflow:hidden; box-shadow:0 8px 28px #2a1d1308; }
+.bh-storefront #menu-section article button:first-child { overflow:hidden; }
+.bh-storefront #menu-section article>div { padding:20px; }
+.bh-storefront input,.bh-storefront select { border-radius:12px; }
+.bh-storefront section button { -webkit-tap-highlight-color:transparent; }
+.bh-orders { background:linear-gradient(180deg,#f7f2ea,#f0e9df) !important; }
+.bh-orders header { position:sticky; top:0; z-index:20; box-shadow:0 6px 22px #241b1609; backdrop-filter:blur(14px); }
+.bh-orders article { border-radius:20px !important; box-shadow:0 8px 26px #2a1d1308; }
+.bh-orders .no-print { border-radius:10px; }
+.bh-staff-shell { background:radial-gradient(ellipse at 100% 0%,#ead8c7 0%,transparent 32%),#f5efe6 !important; }
+.bh-staff-shell header { padding:8px 0 22px; }
+.bh-staff-shell header h1 { color:#9d5739 !important; letter-spacing:-.04em; }
+.bh-staff-shell [class*="rounded-xl"],.bh-staff-shell [class*="rounded-2xl"] { border-radius:18px !important; box-shadow:0 8px 28px #281b1009; }
+.bh-staff-shell input { min-height:42px; border-radius:11px !important; }
+.bh-staff-shell button { border-radius:10px; }
+.bh-owner-shell { background:radial-gradient(ellipse at 0% 0%,#483023 0%,transparent 36%),#181512 !important; }
+.bh-owner-shell header { padding-bottom:22px; }
+.bh-owner-shell header h1 { color:#e4b58d !important; letter-spacing:-.04em; }
+.bh-owner-shell [class*="rounded-xl"],.bh-owner-shell [class*="rounded-2xl"] { border-radius:18px !important; border-color:#ffffff18 !important; background:#211c18 !important; box-shadow:0 12px 34px #00000025; }
+.bh-owner-shell button { border-radius:10px; }
+.bh-owner-shell input { border-radius:10px; }
+@media(max-width:640px) {
+ .bh-storefront #menu-section { padding-top:38px !important; padding-bottom:52px !important; }
+ .bh-storefront #menu-section article { border-radius:17px; }
+ .bh-staff-shell { padding:14px !important; }
+ .bh-staff-shell header { align-items:flex-start; }
+ .bh-staff-shell header>div:last-child { width:100%; flex-wrap:wrap; }
+ .bh-staff-shell header input { flex:1; min-width:0; }
+ .bh-owner-shell { padding:16px !important; }
+ .bh-orders>div { padding-top:28px !important; }
+}

@@ -220,3 +220,16 @@ a { text-decoration:none; }
  .bh-account-visual h1 { font-size:33px; }
  .bh-account-form-head h2 { font-size:26px; }
 }
+
+/* High-intent mobile order rail */
+.bh-mobile-orderbar { display:none; }
+@media(max-width:767px) {
+ .bh-mobile-orderbar { position:fixed;display:flex;align-items:center;justify-content:space-between;gap:10px;right:12px;left:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:60;padding:10px 12px 10px 10px;border:1px solid #6a5b1d;border-radius:16px;background:rgba(20,22,17,.96);box-shadow:0 14px 44px #000b;backdrop-filter:blur(18px); }
+ .bh-mobile-orderbar-meta { display:flex;align-items:center;gap:10px;min-width:0; }
+ .bh-mobile-orderbar-count { display:grid;place-items:center;width:34px;height:34px;flex:none;border-radius:11px;background:var(--bh-yellow);color:#10110d;font-size:13px;font-weight:1000; }
+ .bh-mobile-orderbar-meta b { display:block;color:#fff5d8;font-size:11px;white-space:nowrap; }
+ .bh-mobile-orderbar-meta small { display:block;margin-top:3px;color:#aaa48f;font-size:9px;white-space:nowrap; }
+ .bh-mobile-orderbar>button { display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 14px;border-radius:11px;background:var(--bh-yellow);color:#11120e;font-size:10px;font-weight:1000;white-space:nowrap; }
+ .bh-storefront footer { padding-bottom:88px; }
+ .bh-storefront #menu-section { scroll-margin-top:80px; }
+}

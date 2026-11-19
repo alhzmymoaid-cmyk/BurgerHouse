@@ -3,19 +3,16 @@
  * Configure hosted Supabase Auth for BURGER HOUSE email OTP.
  *
  * Required environment variables (never commit their values):
- * SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF,
- * SMTP_ADMIN_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS.
+ * SUPABASE_ACCESS_TOKEN, SMTP_ADMIN_EMAIL, SMTP_PASS (Resend API key).
+ * SMTP_HOST/PORT/USER default to Resend's SMTP endpoint; project ref defaults
+ * to the Burger House Supabase project and can be overridden if needed.
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const required = [
   'SUPABASE_ACCESS_TOKEN',
-  'SUPABASE_PROJECT_REF',
   'SMTP_ADMIN_EMAIL',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
   'SMTP_PASS',
 ];
 const missing = required.filter((key) => !process.env[key]?.trim());
@@ -24,13 +21,13 @@ if (missing.length) {
   process.exit(1);
 }
 
-const port = Number(process.env.SMTP_PORT);
+const port = Number(process.env.SMTP_PORT || '465');
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   console.error('SMTP_PORT must be a valid TCP port.');
   process.exit(1);
 }
 
-const projectRef = process.env.SUPABASE_PROJECT_REF.trim();
+const projectRef = (process.env.SUPABASE_PROJECT_REF || 'kgmteyikhadzqbscnlfb').trim();
 if (!/^[a-z0-9]{20}$/.test(projectRef)) {
   console.error('SUPABASE_PROJECT_REF is not a valid Supabase project ref.');
   process.exit(1);
@@ -51,9 +48,9 @@ const payload = {
   mailer_subjects_confirmation: 'رمز التحقق لحسابك في BURGER HOUSE',
   mailer_templates_confirmation_content: template,
   smtp_admin_email: process.env.SMTP_ADMIN_EMAIL.trim(),
-  smtp_host: process.env.SMTP_HOST.trim(),
+  smtp_host: (process.env.SMTP_HOST || 'smtp.resend.com').trim(),
   smtp_port: port,
-  smtp_user: process.env.SMTP_USER.trim(),
+  smtp_user: (process.env.SMTP_USER || 'resend').trim(),
   smtp_pass: process.env.SMTP_PASS,
   smtp_sender_name: 'BURGER HOUSE',
 };
@@ -69,7 +66,7 @@ const response = await fetch(`https://api.supabase.com/v1/projects/${projectRef}
 
 if (!response.ok) {
   const details = await response.text();
-  console.error(`Supabase Auth configuration failed (${response.status}): ${details}`);
+  console.error(`Supabase Auth configuration failed (${response.status}). Check the Management API token, SMTP credentials, sender domain, and Supabase response in the dashboard.`);
   process.exit(1);
 }
 

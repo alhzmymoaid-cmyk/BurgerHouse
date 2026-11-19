@@ -10,6 +10,22 @@ export async function POST(request: NextRequest) {
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
     const sessionFingerprint = request.headers.get('x-bh-session') || request.cookies.get('bh_session_id')?.value || 'anon-session';
     const payload = await request.json();
+    const authSupabase = createSupabaseServerClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
+    }
+    const { data: customerProfile } = await serviceSupabase
+      .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
+    const submittedPhone = String(payload?.customer_phone || '').replace(/\\D/g, '');
+    const accountPhone = String(customerProfile?.phone || user.phone || '').replace(/\\D/g, '');
+    if (!accountPhone || submittedPhone !== accountPhone.replace(/^966/, '0')) {
+      const normalizedSubmitted = submittedPhone.startsWith('05') ? '966' + submittedPhone.slice(1) : submittedPhone;
+      const normalizedAccount = accountPhone.startsWith('0') ? '966' + accountPhone.slice(1) : accountPhone;
+      if (!normalizedSubmitted || normalizedSubmitted !== normalizedAccount) {
+        return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
+      }
+    }
 
     const result = await handleCreateOrderRequest({
       serviceSupabase,
@@ -20,6 +36,12 @@ export async function POST(request: NextRequest) {
       nowDate: new Date()
     });
 
+    if (result.status >= 200 && result.status < 300 && result.body?.id) {
+      await serviceSupabase.from('orders').update({ customer_id: user.id }).eq('id', result.body.id);
+      const { data: savedOrder } = await serviceSupabase.from('orders').select('order_number').eq('id', result.body.id).maybeSingle();
+      result.body.order_number = savedOrder?.order_number ?? null;
+      delete result.body.tracking_token;
+    }
     return NextResponse.json(result.body, { status: result.status });
   } catch (err: any) {
     return NextResponse.json(

@@ -285,7 +285,7 @@ export default function StorefrontPage() {
             <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a84f32] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#913f28]">
               <ShoppingBag size={15} /> السلة <span className="rounded-full bg-white/15 px-2 py-0.5">{cartCount}</span>
             </button>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2 md:hidden" aria-label="فتح القائمة"><Menu size={18}/></button>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen}><Menu size={18}/></button>
           </div>
         </div>
         {mobileMenuOpen && (
@@ -329,7 +329,7 @@ export default function StorefrontPage() {
                     <p className="mt-2 text-xs leading-6 text-[#b9b39f]">أنشئ حسابًا لتتابع طلباتك وتحفظ وجباتك المفضلة وتعيد طلبك بسرعة.</p>
                     <div className="mt-4 flex gap-2">
                       <a href="/account" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#ffc82c] px-3 text-xs font-black text-[#11120e]">تسجيل الدخول</a>
-                      <a href="/account" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#5b4a18] px-3 text-xs font-bold text-[#f5d66b]">إنشاء حساب</a>
+                      <a href="/account#signup" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#5b4a18] px-3 text-xs font-bold text-[#f5d66b]">إنشاء حساب</a>
                     </div>
                   </>
                 )}

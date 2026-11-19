@@ -150,11 +150,12 @@ export default function StorefrontPage() {
   const addToCart = () => {
     if (!selectedProduct) return;
     const size = selectedProduct.sizes?.find((entry) => entry.id === selectedSize);
-    const key = [selectedProduct.id, selectedSize, ...selectedAddons.sort(), itemNote].join(':');
+    const note = itemNote.trim() || (selectedProduct.category_id === 'cat-meals' ? selectedProduct.description_ar : '');
+    const key = [selectedProduct.id, selectedSize, ...selectedAddons.sort(), note].join(':');
     setCart((current) => {
       const existing = current.find((line) => line.key === key);
       if (existing) return current.map((line) => line.key === key ? { ...line, quantity: line.quantity + quantity } : line);
-      return [...current, { key, product: selectedProduct, size, addonIds: [...selectedAddons], quantity, note: itemNote }];
+      return [...current, { key, product: selectedProduct, size, addonIds: [...selectedAddons], quantity, note }];
     });
     setSelectedProduct(null);
     setCartOpen(true);
@@ -390,6 +391,17 @@ export default function StorefrontPage() {
           </div>
         </section>
 
+        {featuredProducts.length > 0 && <section className="mx-auto max-w-7xl px-4 pb-12 pt-2 lg:px-8 lg:pb-16">
+          <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">HOUSE SIGNATURES</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">توقيعات برجر هاوس</h2><p className="mt-2 text-xs text-[#80776b]">ثلاث نكهات تستحق أن تبدأ بها.</p></div><button onClick={()=>{setActiveCategory('cat-wagyu');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">اكتشف البرجر</button></div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {featuredProducts.map((product)=> <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa]">
+              <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden"><img src={product.image_url} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f6f0e5] px-3 py-1.5 text-[10px] font-black text-[#87442c]">توقيع البيت</span></button>
+              <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-1 line-clamp-1 text-[11px] text-[#80776b]">{product.description_ar}</p></div><div className="shrink-0 text-sm font-black text-[#a84f32]">{money(Number(product.base_price))} ر.س</div></div>
+              <button onClick={()=>openProduct(product)} className="mx-4 mb-4 flex w-[calc(100%-2rem)] items-center justify-center gap-2 bg-[#211f1b] py-3 text-xs font-bold text-white transition hover:bg-[#a84f32]">أضف إلى طلبك <Plus size={14}/></button>
+            </article>)}
+          </div>
+        </section>}
+
         {comboProducts.length > 0 && <section className="bg-[#211f1b] py-12 text-[#f7f3eb] sm:py-16">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="mb-7 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#d59b6c]">COMBO MEALS</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">وجبات كاملة… بدون حيرة</h2><p className="mt-2 text-xs leading-6 text-[#c9c0b3]">برجرك المفضل مع البطاطس والمشروب في اختيار واحد.</p></div><button onClick={()=>{setActiveCategory('cat-meals');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="hidden border-b border-[#d59b6c] pb-1 text-xs font-bold text-[#e6c7aa] sm:block">تصفّح الوجبات</button></div>
@@ -518,7 +530,7 @@ export default function StorefrontPage() {
 
       {cartOpen && <div className="fixed inset-0 z-[80] bg-black/55" onClick={()=>setCartOpen(false)}><aside className="absolute left-0 top-0 flex h-full w-full max-w-md flex-col bg-[#f8f6f1] text-[#201e1a]" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#ded8cd] p-5"><div><div className="text-lg font-black">سلة طلبك</div><div className="mt-1 text-xs text-[#777064]">{cartCount} أصناف</div></div><button onClick={()=>setCartOpen(false)} className="p-2"><X/></button></div>
-        <div className="flex-1 space-y-4 overflow-y-auto p-5">{cart.length===0?<div className="py-16 text-center text-sm text-[#777064]">السلة فارغة حالياً.</div>:cart.map((line)=><div key={line.key} className="flex gap-3 border-b border-[#e5ded3] pb-4"><img src={line.product.image_url} alt="" className="h-20 w-24 object-cover"/><div className="min-w-0 flex-1"><div className="text-sm font-black">{line.product.name_ar}</div><div className="mt-1 text-[11px] text-[#777064]">{line.size?.name_ar}</div>{line.addonIds.map((id)=><div key={id} className="text-[10px] text-[#777064]">{addonFor(id)?.name_ar}</div>)}<div className="mt-2 flex items-center justify-between"><b className="text-xs">{money(linePrice(line))} ر.س</b><div className="flex items-center gap-3"><button onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="text-xs font-bold">{line.quantity}</span><button onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></div>)}</div>
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">{cart.length===0?<div className="py-16 text-center text-sm text-[#777064]">السلة فارغة حالياً.</div>:cart.map((line)=><div key={line.key} className="flex gap-3 border-b border-[#e5ded3] pb-4"><img src={line.product.image_url} alt="" className="h-20 w-24 object-cover"/><div className="min-w-0 flex-1"><div className="text-sm font-black">{line.product.name_ar}</div><div className="mt-1 text-[11px] text-[#777064]">{line.size?.name_ar}</div>{line.note&&<div className="mt-1 line-clamp-2 text-[10px] leading-5 text-[#8a8175]">{line.note}</div>}{line.addonIds.map((id)=><div key={id} className="text-[10px] text-[#777064]">{addonFor(id)?.name_ar}</div>)}<div className="mt-2 flex items-center justify-between"><b className="text-xs">{money(linePrice(line))} ر.س</b><div className="flex items-center gap-3"><button onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="text-xs font-bold">{line.quantity}</span><button onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></div>)}</div>
         {cart.length>0&&<div className="border-t border-[#ded8cd] p-5"><div className="flex justify-between text-xs text-[#777064]"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="mt-2 flex justify-between text-xs text-[#777064]"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div><div className="mt-3 flex justify-between border-t border-[#ded8cd] pt-3 text-base font-black"><span>الإجمالي</span><span>{money(total)} ر.س</span></div><button onClick={()=>{setCartOpen(false);setCheckoutOpen(true);}} className="mt-5 w-full bg-[#a65e36] py-4 text-sm font-bold text-white">متابعة وإتمام الطلب</button><p className="mt-3 text-center text-[10px] text-[#82796d]">الاستلام من الفرع فقط — الدفع عند الاستلام</p></div>}
       </aside></div>}
 

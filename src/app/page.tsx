@@ -12,7 +12,7 @@ type Addon = { id: string; name_ar: string; price: number; max_per_item?: number
 type Product = {
   id: string; category_id: string; name_ar: string; name_en?: string;
   description_ar: string; base_price: number; image_url: string; prep_minutes?: number;
-  is_featured?: boolean; sizes?: Size[]; allowed_addon_ids?: string[];
+  is_featured?: boolean; prep_minutes?: number; sizes?: Size[]; allowed_addon_ids?: string[];
 };
 type Branch = {
   id: string; name_ar: string; address_ar: string; phone?: string;
@@ -52,6 +52,7 @@ export default function StorefrontPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
   const [customerNotes, setCustomerNotes] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -65,6 +66,24 @@ export default function StorefrontPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [captcha, setCaptcha] = useState<any>(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bh_customer_details');
+      if (saved) {
+        const details = JSON.parse(saved);
+        if (typeof details.name === 'string') setCustomerName(details.name);
+        if (typeof details.phone === 'string') setCustomerPhone(details.phone);
+      }
+    } catch { /* Ignore invalid local customer cache */ }
+    setCustomerDataLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!customerDataLoaded) return;
+    try { localStorage.setItem('bh_customer_details', JSON.stringify({ name: customerName, phone: customerPhone })); }
+    catch { /* Storage may be unavailable */ }
+  }, [customerDataLoaded, customerName, customerPhone]);
 
   useEffect(() => {
     let mounted = true;
@@ -307,7 +326,12 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
+
+        {catalog?.promotions?.length > 0 && <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
+          <div className="mb-5 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a65e36]">HOUSE OFFERS</div><h2 className="mt-2 text-2xl font-black">عروض البيت</h2><p className="mt-1 text-xs text-[#777064]">عروض تجريبية للعرض — لا تُطبق تلقائياً على إجمالي الطلب.</p></div><span className="text-[10px] font-bold text-[#8b8174]">LIMITED SELECTION</span></div>
+          <div className="grid gap-3 md:grid-cols-3">{catalog.promotions.map((promo:any)=><article key={promo.id} className="border border-[#ded8cd] bg-[#fbfaf7] p-5"><div className="text-[10px] font-black tracking-wide text-[#a65e36]">{promo.badge_ar || 'عرض تجريبي'}</div><h3 className="mt-3 text-lg font-black">{promo.title_ar}</h3><p className="mt-2 text-xs leading-6 text-[#777064]">{promo.subtitle_ar}</p></article>)}</div>
+        </section>}
+\n        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

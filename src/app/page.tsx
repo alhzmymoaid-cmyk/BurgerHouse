@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
@@ -54,6 +55,7 @@ export default function StorefrontPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
+  const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
   const [customerNotes, setCustomerNotes] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -69,22 +71,24 @@ export default function StorefrontPage() {
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bh_customer_details');
-      if (saved) {
-        const details = JSON.parse(saved);
-        if (typeof details.name === 'string') setCustomerName(details.name);
-        if (typeof details.phone === 'string') setCustomerPhone(details.phone);
-      }
-    } catch { /* Ignore invalid local customer cache */ }
-    setCustomerDataLoaded(true);
+    let active = true;
+    const loadCustomer = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active) return;
+        if (user) {
+          setCustomerLoggedIn(true);
+          const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
+          setCustomerName(profile?.full_name || user.user_metadata?.full_name || '');
+          setCustomerPhone(profile?.phone || user.phone || '');
+        } else setCustomerLoggedIn(false);
+      } catch { if (active) setCustomerLoggedIn(false); }
+      finally { if (active) setCustomerDataLoaded(true); }
+    };
+    loadCustomer();
+    return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    if (!customerDataLoaded) return;
-    try { localStorage.setItem('bh_customer_details', JSON.stringify({ name: customerName, phone: customerPhone })); }
-    catch { /* Storage may be unavailable */ }
-  }, [customerDataLoaded, customerName, customerPhone]);
 
   useEffect(() => {
     let mounted = true;
@@ -166,6 +170,7 @@ export default function StorefrontPage() {
 
   const submitOrder = async () => {
     setOrderError('');
+    if (!customerLoggedIn) { setOrderError('سجّل الدخول بحسابك أولاً حتى نحفظ الطلب في سجل طلباتك.'); return; }
     if (!customerName.trim() || normalizePhone(customerPhone).length !== 13 || !branchId || !paymentId) {
       setOrderError('أكمل الاسم ورقم الجوال واختر فرع الاستلام وطريقة الدفع.');
       return;
@@ -203,8 +208,7 @@ export default function StorefrontPage() {
       setCart([]);
       setCheckoutOpen(false);
       setCartOpen(false);
-      setTrackCode(result.order_code || '');
-      setTrackToken(result.tracking_token || '');
+
     } catch (error: any) {
       setOrderError(error.message || 'حدث خطأ أثناء إرسال الطلب');
     } finally {
@@ -236,7 +240,7 @@ export default function StorefrontPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message_ar || result.message || result.error || 'تعذر إرسال الطلب');
       setOrderResult(result); setCart([]); setCaptcha(null); setCaptchaAnswer(''); setCheckoutOpen(false); setCartOpen(false);
-      setTrackCode(result.order_code || ''); setTrackToken(result.tracking_token || '');
+
     } catch (error: any) {
       setOrderError(error.message || 'تعذر إكمال التحقق');
     } finally { setSubmitting(false); }
@@ -305,11 +309,11 @@ export default function StorefrontPage() {
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
             <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>المنيو</button>
             <button onClick={() => setActiveView('branches')} className={activeView === 'branches' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>فروعنا</button>
-            <button onClick={() => setActiveView('track')} className={activeView === 'track' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>تتبع طلبك</button>
+            <a href="/account/orders" className="hover:text-[#a84f32]">طلباتي</a>
           </nav>
 
           <div className="flex items-center gap-2">
-            <a href="/auth/login" className="hidden rounded-full border border-[#cfc7ba] px-4 py-2 text-xs font-bold text-[#514b42] transition hover:border-[#a65e36] hover:text-[#a65e36] sm:inline-flex">دخول الموظفين</a>
+            <a href="/account" className="hidden rounded-full border border-[#cfc7ba] px-4 py-2 text-xs font-bold text-[#514b42] transition hover:border-[#a65e36] hover:text-[#a65e36] sm:inline-flex">حسابي</a>
             <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a84f32] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#913f28]">
               <ShoppingBag size={15} /> السلة <span className="rounded-full bg-white/15 px-2 py-0.5">{cartCount}</span>
             </button>
@@ -320,7 +324,7 @@ export default function StorefrontPage() {
           <div className="flex justify-around text-sm font-bold">
             <button onClick={() => {setActiveView('menu');setMobileMenuOpen(false);}}>المنيو</button>
             <button onClick={() => {setActiveView('branches');setMobileMenuOpen(false);}}>فروعنا</button>
-            <button onClick={() => {setActiveView('track');setMobileMenuOpen(false);}}>تتبع طلبك</button>
+            <a href="/account/orders" className="hover:text-[#a84f32]">طلباتي</a>
           </div>
         </div>}
       </header>
@@ -454,7 +458,7 @@ export default function StorefrontPage() {
           <div><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/><div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><div className="text-[9px] tracking-[.2em] text-[#c5a27e]">CRAFTED OVER FIRE</div></div></div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
           <div><div className="text-xs font-black text-white">تصفح</div><div className="mt-4 space-y-3 text-xs text-[#aaa397]"><button onClick={()=>setActiveView('menu')} className="block">المنيو</button><button onClick={()=>setActiveView('branches')} className="block">فروعنا</button><button onClick={()=>setActiveView('track')} className="block">تتبع الطلب</button></div></div>
           <div><div className="text-xs font-black text-white">الاستلام</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">جميع الطلبات عبر الموقع مخصصة للاستلام من الفرع فقط. لا نوفر التوصيل المنزلي حالياً.</p></div>
-          <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/auth/login" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">دخول الموظفين والإدارة <ArrowLeft className="mr-1 inline" size={13}/></a></div>
+          <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/account" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">حساب العميل <ArrowLeft className="mr-1 inline" size={13}/></a></div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-[10px] text-[#827d73]">© {new Date().getFullYear()} BURGER HOUSE. جميع الحقوق محفوظة.</div>
       </footer>
@@ -478,22 +482,23 @@ export default function StorefrontPage() {
       </aside></div>}
 
       {checkoutOpen && <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="max-h-[92vh] w-full max-w-lg overflow-y-auto bg-[#f8f6f1] p-6 text-[#201e1a] sm:p-8" onClick={(e)=>e.stopPropagation()}>
-        <div className="flex items-center justify-between"><div><div className="text-xl font-black">إتمام الطلب</div><div className="mt-1 text-xs text-[#777064]">أدخل بياناتك وحدد طريقة الاستلام.</div></div><button onClick={()=>setCheckoutOpen(false)}><X/></button></div>
+        <div className="flex items-center justify-between"><div><div className="text-xl font-black">إتمام الطلب</div><div className="mt-1 text-xs text-[#777064]">تم تحميل بيانات حسابك. راجع الفرع وطريقة الدفع قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)}><X/></button></div>
         <div className="mt-6 space-y-4">
-          <label className="block text-xs font-bold">الاسم الكامل<input value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="اسمك"/></label>
-          <label className="block text-xs font-bold">رقم الجوال<input value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
+          <label className="block text-xs font-bold">الاسم الكامل<input disabled={!customerLoggedIn} value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="اسمك"/></label>
+          <label className="block text-xs font-bold">رقم الجوال<input disabled={!customerLoggedIn} value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
+          {!customerLoggedIn && <div className="border border-[#d8c6aa] bg-[#f6efe4] p-4 text-xs leading-6 text-[#735538]">لإتمام الطلب وحفظه في سجلّك، يلزم تسجيل الدخول أولاً. <a href="/account" className="font-black underline">تسجيل الدخول أو إنشاء حساب</a></div>}
           <label className="block text-xs font-bold">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="ملاحظات إضافية (اختياري)"/></label>
           {captcha&&<div className="border border-[#d8d0c4] bg-white p-4"><div className="text-xs font-bold">تحقق أمني: {captcha.question_ar || captcha.question || 'أجب عن سؤال التحقق'}</div><input value={captchaAnswer} onChange={(e)=>setCaptchaAnswer(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] px-3 py-2 text-sm" placeholder="الإجابة"/></div>}
           {orderError&&<div className="border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{orderError}</div>}
           <div className="flex justify-between border-t border-[#ded8cd] pt-4 text-base font-black"><span>الإجمالي شامل الضريبة</span><span>{money(total)} ر.س</span></div>
-          <button disabled={submitting} onClick={captcha?verifyAndSubmit:submitOrder} className="w-full bg-[#a65e36] py-4 text-sm font-bold text-white disabled:opacity-50">{submitting?'جارٍ إرسال الطلب...':'تأكيد الطلب'}</button>
+          <button disabled={submitting || !customerLoggedIn} onClick={captcha?verifyAndSubmit:submitOrder} className="w-full bg-[#a65e36] py-4 text-sm font-bold text-white disabled:opacity-50">{submitting?'جارٍ إرسال الطلب...':'تأكيد الطلب'}</button>
           <p className="text-center text-[10px] leading-5 text-[#82796d]">سيتم التحقق من الأسعار والتوفر على الخادم قبل اعتماد الطلب.</p>
         </div>
       </div></div>}
 
-      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-xl font-black" dir="ltr">{orderResult.order_code}</div><div className="mt-4 text-xs text-[#777064]">رمز التتبع</div><div className="mt-1 break-all text-xs font-bold" dir="ltr">{orderResult.tracking_token}</div></div><button onClick={()=>{setOrderResult(null);setActiveView('track');}} className="mt-5 w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">تتبع الطلب</button><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
+      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-3xl font-black tabular-nums">{orderResult.order_number ?? "—"}</div></div><a href="/account/orders" className="mt-5 block w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">عرض طلباتي</a><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
     </main>
   );
 }

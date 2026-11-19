@@ -44,11 +44,11 @@ export default function SovereignSuperAdminVaultPage() {
 
   if (accessDenied) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0B0A09] p-6 text-center text-[#F5EFE6]">
-        <div className="max-w-md rounded-2xl border border-red-500/40 bg-red-950/20 p-8 space-y-3">
-          <h1 className="text-xl font-extrabold text-red-400">403 — محظور الوصول (SOVEREIGN PRIVILEGE REQUIRED)</h1>
-          <p className="text-xs text-[#9E9488]">{accessDenied}</p>
-          <p className="text-xs text-[#9E9488]">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#f4f1eb] p-6 text-center text-[#201e1a]">
+        <div className="max-w-md rounded-sm border border-red-200 bg-red-50 p-8 space-y-3">
+          <h1 className="text-xl font-extrabold text-red-700">403 — محظور الوصول (SOVEREIGN PRIVILEGE REQUIRED)</h1>
+          <p className="text-xs text-[#777064]">{accessDenied}</p>
+          <p className="text-xs text-[#777064]">
             يتم التحقق من هوية `super_admin` حصرياً من جلسة Supabase على الخادم ولا يقبل النظام أي صلاحية مرسلة من المتصفح.
           </p>
         </div>
@@ -57,20 +57,20 @@ export default function SovereignSuperAdminVaultPage() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6] space-y-6">
-      <header className="border-b border-white/10 pb-4">
-        <h1 className="text-2xl font-extrabold text-[#D49A3A]">لوحة الإدارة العليا السيادية (Sovereign Super Admin Vault)</h1>
-        <p className="mt-1 text-xs text-[#9E9488]">
-          تحكم كامل بتشغيل الموقع، وضع الصيانة، حساب مالك المطعم، جدار الحماية، والنسخ الاحتياطية الفورية
+    <div dir="rtl" className="min-h-screen bg-[#f4f1eb] p-6 text-[#201e1a] space-y-6">
+      <header className="border-b border-[#ded8cd] pb-4">
+        <h1 className="text-2xl font-extrabold text-[#a65e36]">الإدارة العامة — BURGER HOUSE</h1>
+        <p className="mt-1 text-xs text-[#777064]">
+          إدارة تشغيل المطعم، حالة الموقع، وضع الصيانة، وحماية الطلبات
         </p>
       </header>
 
       {vaultData && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-[#141210] p-5 space-y-4">
-            <h2 className="text-base font-extrabold text-amber-300">١. التحكم السيادي بتشغيل الموقع ووضع الصيانة</h2>
-            <div className="flex items-center justify-between rounded-xl bg-[#0B0A09] p-4 text-xs">
-              <span>حالة الموقع العام (Master Site Switch)</span>
+          <div className="rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-5 space-y-4">
+            <h2 className="text-base font-extrabold text-[#a65e36]">١. التحكم السيادي بتشغيل الموقع ووضع الصيانة</h2>
+            <div className="flex items-center justify-between rounded-xl bg-[#f4f1eb] p-4 text-xs">
+              <span>حالة الموقع</span>
               <button
                 onClick={() =>
                   executeSovereignAction({
@@ -79,13 +79,13 @@ export default function SovereignSuperAdminVaultPage() {
                     maintenance_mode: vaultData.settings?.maintenance_mode
                   })
                 }
-                className="rounded-lg bg-[#D49A3A] px-3 py-1.5 font-black text-[#0B0A09]"
+                className="rounded-lg bg-[#a65e36] px-3 py-1.5 font-black text-white"
               >
                 {vaultData.settings?.site_online ? 'الموقع يعمل (إيقاف؟)' : 'متوقف (تشغيل؟)'}
               </button>
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-[#0B0A09] p-4 text-xs">
-              <span>وضع الصيانة الشامل (Maintenance Mode)</span>
+            <div className="flex items-center justify-between rounded-xl bg-[#f4f1eb] p-4 text-xs">
+              <span>وضع الصيانة</span>
               <button
                 onClick={() =>
                   executeSovereignAction({
@@ -94,15 +94,15 @@ export default function SovereignSuperAdminVaultPage() {
                     maintenance_mode: !vaultData.settings?.maintenance_mode
                   })
                 }
-                className="rounded-lg border border-amber-500/40 px-3 py-1.5 font-bold text-amber-300"
+                className="rounded-lg border border-[#c9b9a4] px-3 py-1.5 font-bold text-[#a65e36]"
               >
                 {vaultData.settings?.maintenance_mode ? 'مفعل (إنهاء؟)' : 'معطل (تفعيل؟)'}
               </button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#141210] p-5 space-y-4">
-            <h2 className="text-base font-extrabold text-amber-300">٢. جدار الحماية المشترك وحظر الأرقام / الجلسات / IP</h2>
+          <div className="rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-5 space-y-4">
+            <h2 className="text-base font-extrabold text-[#a65e36]">٢. جدار الحماية المشترك وحظر الأرقام / الجلسات / IP</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -120,7 +120,7 @@ export default function SovereignSuperAdminVaultPage() {
               <select
                 value={entityType}
                 onChange={(e) => setEntityType(e.target.value as any)}
-                className="rounded-lg border border-white/15 bg-[#0B0A09] px-2 py-1.5"
+                className="rounded-lg border border-[#d8d0c4] bg-[#f4f1eb] px-2 py-1.5"
               >
                 <option value="phone">رقم جوال</option>
                 <option value="ip">عنوان IP</option>
@@ -132,7 +132,7 @@ export default function SovereignSuperAdminVaultPage() {
                 value={entityValue}
                 onChange={(e) => setEntityValue(e.target.value)}
                 placeholder="+966548192736"
-                className="flex-1 rounded-lg border border-white/15 bg-[#0B0A09] px-3 py-1.5"
+                className="flex-1 rounded-lg border border-[#d8d0c4] bg-[#f4f1eb] px-3 py-1.5"
               />
               <input
                 type="text"
@@ -140,7 +140,7 @@ export default function SovereignSuperAdminVaultPage() {
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
                 placeholder="السبب"
-                className="flex-1 rounded-lg border border-white/15 bg-[#0B0A09] px-3 py-1.5"
+                className="flex-1 rounded-lg border border-[#d8d0c4] bg-[#f4f1eb] px-3 py-1.5"
               />
               <button type="submit" className="rounded-lg bg-red-600 px-3 py-1.5 font-bold text-white">حظر</button>
             </form>

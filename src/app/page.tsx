@@ -237,7 +237,7 @@ export default function StorefrontPage() {
       }).catch(() => null);
       if (!response?.ok) return;
       const result = await response.json();
-      if (result.branch?.id) setBranchId(result.branch.id);
+      if (result.recommended_branch?.id) setBranchId(result.recommended_branch.id);
     }, () => undefined, { enableHighAccuracy: false, timeout: 8000 });
   };
 
@@ -415,7 +415,7 @@ export default function StorefrontPage() {
           <label className="block text-xs font-bold">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="ملاحظات إضافية (اختياري)"/></label>
-          {captcha&&<div className="border border-[#d8d0c4] bg-white p-4"><div className="text-xs font-bold">تحقق أمني: {captcha.question || captcha.prompt || 'أجب عن سؤال التحقق'}</div><input value={captchaAnswer} onChange={(e)=>setCaptchaAnswer(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] px-3 py-2 text-sm" placeholder="الإجابة"/></div>}
+          {captcha&&<div className="border border-[#d8d0c4] bg-white p-4"><div className="text-xs font-bold">تحقق أمني: {captcha.question_ar || captcha.question || 'أجب عن سؤال التحقق'}</div><input value={captchaAnswer} onChange={(e)=>setCaptchaAnswer(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] px-3 py-2 text-sm" placeholder="الإجابة"/></div>}
           {orderError&&<div className="border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{orderError}</div>}
           <div className="flex justify-between border-t border-[#ded8cd] pt-4 text-base font-black"><span>الإجمالي شامل الضريبة</span><span>{money(total)} ر.س</span></div>
           <button disabled={submitting} onClick={captcha?verifyAndSubmit:submitOrder} className="w-full bg-[#a65e36] py-4 text-sm font-bold text-white disabled:opacity-50">{submitting?'جارٍ إرسال الطلب...':'تأكيد الطلب'}</button>

@@ -390,29 +390,6 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        {featuredProducts.length > 0 && <section className="mx-auto max-w-7xl px-4 pb-12 pt-2 lg:px-8 lg:pb-16">
-          <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">HOUSE SIGNATURES</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">توقيعات برجر هاوس</h2><p className="mt-2 text-xs text-[#80776b]">ثلاث نكهات تستحق أن تبدأ بها.</p></div><button onClick={()=>{setActiveCategory('cat-wagyu');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">اكتشف البرجر</button></div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {featuredProducts.map((product)=> <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa]">
-              <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden"><img src={product.image_url} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f6f0e5] px-3 py-1.5 text-[10px] font-black text-[#87442c]">توقيع البيت</span></button>
-              <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-1 line-clamp-1 text-[11px] text-[#80776b]">{product.description_ar}</p></div><div className="shrink-0 text-sm font-black text-[#a84f32]">{money(Number(product.base_price))} ر.س</div></div>
-              <button onClick={()=>openProduct(product)} className="mx-4 mb-4 flex w-[calc(100%-2rem)] items-center justify-center gap-2 bg-[#211f1b] py-3 text-xs font-bold text-white transition hover:bg-[#a84f32]">أضف إلى طلبك <Plus size={14}/></button>
-            </article>)}
-          </div>
-        </section>}
-
-        {comboProducts.length > 0 && <section className="bg-[#211f1b] py-12 text-[#f7f3eb] sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 lg:px-8">
-            <div className="mb-7 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#d59b6c]">COMBO MEALS</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">وجبات كاملة… بدون حيرة</h2><p className="mt-2 text-xs leading-6 text-[#c9c0b3]">برجرك المفضل مع البطاطس والمشروب في اختيار واحد.</p></div><button onClick={()=>{setActiveCategory('cat-meals');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="hidden border-b border-[#d59b6c] pb-1 text-xs font-bold text-[#e6c7aa] sm:block">تصفّح الوجبات</button></div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {comboProducts.slice(0,3).map((product)=> <article key={product.id} className="overflow-hidden bg-[#302d27]">
-                <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden text-right"><img src={product.image_url} alt={product.name_ar} className="h-full w-full object-cover transition duration-700 hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f5f0e7] px-3 py-1.5 text-[10px] font-black text-[#29251f]">وجبة متكاملة</span></button>
-                <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-2 line-clamp-2 text-xs leading-6 text-[#c5bbae]">{product.description_ar}</p></div><span className="shrink-0 text-sm font-black text-[#e3b58c]">{money(Number(product.base_price))} ر.س</span></div><button onClick={()=>openProduct(product)} className="mt-4 flex w-full items-center justify-center gap-2 border border-white/20 py-3 text-xs font-bold transition hover:border-[#d59b6c] hover:bg-white/5">اختر الوجبة <Plus size={14}/></button></div>
-              </article>)}
-            </div>
-          </div>
-        </section>}
-
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#777064]">اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.</p></div>
@@ -449,40 +426,7 @@ export default function StorefrontPage() {
         </section>
       
 
-        <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
-          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a65e36]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة مختارة بعناية</h2><p className="mt-2 text-sm text-[#777064]">مكونات واضحة، نكهات متوازنة، وتحضير يبدأ بعد طلبك.</p></div>
-            <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث في المنيو" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a65e36]"/></div>
-          </div>
-          <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
-            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap bg-[#20201c] px-5 py-2.5 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] px-5 py-2.5 text-xs font-bold text-[#655e53] hover:border-[#a65e36]'}>كل الأصناف</button>
-            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap bg-[#20201c] px-5 py-2.5 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] px-5 py-2.5 text-xs font-bold text-[#655e53] hover:border-[#a65e36]'}>{category.name_ar}</button>)}
-          </div>
 
-          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
-          : catalogError ? <div className="border border-[#d8d0c4] bg-white/60 p-8 text-center"><p className="font-bold">المنيو غير متاح حالياً</p><p className="mt-2 text-sm text-[#777064]">{catalogError}</p><button onClick={()=>location.reload()} className="mt-4 text-sm font-bold text-[#a65e36]">إعادة المحاولة</button></div>
-          : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
-          : <div className="grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
-            {availableProducts.map((product,index)=>{
-              const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
-              return <article key={product.id} className="group">
-                <button onClick={()=>openProduct(product)} className="relative block aspect-[4/3] w-full overflow-hidden bg-[#e5dfd5] text-right">
-                  <img src={product.image_url || '/images/hero-wagyu-smash.jpg'} alt={product.name_ar} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"/>
-                  {product.is_featured && <span className="absolute right-4 top-4 bg-[#f4f1eb] px-3 py-1.5 text-[10px] font-black tracking-wide text-[#8d4d2e]">اختيار الشيف</span>}
-                  <span className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#f4f1eb] text-[#26241f] transition group-hover:bg-[#a65e36] group-hover:text-white"><Plus size={19}/></span>
-                </button>
-                <div className="flex items-start justify-between gap-3 pt-4">
-                  <div className="min-w-0"><h3 className="text-[17px] font-black leading-7">{product.name_ar}</h3><p className="mt-1 line-clamp-2 text-xs leading-6 text-[#777064]">{product.description_ar}</p></div>
-                  <div className="shrink-0 pt-1 text-sm font-black text-[#a65e36]">{money(Number(override?.custom_base_price ?? product.base_price))} <span className="text-[10px]">ر.س</span></div>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[#ddd6ca] pt-3">
-                  <span className="flex items-center gap-1.5 text-[11px] text-[#82796d]"><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span>
-                  <button onClick={()=>openProduct(product)} className="text-xs font-extrabold text-[#25231f] underline decoration-[#b7a18b] underline-offset-4 hover:text-[#a65e36]">تخصيص وإضافة</button>
-                </div>
-              </article>
-            })}
-          </div>}
-        </section>
       </>}
 
       {activeView === 'branches' && <section className="mx-auto min-h-[65vh] max-w-7xl px-4 py-14 lg:px-8">

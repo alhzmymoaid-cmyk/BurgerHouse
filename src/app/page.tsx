@@ -11,7 +11,7 @@ type Size = { id: string; name_ar: string; price_delta: number; is_default?: boo
 type Addon = { id: string; name_ar: string; price: number; max_per_item?: number };
 type Product = {
   id: string; category_id: string; name_ar: string; name_en?: string;
-  description_ar: string; base_price: number; image_url: string; prep_minutes?: number;
+  description_ar: string; base_price: number; image_url: string;
   is_featured?: boolean; prep_minutes?: number; sizes?: Size[]; allowed_addon_ids?: string[];
 };
 type Branch = {

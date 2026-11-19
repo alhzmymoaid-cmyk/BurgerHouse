@@ -1,0 +1,21 @@
+{
+  "name": "BURGER HOUSE",
+  "short_name": "BURGER HOUSE",
+  "description": "اطلب برجر هاوس واستلم من الفرع",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f2ea",
+  "theme_color": "#211f1b",
+  "icons": [
+    {
+      "src": "/brand-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

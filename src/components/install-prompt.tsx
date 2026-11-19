@@ -1,0 +1,12 @@
+'use client';
+import { useEffect,useState } from 'react';
+import { X, Smartphone, Share, PlusSquare } from 'lucide-react';
+declare global { interface Window { deferredPwaPrompt?: any } }
+export default function InstallPrompt(){
+ const [show,setShow]=useState(false);const [ios,setIos]=useState(false);const [installed,setInstalled]=useState(false);
+ useEffect(()=>{if(typeof window==='undefined')return;const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent);const standalone=window.matchMedia('(display-mode: standalone)').matches||(navigator as any).standalone===true;setIos(isIos);setInstalled(standalone);if(standalone||localStorage.getItem('bh-install-dismissed'))return;
+ const onPrompt=(e:Event)=>{e.preventDefault();window.deferredPwaPrompt=e;};window.addEventListener('beforeinstallprompt',onPrompt);const timer=window.setTimeout(()=>setShow(true),9000);if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});return()=>{window.clearTimeout(timer);window.removeEventListener('beforeinstallprompt',onPrompt);};},[]);
+ const install=async()=>{if(window.deferredPwaPrompt){window.deferredPwaPrompt.prompt();await window.deferredPwaPrompt.userChoice;window.deferredPwaPrompt=null;setShow(false);}else if(ios){setShow(true);}};
+ if(!show||installed)return null;
+ return <div className="fixed bottom-4 left-4 right-4 z-[120] mx-auto max-w-md border border-[#d9cfc1] bg-[#fbf8f1] p-4 text-[#211f1b] shadow-2xl" dir="rtl"><button onClick={()=>{setShow(false);localStorage.setItem('bh-install-dismissed','1');}} className="absolute left-3 top-3 p-1" aria-label="إغلاق"><X size={17}/></button><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><div className="font-black">BURGER HOUSE</div><p className="mt-1 text-xs text-[#756c60]">أضف التطبيق إلى شاشتك الرئيسية لتجربة أسرع.</p></div></div>{ios?<div className="mt-3 flex items-center gap-2 text-xs leading-6"><Share size={16}/> اضغط مشاركة في Safari ثم اختر <b>إضافة إلى الشاشة الرئيسية</b> <PlusSquare size={16}/></div>:<button onClick={install} className="mt-4 w-full bg-[#a84f32] py-3 text-sm font-bold text-white"><Smartphone className="ml-2 inline" size={16}/> تثبيت التطبيق</button>}</div>
+}

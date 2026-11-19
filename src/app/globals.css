@@ -263,3 +263,14 @@ a { text-decoration:none; }
  .bh-signature-copy { right:11px;bottom:11px; }
  .bh-signature-copy b { font-size:12px; }
 }
+
+/* Staff access gate */
+.bh-staff-login { position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#3a3218 0%,transparent 52%),#0b0c0a!important;color:#f5f0df!important; }
+.bh-staff-login:before { content:"";position:absolute;inset:0;z-index:-1;opacity:.18;background-image:linear-gradient(#f4c92812 1px,transparent 1px),linear-gradient(90deg,#f4c92812 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(black,transparent 80%); }
+.bh-staff-login>div { border:1px solid #454632!important;border-radius:22px!important;background:#171a15!important;box-shadow:0 28px 90px #0009!important; }
+.bh-staff-login h1 { color:#fff4d4!important; }
+.bh-staff-login p,.bh-staff-login label { color:#aaa48f!important; }
+.bh-staff-login a { color:var(--bh-yellow)!important; }
+.bh-staff-login input { background:#0f110d!important;border:1px solid #3e4234!important;color:#f6efd9!important;border-radius:11px!important; }
+.bh-staff-login input::placeholder { color:#6e7461!important; }
+.bh-staff-login button[type="submit"] { background:var(--bh-yellow)!important;color:#111!important;border-radius:11px!important; }

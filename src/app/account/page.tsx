@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Phone, ShieldCheck, UserRound, UtensilsCrossed } from 'lucide-react';
@@ -25,6 +25,10 @@ export default function CustomerAccountPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    if (window.location.hash === '#signup') setMode('signup');
+  }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

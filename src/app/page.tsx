@@ -297,6 +297,16 @@ export default function StorefrontPage() {
         </div>}
       </header>
 
+      <div className="bh-mobile-orderbar" dir="rtl">
+        <div className="bh-mobile-orderbar-meta">
+          <span className="bh-mobile-orderbar-count">{cartCount}</span>
+          <div><b>{cartCount > 0 ? 'طلبك جاهز للتأكيد' : 'برجر هاوس على مزاجك'}</b><small>{cartCount > 0 ? 'راجع اختياراتك في السلة' : 'اختر وجبتك وابدأ الطلب'}</small></div>
+        </div>
+        <button onClick={() => cartCount > 0 ? setCartOpen(true) : document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>
+          {cartCount > 0 ? <>عرض السلة · {money(total)} ر.س <ArrowLeft size={16}/></> : <>تصفح المنيو <ArrowLeft size={16}/></>}
+        </button>
+      </div>
+
       {activeView === 'menu' && <>
         <section className="relative overflow-hidden bg-[#191916] text-[#f7f3eb]">
           <div className="mx-auto grid max-w-[1440px] lg:min-h-[570px] lg:grid-cols-[1fr_1.05fr]">

@@ -1,11 +1,125 @@
 'use client';
-import {useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {createSupabaseBrowserClient} from '@/lib/supabase/client';
-import {ArrowRight,LockKeyhole,Phone,UserRound} from 'lucide-react';
-const normalize=(v:string)=>{const d=v.replace(/\\D/g,'');if(d.startsWith('966'))return '+'+d;if(d.startsWith('05'))return '+966'+d.slice(1);if(d.startsWith('5'))return '+966'+d;return v;};
-export default function CustomerAccountPage(){
- const router=useRouter();const [mode,setMode]=useState<'login'|'signup'>('login');const [name,setName]=useState('');const [phone,setPhone]=useState('');const [password,setPassword]=useState('');const [otp,setOtp]=useState('');const [needsOtp,setNeedsOtp]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
- const submit=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);setError('');setNotice('');try{const supabase=createSupabaseBrowserClient();const mobile=normalize(phone);if(mode==='signup'&&!needsOtp){const {data,error}=await supabase.auth.signUp({phone:mobile,password,options:{data:{full_name:name.trim()}}});if(error)throw error;if(data.session){router.push('/account/orders');router.refresh();return;}setNeedsOtp(true);setNotice('أرسلنا رمز تحقق إلى جوالك. أدخله لإكمال إنشاء الحساب.');return;}if(needsOtp){const {error}=await supabase.auth.verifyOtp({phone:mobile,token:otp,type:'sms'});if(error)throw error;router.push('/account/orders');router.refresh();return;}const {error}=await supabase.auth.signInWithPassword({phone:mobile,password});if(error)throw error;router.push('/account/orders');router.refresh();}catch(e:any){setError(e?.message||'تعذر إكمال العملية. تحقق من البيانات وحاول مجدداً.');}finally{setBusy(false);}};
- return <main dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 py-10 text-[#211f1b]"><div className="w-full max-w-md border border-[#e0d8cc] bg-[#fbf9f4] p-6 shadow-[0_20px_70px_rgba(36,29,20,.08)] sm:p-9"><a href="/" className="inline-flex items-center gap-2 text-xs font-bold text-[#806f5c]"><ArrowRight size={15}/> العودة للمتجر</a><div className="mt-8 flex items-center gap-3"><img src="/brand-mark.svg" className="h-14 w-14" alt="شعار برجر هاوس"/><div><div className="text-lg font-black tracking-[.12em]">BURGER HOUSE</div><div className="mt-1 text-xs text-[#8a7b69]">حسابك وطلباتك في مكان واحد</div></div></div><h1 className="mt-8 text-2xl font-black">{needsOtp?'تأكيد رقم الجوال':mode==='login'?'مرحباً بعودتك':'أنشئ حسابك'}</h1><p className="mt-2 text-sm leading-7 text-[#766d61]">{needsOtp?'أدخل رمز التحقق المرسل إلى رقمك.':'سجّل برقم جوالك لتحتفظ ببياناتك وفواتيرك وسجل طلباتك.'}</p><form onSubmit={submit} className="mt-7 space-y-4">{mode==='signup'&&!needsOtp&&<label className="block text-xs font-bold">الاسم الكامل<div className="relative mt-2"><UserRound className="absolute right-3 top-3.5 text-[#9b8e7e]" size={17}/><input required value={name} onChange={e=>setName(e.target.value)} className="w-full border border-[#ded5c8] bg-white py-3 pr-10 pl-3 text-sm outline-none focus:border-[#a84f32]" placeholder="اسمك"/></div></label>}<label className="block text-xs font-bold">رقم الجوال<div className="relative mt-2"><Phone className="absolute right-3 top-3.5 text-[#9b8e7e]" size={17}/><input required value={phone} onChange={e=>setPhone(e.target.value)} disabled={needsOtp} inputMode="tel" dir="ltr" className="w-full border border-[#ded5c8] bg-white py-3 pl-3 pr-10 text-left text-sm outline-none focus:border-[#a84f32] disabled:bg-[#f1eee8]" placeholder="05xxxxxxxx"/></div></label>{!needsOtp&&<label className="block text-xs font-bold">كلمة المرور<div className="relative mt-2"><LockKeyhole className="absolute right-3 top-3.5 text-[#9b8e7e]" size={17}/><input required minLength={8} type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full border border-[#ded5c8] bg-white py-3 pr-10 pl-3 text-sm outline-none focus:border-[#a84f32]" placeholder="٨ أحرف على الأقل"/></div></label>}{needsOtp&&<label className="block text-xs font-bold">رمز التحقق<input required inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value)} className="mt-2 w-full border border-[#ded5c8] bg-white px-3 py-3 text-center text-lg tracking-[.4em]" placeholder="000000"/></label>}{error&&<p className="border border-red-200 bg-red-50 p-3 text-xs leading-6 text-red-700">{error}</p>}{notice&&<p className="border border-[#d8c6aa] bg-[#f6efe4] p-3 text-xs leading-6 text-[#735538]">{notice}</p>}<button disabled={busy} className="w-full bg-[#a84f32] py-4 text-sm font-black text-white disabled:opacity-60">{busy?'جارٍ التنفيذ...':needsOtp?'تأكيد الحساب':mode==='login'?'تسجيل الدخول':'إنشاء الحساب'}</button></form>{!needsOtp&&<button onClick={()=>{setMode(mode==='login'?'signup':'login');setError('');}} className="mt-5 w-full text-center text-xs font-bold text-[#8c5539]">{mode==='login'?'ليس لديك حساب؟ أنشئ حساباً':'لديك حساب؟ سجّل الدخول'}</button>}<p className="mt-6 text-center text-[10px] leading-5 text-[#9a9083]">تسجيل الحساب يتطلب تفعيل تسجيل الدخول برقم الجوال ومزود رسائل SMS في إعدادات Supabase.</p></div></main>;
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Phone, ShieldCheck, UserRound, UtensilsCrossed } from 'lucide-react';
+
+const normalize = (value: string) => {
+  const digits = value.replace(/\\D/g, '');
+  if (digits.startsWith('966')) return '+' + digits;
+  if (digits.startsWith('05')) return '+966' + digits.slice(1);
+  if (digits.startsWith('5')) return '+966' + digits;
+  return value.trim();
+};
+
+export default function CustomerAccountPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [needsOtp, setNeedsOtp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const mobile = normalize(phone);
+      if (mode === 'signup' && !needsOtp) {
+        const { data, error: signupError } = await supabase.auth.signUp({
+          phone: mobile,
+          password,
+          options: { data: { full_name: name.trim() } }
+        });
+        if (signupError) {
+          const code = (signupError as any).code || '';
+          if (code === 'phone_provider_disabled' || /phone signups are disabled/i.test(signupError.message)) {
+            throw new Error('تسجيل الحسابات برقم الجوال غير مفعّل حالياً. يجب تفعيل Phone Provider في Supabase Auth ثم إعداد مزوّد رسائل SMS قبل استقبال رموز التحقق.');
+          }
+          throw signupError;
+        }
+        if (data.session) {
+          router.push('/account/orders');
+          router.refresh();
+          return;
+        }
+        setNeedsOtp(true);
+        setNotice('أرسلنا رمز تحقق إلى جوالك. أدخله لإكمال إنشاء الحساب.');
+        return;
+      }
+      if (needsOtp) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({ phone: mobile, token: otp, type: 'sms' });
+        if (verifyError) throw verifyError;
+        router.push('/account/orders');
+        router.refresh();
+        return;
+      }
+      const { error: loginError } = await supabase.auth.signInWithPassword({ phone: mobile, password });
+      if (loginError) throw loginError;
+      router.push('/account/orders');
+      router.refresh();
+    } catch (caught: any) {
+      setError(caught?.message || 'تعذر إكمال العملية. تحقق من البيانات وحاول مجدداً.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <main className="bh-account min-h-screen" dir="rtl">
+      <div className="bh-account-topline"><span>BURGER HOUSE</span><span>GOOD FOOD. GOOD MOOD.</span></div>
+      <div className="bh-account-layout">
+        <section className="bh-account-visual">
+          <a href="/" className="bh-account-back"><ArrowRight size={16}/> العودة إلى المتجر</a>
+          <div className="bh-account-visual-copy">
+            <img src="/brand-mark.svg" alt="BURGER HOUSE" className="bh-account-logo"/>
+            <p className="bh-eyebrow">YOUR HOUSE. YOUR ORDERS.</p>
+            <h1>كل طلب تحبه،<br/><em>في مكان واحد.</em></h1>
+            <p className="bh-account-lead">أنشئ حسابك لتتابع طلباتك، تحتفظ بفواتيرك، وتعيد طلب وجبتك المفضلة بسهولة.</p>
+            <div className="bh-account-perks">
+              <div><CheckCircle2/><span>سجل طلبات وفواتير محفوظ</span></div>
+              <div><CheckCircle2/><span>إعادة طلب أسرع في المرات القادمة</span></div>
+              <div><CheckCircle2/><span>تحديث حالة الطلب لحظة بلحظة</span></div>
+            </div>
+          </div>
+          <div className="bh-account-photo"><img src="/images/hero-wagyu-smash.jpg" alt="برجر واغيو سماش"/><span>MADE FRESH FOR YOU</span></div>
+        </section>
+
+        <section className="bh-account-panel">
+          <div className="bh-account-form-head">
+            <div className="bh-account-icon"><UtensilsCrossed size={22}/></div>
+            <p className="bh-eyebrow">MEMBER ACCESS</p>
+            <h2>{needsOtp ? 'تأكيد رقم الجوال' : mode === 'login' ? 'أهلاً بعودتك' : 'ابدأ حسابك الآن'}</h2>
+            <p>{needsOtp ? 'أدخل رمز التحقق المرسل إلى رقم جوالك.' : mode === 'login' ? 'سجّل الدخول لتكمل طلبك وتتابع طلباتك السابقة.' : 'بيانات بسيطة، وتجربة طلب أسهل في كل مرة.'}</p>
+          </div>
+
+          <div className="bh-account-switch" role="tablist" aria-label="نوع الحساب">
+            <button type="button" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setNeedsOtp(false); setError(''); setNotice(''); }}>تسجيل الدخول</button>
+            <button type="button" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setNeedsOtp(false); setError(''); setNotice(''); }}>حساب جديد</button>
+          </div>
+
+          <form onSubmit={submit} className="bh-account-form">
+            {mode === 'signup' && !needsOtp && <label>الاسم الكامل<div className="bh-field"><UserRound/><input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="اكتب اسمك"/></div></label>}
+            <label>رقم الجوال<div className="bh-field"><Phone/><input required autoComplete="tel" inputMode="tel" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} disabled={needsOtp} placeholder="05xxxxxxxx"/></div></label>
+            {!needsOtp && <label>كلمة المرور<div className="bh-field"><LockKeyhole/><input required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="٨ أحرف على الأقل"/><button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
+            {needsOtp && <label>رمز التحقق<div className="bh-field bh-otp-field"><ShieldCheck/><input required inputMode="numeric" maxLength={6} dir="ltr" value={otp} onChange={e => setOtp(e.target.value.replace(/\\D/g, '').slice(0, 6))} placeholder="000000"/></div></label>}
+            {error && <div className="bh-account-alert" role="alert">{error}</div>}
+            {notice && <div className="bh-account-notice">{notice}</div>}
+            <button type="submit" disabled={busy} className="bh-account-submit">{busy ? 'جارٍ التحقق...' : needsOtp ? 'تأكيد الحساب' : mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'} <span>←</span></button>
+          </form>
+          {needsOtp && <button type="button" className="bh-account-secondary" onClick={() => { setNeedsOtp(false); setOtp(''); setError(''); }}>تعديل البيانات</button>}
+          <div className="bh-account-security"><ShieldCheck size={16}/><span>بيانات حسابك وطلباتك محمية، ولا نطلب منك بيانات الدفع الإلكتروني في هذه النسخة.</span></div>
+        </section>
+      </div>
+    </main>
+  );
 }

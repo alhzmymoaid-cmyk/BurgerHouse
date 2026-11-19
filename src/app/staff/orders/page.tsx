@@ -159,7 +159,7 @@ export default function StaffLiveOrdersPage() {
         {orders
           .filter((o) =>
             searchQuery
-              ? o.order_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              ? String(o.order_number ?? '').includes(searchQuery) || o.order_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 o.customer_phone?.includes(searchQuery)
               : true
           )
@@ -170,7 +170,7 @@ export default function StaffLiveOrdersPage() {
             return (
               <div key={order.order_code} className="rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-[#e4ded4] pb-3">
-                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">{order.order_code}</span>
+                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">#{order.order_number ?? '—'}</span>
                   <span className="rounded-sm bg-[#eee8df] px-2.5 py-1 text-xs font-bold text-[#655e53]">
                     {(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}
                   </span>

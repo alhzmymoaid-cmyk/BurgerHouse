@@ -247,6 +247,24 @@ export default function StorefrontPage() {
     } catch (error: any) { setTrackingError(error.message || 'تعذر تتبع الطلب'); }
   };
 
+  useEffect(() => {
+    if (activeView !== 'track' || !trackCode || !trackToken) return;
+    let active = true;
+    const refreshTracking = async () => {
+      try {
+        const response = await fetch('/api/orders/track', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_code: trackCode.trim(), tracking_token: trackToken.trim() }),
+          cache: 'no-store'
+        });
+        const result = await response.json();
+        if (active && response.ok) setTracking(result);
+      } catch { /* Keep the last confirmed order state visible */ }
+    };
+    const timer = window.setInterval(refreshTracking, 8000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [activeView, trackCode, trackToken]);
+
   const detectNearestBranch = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
@@ -399,7 +417,7 @@ export default function StorefrontPage() {
           <label className="block text-xs font-bold">رمز التتبع<input value={trackToken} onChange={(e)=>setTrackToken(e.target.value)} placeholder="trk_..." className="mt-2 w-full border border-[#d8d0c4] bg-white px-4 py-3 text-sm outline-none focus:border-[#a65e36]" dir="ltr"/></label>
           {trackingError&&<p className="text-xs font-bold text-red-700">{trackingError}</p>}
           <button onClick={trackOrder} className="w-full bg-[#a65e36] py-3.5 text-sm font-bold text-white">عرض حالة الطلب</button>
-          {tracking&&<div className="border-t border-[#e4ded4] pt-5"><div className="text-sm font-black">حالة الطلب: {tracking.status_ar || tracking.status || 'قيد المعالجة'}</div><pre className="mt-3 overflow-auto whitespace-pre-wrap text-xs text-[#777064]">{JSON.stringify(tracking,null,2)}</pre></div>}
+          {tracking&&<div className="border-t border-[#e4ded4] pt-5"><div className="text-[10px] font-black tracking-[.16em] text-[#a65e36]">LIVE ORDER STATUS</div><div className="mt-2 text-xl font-black">{({new:'بانتظار موافقة الفرع',pending_confirmation:'بانتظار تأكيد الفرع',accepted:'تم قبول طلبك',preparing:'طلبك قيد التجهيز',ready_for_pickup:'طلبك جاهز للاستلام',completed:'تم استلام طلبك',rejected:'تم رفض الطلب',cancelled:'تم إلغاء الطلب'} as Record<string,string>)[tracking.status] || tracking.status_ar || tracking.status || 'قيد المعالجة'}</div><p className="mt-2 text-xs leading-6 text-[#777064]">تتحدث حالة طلبك تلقائياً أثناء متابعة هذه الصفحة.</p><div className="mt-5 grid grid-cols-4 gap-2 text-center text-[10px]"><div className={['new','pending_confirmation','accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>استلام الطلب</div><div className={['accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>القبول</div><div className={['preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>التجهيز</div><div className={['ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>جاهز للاستلام</div></div>{tracking.rejected_reason&&<p className="mt-4 border border-red-200 bg-red-50 p-3 text-xs text-red-700">سبب الرفض: {tracking.rejected_reason}</p>}</div>}
         </div>
       </section>}
 
@@ -447,7 +465,7 @@ export default function StorefrontPage() {
         </div>
       </div></div>}
 
-      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">تم استلام طلبك</h2><p className="mt-2 text-sm text-[#777064]">احتفظ برقم الطلب ورمز التتبع لمتابعة حالة التجهيز.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-xl font-black" dir="ltr">{orderResult.order_code}</div><div className="mt-4 text-xs text-[#777064]">رمز التتبع</div><div className="mt-1 break-all text-xs font-bold" dir="ltr">{orderResult.tracking_token}</div></div><button onClick={()=>{setOrderResult(null);setActiveView('track');}} className="mt-5 w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">تتبع الطلب</button><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
+      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-xl font-black" dir="ltr">{orderResult.order_code}</div><div className="mt-4 text-xs text-[#777064]">رمز التتبع</div><div className="mt-1 break-all text-xs font-bold" dir="ltr">{orderResult.tracking_token}</div></div><button onClick={()=>{setOrderResult(null);setActiveView('track');}} className="mt-5 w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">تتبع الطلب</button><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
     </main>
   );
 }

@@ -19,12 +19,8 @@ export async function POST(request: NextRequest) {
       .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
     const submittedPhone = String(payload?.customer_phone || '').replace(/\\D/g, '');
     const accountPhone = String(customerProfile?.phone || user.phone || '').replace(/\\D/g, '');
-    if (!accountPhone || submittedPhone !== accountPhone.replace(/^966/, '0')) {
-      const normalizedSubmitted = submittedPhone.startsWith('05') ? '966' + submittedPhone.slice(1) : submittedPhone;
-      const normalizedAccount = accountPhone.startsWith('0') ? '966' + accountPhone.slice(1) : accountPhone;
-      if (!normalizedSubmitted || normalizedSubmitted !== normalizedAccount) {
-        return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
-      }
+    if (!accountPhone || submittedPhone !== accountPhone) {
+      return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
     }
 
     const result = await handleCreateOrderRequest({

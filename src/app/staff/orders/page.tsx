@@ -122,7 +122,7 @@ export default function StaffLiveOrdersPage() {
     : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
+    <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#ded8cd] pb-4">
         <div>
           <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#a65e36]">مركز تشغيل الطلبات</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#8a8175]">BURGER HOUSE · BRANCH OPERATIONS</p></div></div>

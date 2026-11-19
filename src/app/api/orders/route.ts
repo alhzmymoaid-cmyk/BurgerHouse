@@ -22,11 +22,14 @@ export async function POST(request: NextRequest) {
     const { data: customerProfile } = await serviceSupabase
       .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
     const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
-    const accountPhone = String(customerProfile?.phone || user.phone || '').replace(/\D/g, '');
+    const accountPhone = String(customerProfile?.phone || user.user_metadata?.phone || user.phone || '').replace(/\D/g, '');
+    if (!/^9665\d{8}$/.test(accountPhone)) {
+      return NextResponse.json({ error: 'CUSTOMER_PHONE_REQUIRED', message_ar: 'أكمل رقم جوالك السعودي في ملف حسابك قبل إرسال الطلب.' }, { status: 403 });
+    }
     if (!/^9665\d{8}$/.test(submittedPhone)) {
       return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً لاستلام تحديثات الطلب.' }, { status: 400 });
     }
-    if (accountPhone && submittedPhone !== accountPhone) {
+    if (submittedPhone !== accountPhone) {
       return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
     }
 

@@ -44,7 +44,7 @@ export default function SovereignSuperAdminVaultPage() {
 
   if (accessDenied) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#f4f1eb] p-6 text-center text-[#201e1a]">
+      <div dir="rtl" className="bh-superadmin flex min-h-screen flex-col items-center justify-center bg-[#f4f1eb] p-6 text-center text-[#201e1a]">
         <div className="max-w-md rounded-sm border border-red-200 bg-red-50 p-8 space-y-3">
           <h1 className="text-xl font-extrabold text-red-700">403 — محظور الوصول (SOVEREIGN PRIVILEGE REQUIRED)</h1>
           <p className="text-xs text-[#777064]">{accessDenied}</p>
@@ -57,7 +57,7 @@ export default function SovereignSuperAdminVaultPage() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f4f1eb] p-6 text-[#201e1a] space-y-6">
+    <div dir="rtl" className="bh-superadmin min-h-screen bg-[#f4f1eb] p-6 text-[#201e1a] space-y-6">
       <header className="border-b border-[#ded8cd] pb-4">
         <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#a65e36]">مركز الإدارة العامة</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#81776b]">BURGER HOUSE · SYSTEM ADMINISTRATION</p></div></div>
         <p className="mt-1 text-xs text-[#777064]">

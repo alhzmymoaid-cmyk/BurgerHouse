@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BURGER HOUSE | برجر هاوس — Luxury Artisan Wagyu Burgers',
-  description: 'نظام الطلبات الفاخر والاستلام من الفروع لمطعم برجر هاوس — تجربة واغيو استثنائية',
+  title: 'BURGER HOUSE | برجر هاوس',
+  description: 'اكتشف قائمة برجر هاوس واطلب مسبقاً للاستلام من الفرع الأقرب إليك.',
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#0B0A09] text-[#F5EFE6] antialiased selection:bg-[#D49A3A] selection:text-[#0B0A09]">
+      <body className="min-h-screen bg-[#f4f1eb] text-[#201e1a] antialiased selection:bg-[#a65e36] selection:text-white">
         {children}
       </body>
     </html>

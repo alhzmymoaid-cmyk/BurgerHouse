@@ -539,7 +539,7 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'UPSERT_PRODUCT') {
-    const productData = body.product;
+    const { product_sizes: ignoredProductSizes, ...productData } = body.product || {};
     const { data, error } = await serviceSupabase
       .from('products')
       .upsert(productData, { onConflict: 'id' })
@@ -594,6 +594,22 @@ export async function handleOwnerAdminRequest({
 
     if (error) return { status: 400, body: { error: error.message } };
     return { status: 200, body: { ok: true, staff: data } };
+  }
+
+  if (action === 'UPSERT_PRODUCT_SIZE') {
+    const size = body.size || {};
+    if (!size.id || !size.product_id || !String(size.name_ar || '').trim() || !String(size.name_en || '').trim() || !Number.isFinite(Number(size.price_delta))) {
+      return { status: 400, body: { error: 'INVALID_PRODUCT_SIZE_DATA' } };
+    }
+    const { data, error } = await serviceSupabase.from('product_sizes')
+      .upsert(size, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_PRODUCT_SIZE', target_type: 'product_size', target_id: data.id,
+      metadata: { product_id: data.product_id, name_ar: data.name_ar, price_delta: data.price_delta }
+    });
+    return { status: 200, body: { ok: true, size: data } };
   }
 
   if (action === 'UPSERT_CATEGORY') {

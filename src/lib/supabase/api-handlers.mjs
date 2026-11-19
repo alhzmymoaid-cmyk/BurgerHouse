@@ -622,6 +622,7 @@ export async function handleOwnerAdminRequest({
  * - Validates MIME type, size <= 5MB, and Magic Bytes binary signature
  * - Uploads buffer to Supabase Storage bucket `menu-media` and optionally updates `products.image_url`
  */
+/** @param {{ authSupabase: any; serviceSupabase: any; fileName: string; mimeType: string; fileBuffer: Buffer; productId?: string | null }} args */
 export async function handleMediaUploadRequest({
   authSupabase,
   serviceSupabase,

@@ -32,12 +32,21 @@
 
 أُضيف سكربت `scripts/configure-supabase-auth.mjs` ليضبط قالب Confirm signup وSMTP عبر Supabase Management API دفعة واحدة، دون تخزين الأسرار في المستودع.
 
+المزود المقترح هو **Resend** لأنه يوفر SMTP متوافقًا مع Supabase. إعداداته الافتراضية في السكربت:
+
+- Host: `smtp.resend.com`
+- Port: `465` (اتصال SSL)
+- Username: `resend`
+- Password: مفتاح API من Resend.
+- Sender email: عنوان بريد تابع لنطاق تملكه وتم التحقق منه لدى Resend.
+
 المتغيرات المطلوبة وقت التشغيل فقط:
 
 - `SUPABASE_ACCESS_TOKEN`: رمز وصول شخصي من Supabase Dashboard > Account > Access Tokens.
-- `SUPABASE_PROJECT_REF`: مرجع مشروع Burger House.
-- `SMTP_ADMIN_EMAIL`: عنوان المرسل المعتمد لدى مزود البريد.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: بيانات SMTP من المزود.
+- `SMTP_ADMIN_EMAIL`: عنوان المرسل المعتمد ضمن نطاقك في Resend.
+- `SMTP_PASS`: مفتاح API من Resend.
+
+يمكن تجاوز مرجع المشروع أو إعدادات SMTP عبر `SUPABASE_PROJECT_REF`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` عند الحاجة. الافتراضي مضبوط على مشروع Burger House وبيانات Resend أعلاه.
 
 بعد تجهيز هذه المتغيرات في بيئة آمنة، شغّل:
 
@@ -47,4 +56,4 @@ node scripts/configure-supabase-auth.mjs
 
 يتحقق السكربت من وجود رمز OTP في القالب، ويُبقي تأكيد البريد إلزاميًا، ويُفعّل SMTP الخارجي. لا يطبع أي قيمة سرية. لا تضع بيانات الاعتماد في Git أو ملفات المشروع.
 
-**المتبقي الخارجي الوحيد:** إنشاء/اعتماد حساب مزود إرسال بريد والتحقق من نطاق المرسل، ثم توفير بيانات SMTP ورمز Supabase Management API لتشغيل السكربت. لا يمكن تفعيل الإرسال العام باستخدام خدمة Supabase الافتراضية؛ فهي مخصصة للاختبار وعناوين أعضاء الفريق فقط.
+**المتبقي الخارجي الوحيد:** إنشاء/اعتماد حساب Resend، والتحقق من نطاق المرسل وإضافة سجلات DNS التي يوفرها Resend، ثم إنشاء API key ورمز Supabase Management API لتشغيل السكربت. لا يمكن تفعيل الإرسال العام باستخدام خدمة Supabase الافتراضية؛ فهي مخصصة للاختبار وعناوين أعضاء الفريق فقط.

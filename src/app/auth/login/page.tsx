@@ -62,7 +62,7 @@ function StaffAndAdminLoginContent() {
 
   return (
     <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
-      <div className="w-full max-w-md rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-8 shadow-xl space-y-6">
+      <div className="w-full max-w-md rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-8 shadow-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-[#20201c] font-black text-[#f4f1eb]">
             BH
@@ -78,13 +78,13 @@ function StaffAndAdminLoginContent() {
             <label className="block text-xs font-bold text-[#9E9488] mb-1">البريد الإلكتروني الوظيفي</label>
             <input type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="staff@burgerhouse.sa"
-              className="w-full rounded-xl border border-[#d8d0c4] bg-white px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#a65e36] focus:outline-none" />
+              className="w-full rounded-sm border border-[#d8d0c4] bg-white px-4 py-3 text-sm text-[#201e1a] focus:border-[#a65e36] focus:outline-none" />
           </div>
           <div>
             <label className="block text-xs font-bold text-[#9E9488] mb-1">كلمة المرور</label>
             <input type="password" required dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none" />
+              className="w-full rounded-sm border border-[#d8d0c4] bg-white px-4 py-3 text-sm text-[#201e1a] focus:border-[#a65e36] focus:outline-none" />
           </div>
 
           {errorMsg && (

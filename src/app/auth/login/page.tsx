@@ -61,24 +61,24 @@ function StaffAndAdminLoginContent() {
   };
 
   return (
-    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0B0A09] px-4 text-[#F5EFE6]">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#141210] p-8 shadow-2xl space-y-6">
+    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
+      <div className="w-full max-w-md rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-8 shadow-xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#D49A3A] to-[#B84A27] font-black text-[#0B0A09]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-[#20201c] font-black text-[#f4f1eb]">
             BH
           </div>
-          <h1 className="text-2xl font-extrabold text-[#F5EFE6]">بوابة الدخول الموثقة — BURGER HOUSE</h1>
-          <p className="text-xs text-[#9E9488]">
+          <h1 className="text-2xl font-extrabold text-[#201e1a]">بوابة الدخول الموثقة — BURGER HOUSE</h1>
+          <p className="text-xs text-[#777064]">
             مصادقة خادمية عبر Supabase Auth • يتم التحقق من الدور والفرع تلقائياً على الخادم
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <a href="/" className="block text-center text-xs font-bold text-[#a65e36] underline underline-offset-4">العودة إلى واجهة العميل</a>\n        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[#9E9488] mb-1">البريد الإلكتروني الوظيفي</label>
             <input type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="staff@burgerhouse.sa"
-              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#D49A3A] focus:outline-none" />
+              className="w-full rounded-xl border border-[#d8d0c4] bg-white px-4 py-3 text-sm text-[#F5EFE6] focus:border-[#a65e36] focus:outline-none" />
           </div>
           <div>
             <label className="block text-xs font-bold text-[#9E9488] mb-1">كلمة المرور</label>
@@ -88,13 +88,13 @@ function StaffAndAdminLoginContent() {
           </div>
 
           {errorMsg && (
-            <div className="rounded-xl border border-red-500/40 bg-red-950/30 p-3 text-xs font-bold text-red-300">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
               {errorMsg}
             </div>
           )}
 
           <button type="submit" disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-[#D49A3A] to-[#B84A27] py-3.5 text-sm font-black text-[#0B0A09] shadow-lg disabled:opacity-50">
+            className="w-full rounded-xl bg-[#a65e36] py-3.5 text-sm font-black text-white shadow-none disabled:opacity-50">
             {loading ? 'جاري التحقق من الجلسة والصلاحيات...' : 'تسجيل الدخول الآمن'}
           </button>
         </form>

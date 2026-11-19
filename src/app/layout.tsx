@@ -24,7 +24,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#f4f1eb] text-[#201e1a] antialiased selection:bg-[#a65e36] selection:text-white">
+      <body className="min-h-screen bg-[#0b0c0b] text-[#f5f0df] antialiased selection:bg-[#f4c928] selection:text-black">
         {children}
         <InstallPrompt />
       </body>

@@ -61,7 +61,7 @@ export default function OwnerStudioDashboard() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6] space-y-6">
+    <div dir="rtl" className="bh-owner-shell min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6] space-y-6">
       <header className="border-b border-white/10 pb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#D49A3A]">مركز إدارة برجر هاوس</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#9E9488]">BURGER HOUSE · OWNER CONTROL</p></div></div>

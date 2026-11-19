@@ -75,7 +75,14 @@ export default function CustomerAccountPage() {
       router.push('/account/orders');
       router.refresh();
     } catch (caught: any) {
-      setError(caught?.message || 'تعذر إكمال العملية. تحقق من البيانات وحاول مجدداً.');
+      const authCode = caught?.code || '';
+      if (mode === 'login' && (authCode === 'email_not_confirmed' || /email not confirmed/i.test(caught?.message || ''))) {
+        setMode('signup');
+        setNeedsOtp(true);
+        setNotice('بريدك غير مؤكد بعد. أرسلنا لك شاشة إدخال الرمز؛ استخدم إعادة إرسال الرمز إذا لم تصلك الرسالة.');
+      } else {
+        setError(caught?.message || 'تعذر إكمال العملية. تحقق من البيانات وحاول مجدداً.');
+      }
     } finally {
       setBusy(false);
     }

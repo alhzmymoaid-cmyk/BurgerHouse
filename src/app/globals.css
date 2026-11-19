@@ -29,3 +29,11 @@ button { -webkit-tap-highlight-color: transparent; }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 }
+
+
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  header, button, a, .no-print { display: none !important; }
+  article { break-inside: avoid; border: 1px solid #bbb !important; box-shadow: none !important; margin-bottom: 12px; }
+  main, section, div { color: #000 !important; }
+}

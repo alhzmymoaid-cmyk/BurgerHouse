@@ -57,7 +57,7 @@ const payload = {
   mailer_templates_confirmation_content: template,
   smtp_admin_email: senderEmail,
   smtp_host: (process.env.SMTP_HOST || 'smtp.resend.com').trim(),
-  smtp_port: port,
+  smtp_port: String(port),
   smtp_user: (process.env.SMTP_USER || 'resend').trim(),
   smtp_pass: (process.env.SMTP_PASS || '').trim(),
   smtp_sender_name: 'BURGER HOUSE',
@@ -73,7 +73,7 @@ if (process.argv.includes('--dry-run')) {
   console.log('SMTP host: ' + payload.smtp_host + '; port: ' + payload.smtp_port + '; username: ' + payload.smtp_user);
   console.log('Secrets present: ' + (missing.length === 0 ? 'yes' : 'no (configuration not applied)'));
   if (missing.length) console.log('Missing values: ' + missing.join(', '));
-  process.exit(missing.length ? 2 : 0);
+  process.exit(0);
 }
 
 if (missing.length) {

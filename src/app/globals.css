@@ -4,16 +4,16 @@
 
 :root {
   color-scheme: dark;
-  --bh-bg:#0b0c0b;
-  --bh-surface:#151714;
-  --bh-card:#1c1f1a;
-  --bh-line:#30342b;
-  --bh-text:#f5f0df;
-  --bh-muted:#a6a18e;
-  --bh-yellow:#f4c928;
-  --bh-yellow-hot:#ffdb35;
+  --bh-bg:#0A0A0B;
+  --bh-surface:#141417;
+  --bh-card:#1C1C21;
+  --bh-line:#27272E;
+  --bh-text:#F5F5F4;
+  --bh-muted:#A1A1AA;
+  --bh-yellow:#FFC82C;
+  --bh-yellow-hot:#F5B800;
   --bh-yellow-soft:#3b3215;
-  --bh-red:#df684f;
+  --bh-red:#EF4444;
 }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; background:var(--bh-bg); }
@@ -274,3 +274,18 @@ a { text-decoration:none; }
 .bh-staff-login input { background:#0f110d!important;border:1px solid #3e4234!important;color:#f6efd9!important;border-radius:11px!important; }
 .bh-staff-login input::placeholder { color:#6e7461!important; }
 .bh-staff-login button[type="submit"] { background:var(--bh-yellow)!important;color:#111!important;border-radius:11px!important; }
+
+
+/* Accessibility and device-safe interaction polish */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior:auto!important; }
+  *, *::before, *::after {
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
+.bh-storefront, .bh-account, .bh-orders, .bh-staff-shell, .bh-owner-shell, .bh-superadmin {
+  color-scheme:dark;
+}

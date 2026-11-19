@@ -116,11 +116,11 @@ export default function StaffLiveOrdersPage() {
     : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6]">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+    <div dir="rtl" className="min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#ded8cd] pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#D49A3A]">شاشة تشغيل الطلبات المباشرة (Realtime KDS / POS)</h1>
-          <p className="text-xs text-[#9E9488]">
+          <h1 className="text-2xl font-extrabold text-[#a65e36]">شاشة تشغيل الطلبات المباشرة (Realtime KDS / POS)</h1>
+          <p className="text-xs text-[#777064]">
             {actorProfile
               ? `الموظف المصادق عليه خادمياً: ${actorProfile.full_name} (${actorProfile.role}) • الفرع المعزول: ${actorProfile.assigned_branch_id || 'جميع الفروع'}`
               : 'جاري التحقق من الجلسة الخادمية...'}
@@ -132,11 +132,11 @@ export default function StaffLiveOrdersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="بحث برقم الطلب أو الجوال..."
-            className="rounded-xl border border-white/15 bg-[#141210] px-3 py-2 text-xs"
+            className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs text-[#201e1a]"
           />
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold"
+            className="rounded-sm border border-[#d8d0c4] bg-white px-4 py-2 text-xs font-bold text-[#514b42]"
           >
             {soundEnabled ? '🔔 التنبيه الصوتي مفعل' : '🔕 التنبيه الصوتي صامت'}
           </button>
@@ -144,7 +144,7 @@ export default function StaffLiveOrdersPage() {
       </header>
 
       {errorBanner && (
-        <div className="mb-4 rounded-xl border border-red-500/40 bg-red-950/30 p-3 text-xs font-bold text-red-300">
+        <div className="mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
           {errorBanner}
         </div>
       )}
@@ -162,17 +162,18 @@ export default function StaffLiveOrdersPage() {
               allowedRoleTargets.includes(st)
             );
             return (
-              <div key={order.order_code} className="rounded-2xl border border-white/10 bg-[#141210] p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="font-mono text-lg font-extrabold text-[#D49A3A]">{order.order_code}</span>
-                  <span className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-bold">
+              <div key={order.order_code} className="rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-[#e4ded4] pb-3">
+                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">{order.order_code}</span>
+                  <span className="rounded-sm bg-[#eee8df] px-2.5 py-1 text-xs font-bold text-[#655e53]">
                     {(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}
                   </span>
                 </div>
                 <div className="text-xs space-y-1">
                   <div>العميل: <strong>{order.customer_name}</strong> ({order.customer_phone})</div>
-                  <div>الإجمالي: <strong className="text-emerald-400">{order.total_amount} ر.س</strong></div>
+                  <div>الإجمالي: <strong className="text-[#426348]">{order.total_amount} ر.س</strong></div>
                 </div>
+                {Array.isArray(order.order_items) && order.order_items.length > 0 && <div className="border-t border-[#e4ded4] pt-3"><div className="mb-2 text-[11px] font-black text-[#655e53]">تفاصيل الأصناف</div><div className="space-y-2">{order.order_items.map((item:any,index:number)=><div key={item.id || index} className="flex items-start justify-between gap-3 text-xs"><div><div className="font-bold">{item.product_name_ar || 'صنف'}</div><div className="mt-0.5 text-[10px] text-[#777064]">{item.size_name_ar || ''}{item.item_notes ? ' • '+item.item_notes : ''}</div></div><span className="shrink-0 font-bold">× {item.quantity}</span></div>)}</div></div>}
                 <div className="flex flex-wrap gap-2">
                   {nextStatuses.map((nextSt: string) => (
                     <button
@@ -184,7 +185,7 @@ export default function StaffLiveOrdersPage() {
                           executeStatusTransition(order.order_code, nextSt, false, 'تحديث مباشر من شاشة الفرع');
                         }
                       }}
-                      className="rounded-lg bg-[#D49A3A] px-3 py-1.5 text-xs font-bold text-[#0B0A09]"
+                      className="rounded-sm bg-[#a65e36] px-3 py-2 text-xs font-bold text-white"
                     >
                       {(ORDER_STATUS_META as any)[nextSt]?.label_ar}
                     </button>
@@ -196,21 +197,21 @@ export default function StaffLiveOrdersPage() {
       </div>
 
       {pendingSensitive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-red-500/40 bg-[#141210] p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <div className="w-full max-w-md rounded-sm border border-red-200 bg-[#fbfaf7] p-6 text-[#201e1a] space-y-4">
             <h3 className="text-lg font-bold text-red-400">تأكيد إجراء حساس ({pendingSensitive.code})</h3>
             <input
               type="text"
               value={sensitiveReason}
               onChange={(e) => setSensitiveReason(e.target.value)}
               placeholder="اكتب سبب الرفض أو الإلغاء..."
-              className="w-full rounded-xl border border-white/15 bg-[#0B0A09] px-3 py-2 text-xs"
+              className="w-full rounded-xl border border-[#d8d0c4] bg-white px-3 py-2 text-xs"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setPendingSensitive(null)} className="rounded-xl border border-white/15 px-4 py-2 text-xs">تراجع</button>
+              <button onClick={() => setPendingSensitive(null)} className="rounded-sm border border-[#d8d0c4] px-4 py-2 text-xs">تراجع</button>
               <button
                 onClick={() => executeStatusTransition(pendingSensitive.code, pendingSensitive.status, true, sensitiveReason)}
-                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white"
+                className="rounded-sm bg-red-700 px-4 py-2 text-xs font-bold text-white"
               >
                 تأكيد التنفيذ
               </button>

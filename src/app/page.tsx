@@ -119,6 +119,13 @@ export default function StorefrontPage() {
     return matchesCategory && matchesSearch && override?.is_available !== false;
   }), [products, activeCategory, search, catalog, branchId]);
 
+  const categoryGroups = useMemo(() => categories
+    .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
+    .filter((group) => group.products.length > 0), [categories, availableProducts]);
+  const featuredProducts = useMemo(() => products.filter((product) => product.is_featured).slice(0, 3), [products]);
+  const comboProducts = useMemo(() => products.filter((product) => product.category_id === 'cat-meals'), [products]);
+
+
   const addonFor = (id: string) => addons.find((addon) => addon.id === id);
   const linePrice = (line: CartLine) => {
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === line.product.id);
@@ -319,39 +326,101 @@ export default function StorefrontPage() {
       </header>
 
       {activeView === 'menu' && <>
-        <section className="relative overflow-hidden bg-[#20201c] text-[#f6f2e9]">
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:py-14 lg:grid-cols-[.92fr_1.08fr] lg:px-8 lg:py-16">
-            <div className="relative z-10 order-2 lg:order-1">
-              <div className="mb-5 flex items-center gap-3 text-[10px] font-bold tracking-[.25em] text-[#c28b60]"><span className="h-px w-9 bg-[#c28b60]"/> BURGER HOUSE — JEDDAH</div>
-              <h1 className="max-w-xl text-4xl font-black leading-[1.25] tracking-tight sm:text-5xl lg:text-[58px]">الطعم الذي<br/><span className="text-[#c28b60]">يستحق الانتظار.</span></h1>
-              <p className="mt-5 max-w-lg text-sm leading-8 text-[#c8c1b5] sm:text-base">لحم يُشوى على اللهب، خبز يُحمّص عند الطلب، وتفاصيل نصنعها بعناية. اختر وجبتك واستلمها ساخنة من أقرب فرع.</p>
+        <section className="relative overflow-hidden bg-[#191916] text-[#f7f3eb]">
+          <div className="mx-auto grid max-w-[1440px] lg:min-h-[570px] lg:grid-cols-[1fr_1.05fr]">
+            <div className="relative z-10 order-2 flex flex-col justify-center px-5 py-12 sm:px-10 lg:order-1 lg:px-16 lg:py-20">
+              <div className="mb-6 flex items-center gap-3 text-[11px] font-extrabold tracking-[.22em] text-[#c58a5e]"><span className="h-px w-10 bg-[#c58a5e]"/> BURGER HOUSE · EST. FOR GREAT TASTE</div>
+              <h1 className="max-w-xl text-[38px] font-black leading-[1.32] tracking-tight sm:text-5xl lg:text-[64px]">البرجر كما<br/><span className="text-[#d59b6c]">يجب أن يكون.</span></h1>
+              <p className="mt-5 max-w-lg text-sm leading-8 text-[#d1c9bb] sm:text-base">لحم يُحمّر على الصاج، خبز بريوش طازج، وصوصات نجهزها لتكمل كل قضمة. اختر من قائمتنا واستلم طلبك من الفرع.</p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <button onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="inline-flex items-center gap-3 bg-[#a65e36] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#8d4d2e]">استكشف المنيو <ArrowLeft size={16}/></button>
-                <button onClick={() => setActiveView('branches')} className="inline-flex items-center gap-2 border border-white/25 px-5 py-3.5 text-sm font-semibold text-[#eee8dc] transition hover:bg-white/5"><MapPin size={15}/> مواقع الفروع</button>
+                <button onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="inline-flex items-center gap-3 bg-[#a84f32] px-7 py-4 text-sm font-extrabold text-white transition hover:bg-[#913f28]">اطلب الآن <ArrowLeft size={17}/></button>
+                <button onClick={() => setActiveView('branches')} className="inline-flex items-center gap-2 border border-white/25 px-6 py-4 text-sm font-bold text-[#f2ece2] transition hover:bg-white/10"><MapPin size={16}/> اعثر على فرع</button>
               </div>
-              <div className="mt-10 flex flex-wrap gap-7 border-t border-white/15 pt-6 text-xs text-[#bdb5a8]">
-                <div><div className="text-lg font-black text-white">100%</div><div className="mt-1">تحضير عند الطلب</div></div>
-                <div><div className="text-lg font-black text-white">15–20</div><div className="mt-1">دقيقة تجهيز تقريباً</div></div>
-                <div><div className="text-lg font-black text-white">4</div><div className="mt-1">فروع للاستلام</div></div>
+              <div className="mt-10 flex flex-wrap gap-6 border-t border-white/15 pt-6 text-xs text-[#c8c0b4]">
+                <div><div className="text-base font-black text-white">طازج</div><div className="mt-1">يُحضّر بعد الطلب</div></div>
+                <div><div className="text-base font-black text-white">سنقل أو دبل</div><div className="mt-1">اختر حجم برجرك</div></div>
+                <div><div className="text-base font-black text-white">{branches.length} فروع</div><div className="mt-1">استلام من الفرع</div></div>
               </div>
             </div>
-            <div className="order-1 lg:order-2">
-              <div className="relative aspect-[5/4] overflow-hidden bg-[#35332d]">
-                <img src="/images/hero-wagyu-smash.jpg" alt="برجر واغيو مشوي" className="h-full w-full object-cover"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent"/>
-                <div className="absolute bottom-5 right-5 border-r-2 border-[#c28b60] pr-4 text-white"><div className="text-[10px] tracking-[.2em] text-[#e1c4a8]">HOUSE SIGNATURE</div><div className="mt-1 text-lg font-bold">واغيو سماش ريزيرف</div></div>
-              </div>
+            <div className="relative order-1 min-h-[300px] overflow-hidden sm:min-h-[430px] lg:order-2 lg:min-h-full">
+              <img src="/images/hero-wagyu-smash.jpg" alt="برجر واغيو من برجر هاوس" className="absolute inset-0 h-full w-full object-cover object-center"/>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#191916]/70 via-transparent to-[#191916]/5 lg:bg-gradient-to-l lg:from-[#191916]/30 lg:via-transparent lg:to-transparent"/>
+              <div className="absolute bottom-6 right-5 border-r-2 border-[#d59b6c] pr-4 text-white sm:bottom-9 sm:right-9"><div className="text-[10px] font-bold tracking-[.2em] text-[#e6c7aa]">HOUSE SIGNATURE</div><div className="mt-1 text-xl font-black sm:text-2xl">واغيو سماش هاوس</div><div className="mt-1 text-xs text-white/75">ابدأ من ٣٨ ر.س</div></div>
+              <div className="absolute left-5 top-5 border border-white/25 bg-black/25 px-4 py-2 text-[10px] font-bold tracking-[.16em] text-white backdrop-blur-sm">MADE TO ORDER</div>
             </div>
           </div>
         </section>
 
+        <section className="border-b border-[#e2dbcf] bg-[#fbf9f4]">
+          <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-x-reverse divide-[#e5ded3] px-3 py-5 sm:px-8 sm:py-6">
+            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">مكونات مختارة</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">تفاصيل تصنع الفرق</p></div>
+            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">تحضير عند الطلب</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">من المطبخ مباشرة</p></div>
+            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">استلام من الفرع</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">اختر موقعك المناسب</p></div>
+          </div>
+        </section>
 
-        {catalog?.promotions?.length > 0 && <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
-          <div className="mb-5 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a65e36]">HOUSE OFFERS</div><h2 className="mt-2 text-2xl font-black">عروض البيت</h2><p className="mt-1 text-xs text-[#777064]">عروض تجريبية للعرض — لا تُطبق تلقائياً على إجمالي الطلب.</p></div><span className="text-[10px] font-bold text-[#8b8174]">LIMITED SELECTION</span></div>
-          <div className="grid gap-3 md:grid-cols-3">{catalog.promotions.map((promo:any)=><article key={promo.id} className="border border-[#ded8cd] bg-[#fbfaf7] p-5"><div className="text-[10px] font-black tracking-wide text-[#a65e36]">{promo.badge_ar || 'عرض تجريبي'}</div><h3 className="mt-3 text-lg font-black">{promo.title_ar}</h3><p className="mt-2 text-xs leading-6 text-[#777064]">{promo.subtitle_ar}</p></article>)}</div>
+        <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+          <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">EXPLORE THE MENU</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">تصفّح حسب ذوقك</h2></div><button onClick={()=>document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">كل القائمة</button></div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {categories.map((category) => {
+              const categoryImage = products.find((product) => product.category_id === category.id)?.image_url || '/images/hero-wagyu-smash.jpg';
+              const count = products.filter((product) => product.category_id === category.id).length;
+              return <button key={category.id} onClick={()=>{setActiveCategory(category.id);document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="group relative min-h-[150px] overflow-hidden bg-[#24221d] text-right sm:min-h-[190px]">
+                <img src={categoryImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-90"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent"/>
+                <div className="absolute bottom-0 right-0 p-4 text-white"><div className="text-sm font-black sm:text-base">{category.name_ar}</div><div className="mt-1 text-[10px] text-white/75">{count} أصناف <span className="mr-1">←</span></div></div>
+              </button>;
+            })}
+          </div>
+        </section>
+
+        {comboProducts.length > 0 && <section className="bg-[#211f1b] py-12 text-[#f7f3eb] sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <div className="mb-7 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#d59b6c]">COMBO MEALS</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">وجبات كاملة… بدون حيرة</h2><p className="mt-2 text-xs leading-6 text-[#c9c0b3]">برجرك المفضل مع البطاطس والمشروب في اختيار واحد.</p></div><button onClick={()=>{setActiveCategory('cat-meals');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="hidden border-b border-[#d59b6c] pb-1 text-xs font-bold text-[#e6c7aa] sm:block">تصفّح الوجبات</button></div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {comboProducts.slice(0,3).map((product)=> <article key={product.id} className="overflow-hidden bg-[#302d27]">
+                <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden text-right"><img src={product.image_url} alt={product.name_ar} className="h-full w-full object-cover transition duration-700 hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f5f0e7] px-3 py-1.5 text-[10px] font-black text-[#29251f]">وجبة متكاملة</span></button>
+                <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-2 line-clamp-2 text-xs leading-6 text-[#c5bbae]">{product.description_ar}</p></div><span className="shrink-0 text-sm font-black text-[#e3b58c]">{money(Number(product.base_price))} ر.س</span></div><button onClick={()=>openProduct(product)} className="mt-4 flex w-full items-center justify-center gap-2 border border-white/20 py-3 text-xs font-bold transition hover:border-[#d59b6c] hover:bg-white/5">اختر الوجبة <Plus size={14}/></button></div>
+              </article>)}
+            </div>
+          </div>
         </section>}
 
-        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
+        <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
+          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#777064]">اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.</p></div>
+            <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a84f32]"/></div>
+          </div>
+          <div className="mb-9 flex gap-2 overflow-x-auto pb-2">
+            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>كل الأصناف</button>
+            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>{category.name_ar}</button>)}
+          </div>
+
+          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
+          : catalogError ? <div className="border border-[#d8d0c4] bg-white/60 p-8 text-center"><p className="font-bold">المنيو غير متاح حالياً</p><p className="mt-2 text-sm text-[#777064]">{catalogError}</p><button onClick={()=>location.reload()} className="mt-4 text-sm font-bold text-[#a84f32]">إعادة المحاولة</button></div>
+          : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
+          : <div className="space-y-14">
+            {categoryGroups.map((group) => <section key={group.id}>
+              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {group.products.map((product)=>{
+                  const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
+                  return <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa] transition hover:-translate-y-1 hover:shadow-[0_14px_35px_rgba(42,34,24,.09)]">
+                    <button onClick={()=>openProduct(product)} className="relative block aspect-[5/3] w-full overflow-hidden bg-[#e8e2d8] text-right">
+                      <img src={product.image_url || '/images/hero-wagyu-smash.jpg'} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.045]"/>
+                      {product.is_featured && <span className="absolute right-4 top-4 bg-[#f6f0e5] px-3 py-1.5 text-[10px] font-black text-[#87442c]">اختيار البيت</span>}
+                      <span className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#f6f0e5] text-[#28251f] transition group-hover:bg-[#a84f32] group-hover:text-white"><Plus size={19}/></span>
+                    </button>
+                    <div className="p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h4 className="text-base font-black leading-7 text-[#24211d]">{product.name_ar}</h4><p className="mt-1 line-clamp-2 min-h-[42px] text-xs leading-6 text-[#777064]">{product.description_ar}</p></div><div className="shrink-0 pt-1 text-sm font-black text-[#a84f32]">{money(Number(override?.custom_base_price ?? product.base_price))}<span className="mr-1 text-[10px]">ر.س</span></div></div>
+                      <div className="mt-4 flex items-center justify-between border-t border-[#eee8df] pt-3"><span className="flex items-center gap-1.5 text-[10px] text-[#82796d]"><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span><button onClick={()=>openProduct(product)} className="inline-flex items-center gap-2 text-xs font-extrabold text-[#29251f] transition hover:text-[#a84f32]">تخصيص الصنف <ArrowLeft size={13}/></button></div>
+                    </div>
+                  </article>;
+                })}
+              </div>
+            </section>)}
+          </div>}
+        </section>
+              <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -436,8 +505,8 @@ export default function StorefrontPage() {
       {selectedProduct && <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-5" onClick={()=>setSelectedProduct(null)}>
         <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto bg-[#f8f6f1] text-[#201e1a] sm:max-h-[88vh]" onClick={(e)=>e.stopPropagation()}>
           <div className="relative aspect-[16/8] bg-[#e5dfd5]"><img src={selectedProduct.image_url} alt={selectedProduct.name_ar} className="h-full w-full object-cover"/><button onClick={()=>setSelectedProduct(null)} className="absolute left-4 top-4 rounded-full bg-[#f8f6f1] p-2"><X size={18}/></button></div>
-          <div className="p-5 sm:p-7"><div className="flex items-start justify-between gap-4"><div><h2 className="text-2xl font-black">{selectedProduct.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#777064]">{selectedProduct.description_ar}</p></div><span className="shrink-0 text-lg font-black text-[#a65e36]">{money(Number(selectedProduct.base_price))} ر.س</span></div>
-            {!!selectedProduct.sizes?.length&&<div className="mt-6"><div className="mb-3 text-sm font-black">اختر الحجم</div><div className="grid gap-2 sm:grid-cols-2">{selectedProduct.sizes.map((size)=><label key={size.id} className={selectedSize===size.id?'flex cursor-pointer items-center justify-between border border-[#a65e36] bg-[#f0e8df] p-3 text-xs font-bold':'flex cursor-pointer items-center justify-between border border-[#ddd6ca] bg-white p-3 text-xs font-bold'}><span>{size.name_ar}</span><span>{Number(size.price_delta)>0?'+':''}{money(Number(size.price_delta))} ر.س</span><input type="radio" className="sr-only" checked={selectedSize===size.id} onChange={()=>setSelectedSize(size.id)}/></label>)}</div></div>}
+          <div className="p-5 sm:p-7"><div className="flex items-start justify-between gap-4"><div><h2 className="text-2xl font-black">{selectedProduct.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#777064]">{selectedProduct.description_ar}</p></div><span className="shrink-0 text-lg font-black text-[#a84f32]">{money(Number(selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0))} ر.س</span></div>
+            {!!selectedProduct.sizes?.length&&<div className="mt-6"><div className="mb-3 text-sm font-black">اختر حجم البرجر</div><div className="grid gap-2 sm:grid-cols-2">{selectedProduct.sizes.map((size)=><label key={size.id} className={selectedSize===size.id?'flex cursor-pointer items-center justify-between border border-[#a65e36] bg-[#f0e8df] p-3 text-xs font-bold':'flex cursor-pointer items-center justify-between border border-[#ddd6ca] bg-white p-3 text-xs font-bold'}><span>{size.name_ar}</span><span>{Number(size.price_delta)>0?'+':''}{money(Number(size.price_delta))} ر.س</span><input type="radio" className="sr-only" checked={selectedSize===size.id} onChange={()=>setSelectedSize(size.id)}/></label>)}</div></div>}
             {!!selectedProduct.allowed_addon_ids?.length&&<div className="mt-6"><div className="mb-3 text-sm font-black">إضافات حسب رغبتك</div><div className="space-y-2">{selectedProduct.allowed_addon_ids.map((id)=>addonFor(id)).filter(Boolean).map((addon)=> <label key={addon!.id} className="flex items-center justify-between border border-[#ddd6ca] bg-white px-3 py-3 text-xs"><span className="flex items-center gap-3"><input type="checkbox" checked={selectedAddons.includes(addon!.id)} onChange={(e)=>setSelectedAddons((current)=>e.target.checked?[...current,addon!.id]:current.filter((item)=>item!==addon!.id))} className="h-4 w-4 accent-[#a65e36]"/>{addon!.name_ar}</span><b>+{money(Number(addon!.price))} ر.س</b></label>)}</div></div>}
             <label className="mt-5 block text-xs font-bold">ملاحظات خاصة<input value={itemNote} onChange={(e)=>setItemNote(e.target.value)} placeholder="مثلاً: بدون مخلل" className="mt-2 w-full border border-[#ddd6ca] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]"/></label>
             <div className="mt-6 flex items-center justify-between gap-4"><div className="flex items-center gap-4 border border-[#ddd6ca] bg-white px-3 py-2"><button onClick={()=>setQuantity(Math.max(1,quantity-1))}><Minus size={15}/></button><b>{quantity}</b><button onClick={()=>setQuantity(Math.min(20,quantity+1))}><Plus size={15}/></button></div><button onClick={addToCart} className="flex-1 bg-[#a65e36] py-3.5 text-sm font-bold text-white">أضف إلى السلة</button></div>

@@ -275,11 +275,13 @@ export default function StorefrontV2() {
           </div>
         </section>
 
+        {catalog?.promotions?.[0]&&<section className="border-b border-[#ead9cc] bg-[#f8e9df]"><div className="mx-auto flex max-w-[1400px] flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8"><div className="flex items-center gap-3"><span className="bg-[#c65c34] px-3 py-1.5 text-[10px] font-black text-white">{catalog.promotions[0].badge_ar||'من برجر هاوس'}</span><span className="text-sm font-black">{catalog.promotions[0].title_ar}</span></div><p className="text-xs text-[#785b4c]">{catalog.promotions[0].subtitle_ar}</p></div></section>}
+
         <section className="border-b border-[#e8e3da] bg-white">
           <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <div><div className="text-[10px] font-black tracking-widest text-[#c65c34]">PICKUP LOCATION</div><div className="mt-1 text-sm font-black">من أي فرع تحب تستلم؟</div></div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative min-w-[260px]"><MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#89877e]"/><select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="h-12 w-full appearance-none border border-[#dfddd5] bg-[#fbfaf7] py-2 pr-10 pl-10 text-xs font-bold outline-none focus:border-[#c65c34]">{branches.filter((b)=>b.is_active&&b.is_accepting_orders).map((b)=><option key={b.id} value={b.id}>{b.name_ar}</option>)}</select><ChevronDown size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#89877e]"/></div>
+              <div className="relative min-w-[260px]"><MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#89877e]"/><select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="h-12 w-full appearance-none border border-[#dfddd5] bg-[#fbfaf7] py-2 pr-10 pl-10 text-xs font-bold outline-none focus:border-[#c65c34]">{branches.filter((b)=>b.is_active&&b.is_accepting_orders).length===0?<option value="">لا توجد فروع تستقبل الطلبات حالياً</option>:branches.filter((b)=>b.is_active&&b.is_accepting_orders).map((b)=><option key={b.id} value={b.id}>{b.name_ar}</option>)}</select><ChevronDown size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#89877e]"/></div>
               <button onClick={detectNearestBranch} className="flex h-12 items-center justify-center gap-2 border border-[#dfddd5] px-5 text-xs font-bold text-[#55574f] hover:border-[#c65c34] hover:text-[#c65c34]"><Navigation size={15}/> أقرب فرع لي</button>
             </div>
           </div>

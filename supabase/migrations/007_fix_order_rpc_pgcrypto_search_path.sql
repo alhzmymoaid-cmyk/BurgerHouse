@@ -1,0 +1,3 @@
+-- pgcrypto is installed in the Supabase extensions schema. The order RPC is SECURITY DEFINER and had a restricted search_path that excluded extensions, causing gen_random_bytes(integer) to fail during checkout.
+ALTER FUNCTION public.create_verified_pickup_order(text, text, text, text, text, text, text, jsonb, text, text, integer, text, numeric, timestamptz)
+SET search_path TO pg_catalog, public, extensions;

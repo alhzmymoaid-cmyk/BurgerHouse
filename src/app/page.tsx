@@ -259,7 +259,7 @@ export default function StorefrontPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] text-[#201e1a]" dir="rtl">
+    <main className="bh-storefront min-h-screen bg-[#f4f1eb] text-[#201e1a]" dir="rtl">
       <div className="bg-[#1c1c18] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
         تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
       </div>

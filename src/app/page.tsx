@@ -36,6 +36,14 @@ const normalizePhone = (value: string) => {
   if (digits.startsWith('5')) return '+966' + digits;
   return value;
 };
+const normalizeSearchText = (value: string) => value
+  .toLocaleLowerCase('ar')
+  .normalize('NFKC')
+  .replace(/[أإآ]/g, 'ا')
+  .replace(/ة/g, 'ه')
+  .replace(/[\u064B-\u065F\u0670]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 export default function StorefrontPage() {
   const [catalog, setCatalog] = useState<any>(null);
@@ -116,7 +124,11 @@ export default function StorefrontPage() {
   const availableProducts = useMemo(() => products.filter((product) => {
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const matchesCategory = activeCategory === 'all' || product.category_id === activeCategory;
-    const matchesSearch = !search || product.name_ar.toLowerCase().includes(search.toLowerCase()) || product.description_ar?.toLowerCase().includes(search.toLowerCase());
+    const normalizedSearch = normalizeSearchText(search);
+    const searchableFields = [product.name_ar, product.name_en, product.description_ar, (product as any).description_en]
+      .filter(Boolean)
+      .map((value) => normalizeSearchText(String(value)));
+    const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
     return matchesCategory && matchesSearch && override?.is_available !== false;
   }), [products, activeCategory, search, catalog, branchId]);
 

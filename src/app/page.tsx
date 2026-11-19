@@ -122,7 +122,7 @@ export default function StorefrontPage() {
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0), [categories, availableProducts]);
-  const featuredProducts = useMemo(() => products.filter((product) => product.is_featured).slice(0, 3), [products]);
+  const featuredProducts = useMemo(() => ['prd-wagyu-smash', 'prd-truffle-swiss', 'prd-smoked-brisket'].map((id) => products.find((product) => product.id === id)).filter(Boolean) as Product[], [products]);
   const comboProducts = useMemo(() => products.filter((product) => product.category_id === 'cat-meals'), [products]);
 
 

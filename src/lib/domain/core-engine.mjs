@@ -339,6 +339,7 @@ export function isBranchOpenAtTime(branch, dateObj = new Date()) {
   return { open: true, reason: 'OPEN' };
 }
 
+/** @param {any[]} branches @param {{ latitude: number; longitude: number } | null} [userCoords] @param {Date} [checkDate] */
 export function resolveBranchesForCheckout(branches, userCoords = null, checkDate = new Date()) {
   const activeBranches = branches.filter((b) => b.is_active);
   const enriched = activeBranches.map((branch) => {

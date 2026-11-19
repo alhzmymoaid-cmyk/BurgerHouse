@@ -122,8 +122,7 @@ export default function StorefrontPage() {
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0), [categories, availableProducts]);
-  const featuredProducts = useMemo(() => ['prd-wagyu-smash', 'prd-truffle-swiss', 'prd-smoked-brisket'].map((id) => products.find((product) => product.id === id)).filter(Boolean) as Product[], [products]);
-  const comboProducts = useMemo(() => products.filter((product) => product.category_id === 'cat-meals'), [products]);
+
 
 
   const addonFor = (id: string) => addons.find((addon) => addon.id === id);
@@ -296,7 +295,7 @@ export default function StorefrontPage() {
       <header className="sticky top-0 z-40 border-b border-[#e2dbcf] bg-[#fbf9f4]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
           <a href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center bg-[#20201c] text-[13px] font-black tracking-[.12em] text-[#f2eee5]">BH</div>
+            <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="h-12 w-12 object-contain"/>
             <div>
               <div className="font-[Cairo] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
               <div className="mt-0.5 text-[10px] font-bold tracking-[.18em] text-[#82796d]">CRAFTED OVER FIRE</div>
@@ -508,7 +507,7 @@ export default function StorefrontPage() {
 
       <footer className="bg-[#20201c] text-[#d6d0c5]">
         <div className="mx-auto grid max-w-7xl gap-9 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-          <div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
+          <div><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/><div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><div className="text-[9px] tracking-[.2em] text-[#c5a27e]">CRAFTED OVER FIRE</div></div></div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
           <div><div className="text-xs font-black text-white">تصفح</div><div className="mt-4 space-y-3 text-xs text-[#aaa397]"><button onClick={()=>setActiveView('menu')} className="block">المنيو</button><button onClick={()=>setActiveView('branches')} className="block">فروعنا</button><button onClick={()=>setActiveView('track')} className="block">تتبع الطلب</button></div></div>
           <div><div className="text-xs font-black text-white">الاستلام</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">جميع الطلبات عبر الموقع مخصصة للاستلام من الفرع فقط. لا نوفر التوصيل المنزلي حالياً.</p></div>
           <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/auth/login" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">دخول الموظفين والإدارة <ArrowLeft className="mr-1 inline" size={13}/></a></div>

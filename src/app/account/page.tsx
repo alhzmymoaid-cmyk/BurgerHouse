@@ -10,6 +10,7 @@ export default function CustomerAccountPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [needsOtp, setNeedsOtp] = useState(false);
@@ -30,12 +31,15 @@ export default function CustomerAccountPage() {
     try {
       const supabase = createSupabaseBrowserClient();
       const normalizedEmail = email.trim().toLowerCase();
+      const digits = phone.replace(/\D/g, '');
+      const normalizedPhone = digits.startsWith('9665') ? digits : digits.startsWith('05') ? `966${digits.slice(1)}` : digits.startsWith('5') ? `966${digits}` : '';
 
       if (mode === 'signup' && !needsOtp) {
+        if (!/^9665\d{8}$/.test(normalizedPhone)) throw new Error('أدخل رقم جوال سعودي صحيحًا يبدأ بـ 05 ويتكون من 10 أرقام.');
         const { data, error: signupError } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
-          options: { data: { full_name: name.trim() } }
+          options: { data: { full_name: name.trim(), phone: normalizedPhone } }
         });
         if (signupError) throw signupError;
         if (data.session && data.user?.email_confirmed_at) {
@@ -142,6 +146,7 @@ export default function CustomerAccountPage() {
           <form onSubmit={submit} className="bh-account-form">
             {mode === 'signup' && !needsOtp && <label>الاسم الكامل<div className="bh-field"><UserRound/><input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="اكتب اسمك"/></div></label>}
             <label>البريد الإلكتروني<div className="bh-field"><Mail/><input required type="email" autoComplete="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} disabled={needsOtp} placeholder="name@example.com"/></div></label>
+            {mode === 'signup' && !needsOtp && <label>رقم الجوال السعودي<div className="bh-field"><input required type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9+]/g, '').slice(0, 16))} placeholder="05XXXXXXXX"/></div><small className="text-xs text-zinc-400">مطلوب للتواصل وربط الطلبات بحسابك.</small></label>}
             {!needsOtp && <label>كلمة المرور<div className="bh-field"><LockKeyhole/><input required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="٨ أحرف على الأقل"/><button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
             {needsOtp && <label>رمز التحقق<div className="bh-field bh-otp-field"><ShieldCheck/><input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" dir="ltr" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000"/></div></label>}
             {error && <div className="bh-account-alert" role="alert">{error}</div>}
@@ -150,7 +155,7 @@ export default function CustomerAccountPage() {
           </form>
           {needsOtp && <button type="button" disabled={busy} className="bh-account-secondary" onClick={resendOtp}>إعادة إرسال الرمز</button>}
           {needsOtp && <button type="button" className="bh-account-secondary" onClick={() => { setNeedsOtp(false); setOtp(''); setError(''); setNotice(''); }}>تعديل البيانات</button>}
-          <div className="bh-account-security"><ShieldCheck size={16}/><span>يتم التحقق من ملكية البريد الإلكتروني قبل تفعيل الحساب. لا نطلب بيانات الدفع الإلكتروني.</span></div>
+          <div className="bh-account-security"><ShieldCheck size={16}/><span>يتم التحقق من البريد الإلكتروني قبل تفعيل الحساب، ويُحفظ رقم جوالك في ملف العميل.</span></div>
         </section>
       </div>
     </main>

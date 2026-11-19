@@ -8,8 +8,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f6f2ea",
-  "theme_color": "#211f1b",
+  "background_color": "#0b0c0b",
+  "theme_color": "#f4c928",
   "icons": [
     {
       "src": "/brand-mark.svg",

@@ -15,11 +15,18 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
     }
+    if (!user.email || !user.email_confirmed_at) {
+      return NextResponse.json({ error: 'CUSTOMER_EMAIL_NOT_VERIFIED', message_ar: 'تحقق من بريدك الإلكتروني أولاً قبل إرسال الطلب.' }, { status: 403 });
+    }
+
     const { data: customerProfile } = await serviceSupabase
       .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
     const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
     const accountPhone = String(customerProfile?.phone || user.phone || '').replace(/\D/g, '');
-    if (!accountPhone || submittedPhone !== accountPhone) {
+    if (!/^9665\d{8}$/.test(submittedPhone)) {
+      return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً لاستلام تحديثات الطلب.' }, { status: 400 });
+    }
+    if (accountPhone && submittedPhone !== accountPhone) {
       return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
     }
 
@@ -71,7 +78,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(100);
 
-    // Enforce strict server-side branch scoping for staff roles
     if (['branch_manager', 'cashier', 'kitchen_staff'].includes(profile.role)) {
       query = query.eq('branch_id', profile.assigned_branch_id);
     } else if (requestedBranch && requestedBranch !== 'all') {

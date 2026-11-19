@@ -292,25 +292,25 @@ export default function StorefrontPage() {
         تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-[#ded8cd] bg-[#f8f6f1]/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-[#e2dbcf] bg-[#fbf9f4]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
           <a href="/" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center bg-[#20201c] text-[13px] font-black tracking-[.12em] text-[#f2eee5]">BH</div>
             <div>
-              <div className="font-[Arial] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
+              <div className="font-[Cairo] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
               <div className="mt-0.5 text-[10px] font-bold tracking-[.18em] text-[#82796d]">CRAFTED OVER FIRE</div>
             </div>
           </a>
 
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
-            <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a65e36]' : 'hover:text-[#a65e36]'}>المنيو</button>
-            <button onClick={() => setActiveView('branches')} className={activeView === 'branches' ? 'text-[#a65e36]' : 'hover:text-[#a65e36]'}>فروعنا</button>
-            <button onClick={() => setActiveView('track')} className={activeView === 'track' ? 'text-[#a65e36]' : 'hover:text-[#a65e36]'}>تتبع طلبك</button>
+            <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>المنيو</button>
+            <button onClick={() => setActiveView('branches')} className={activeView === 'branches' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>فروعنا</button>
+            <button onClick={() => setActiveView('track')} className={activeView === 'track' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>تتبع طلبك</button>
           </nav>
 
           <div className="flex items-center gap-2">
             <a href="/auth/login" className="hidden rounded-full border border-[#cfc7ba] px-4 py-2 text-xs font-bold text-[#514b42] transition hover:border-[#a65e36] hover:text-[#a65e36] sm:inline-flex">دخول الموظفين</a>
-            <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a65e36] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#874a2d]">
+            <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a84f32] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#913f28]">
               <ShoppingBag size={15} /> السلة <span className="rounded-full bg-white/15 px-2 py-0.5">{cartCount}</span>
             </button>
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2 md:hidden" aria-label="فتح القائمة"><Menu size={18}/></button>
@@ -356,6 +356,22 @@ export default function StorefrontPage() {
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">مكونات مختارة</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">تفاصيل تصنع الفرق</p></div>
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">تحضير عند الطلب</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">من المطبخ مباشرة</p></div>
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">استلام من الفرع</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">اختر موقعك المناسب</p></div>
+          </div>
+        </section>
+
+        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+            <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative min-w-[240px]">
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/>
+                <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className="w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
+                  {branches.filter((branch) => branch.is_active).map((branch) => <option key={branch.id} value={branch.id}>{branch.name_ar}{branch.is_accepting_orders ? '' : ' — لا يستقبل طلبات'}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={15}/>
+              </div>
+              <button onClick={detectNearestBranch} className="inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36]"><Navigation size={14}/> أقرب فرع لي</button>
+            </div>
           </div>
         </section>
 
@@ -420,21 +436,7 @@ export default function StorefrontPage() {
             </section>)}
           </div>}
         </section>
-              <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-            <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-[240px]">
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/>
-                <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className="w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
-                  {branches.filter((branch) => branch.is_active).map((branch) => <option key={branch.id} value={branch.id}>{branch.name_ar}{branch.is_accepting_orders ? '' : ' — لا يستقبل طلبات'}</option>)}
-                </select>
-                <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={15}/>
-              </div>
-              <button onClick={detectNearestBranch} className="inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36]"><Navigation size={14}/> أقرب فرع لي</button>
-            </div>
-          </div>
-        </section>
+      
 
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

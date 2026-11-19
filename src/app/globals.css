@@ -4,23 +4,23 @@
 
 :root {
   color-scheme: light;
-  --paper: #f4f1eb;
-  --ink: #201e1a;
-  --muted: #777064;
-  --clay: #a65e36;
-  --line: #ded8cd;
+  --paper: #f6f2ea;
+  --ink: #211e19;
+  --muted: #766d61;
+  --clay: #a84f32;
+  --line: #e1d9ce;
 }
 
 html { scroll-behavior: smooth; }
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: Arial, "Tahoma", sans-serif;
+  font-family: "Tajawal", "Cairo", sans-serif;
   overflow-x: hidden;
 }
-button, input, select, textarea { font: inherit; }
+h1, h2, h3, h4, .display-type { font-family: "Cairo", "Tajawal", sans-serif; }\nbutton, input, select, textarea { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
-::selection { background: #a65e36; color: #fff; }
+::selection { background: #a84f32; color: #fff; }\n\n:focus-visible { outline: 2px solid #a84f32; outline-offset: 3px; }
 
 @media print {
   .no-print { display: none !important; }

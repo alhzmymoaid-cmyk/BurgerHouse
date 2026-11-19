@@ -3,27 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --bg-obsidian: #0B0A09;
-  --bg-espresso: #141210;
-  --card-slate: #1C1916;
-  --accent-gold: #D49A3A;
-  --accent-sear: #B84A27;
-  --text-cream: #F5EFE6;
-  --text-stone: #9E9488;
+  color-scheme: light;
+  --paper: #f4f1eb;
+  --ink: #201e1a;
+  --muted: #777064;
+  --clay: #a65e36;
+  --line: #ded8cd;
 }
 
+html { scroll-behavior: smooth; }
 body {
-  background-color: var(--bg-obsidian);
-  color: var(--text-cream);
-  font-family: 'Tajawal', 'Plus Jakarta Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, "Tahoma", sans-serif;
   overflow-x: hidden;
 }
+button, input, select, textarea { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+::selection { background: #a65e36; color: #fff; }
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
 }

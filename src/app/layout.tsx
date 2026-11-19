@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import InstallPrompt from '@/components/install-prompt';
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',
-  description: 'اكتشف قائمة برجر هاوس واطلب مسبقاً للاستلام من الفرع الأقرب إليك.',
+  description: 'BURGER HOUSE — برجر محضّر بعناية. اطلب واستلم من الفرع.',
+  applicationName: 'BURGER HOUSE',
+  appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black-translucent' },
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/brand-mark.svg', apple: '/brand-mark.svg' },
 };
 
 export default function RootLayout({
@@ -21,6 +26,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#f4f1eb] text-[#201e1a] antialiased selection:bg-[#a65e36] selection:text-white">
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );

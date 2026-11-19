@@ -350,7 +350,8 @@ export default function StorefrontPage() {
           <div className="mb-5 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a65e36]">HOUSE OFFERS</div><h2 className="mt-2 text-2xl font-black">عروض البيت</h2><p className="mt-1 text-xs text-[#777064]">عروض تجريبية للعرض — لا تُطبق تلقائياً على إجمالي الطلب.</p></div><span className="text-[10px] font-bold text-[#8b8174]">LIMITED SELECTION</span></div>
           <div className="grid gap-3 md:grid-cols-3">{catalog.promotions.map((promo:any)=><article key={promo.id} className="border border-[#ded8cd] bg-[#fbfaf7] p-5"><div className="text-[10px] font-black tracking-wide text-[#a65e36]">{promo.badge_ar || 'عرض تجريبي'}</div><h3 className="mt-3 text-lg font-black">{promo.title_ar}</h3><p className="mt-2 text-xs leading-6 text-[#777064]">{promo.subtitle_ar}</p></article>)}</div>
         </section>}
-\n        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
+
+        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

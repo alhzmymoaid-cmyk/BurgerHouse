@@ -175,10 +175,15 @@ export default function SmartPwaInstallBanner() {
                 <li><span>2</span><div><b>اختر «إضافة إلى الشاشة الرئيسية»</b><p>قد تحتاج إلى التمرير لأسفل في قائمة المشاركة.</p></div><Plus size={21}/></li>
                 <li><span>3</span><div><b>اضغط «إضافة»</b><p>سيظهر BURGER HOUSE على الشاشة الرئيسية.</p></div><Check size={21}/></li>
               </ol>
+            ) : isIosOther ? (
+              <ol className="bh-pwa-steps">
+                <li><span>1</span><div><b>افتح Safari</b><p>افتح Safari والصق الرابط الذي نسخته في شريط العنوان.</p></div><Apple size={21}/></li>
+                <li><span>2</span><div><b>اضغط مشاركة</b><p>اختر أيقونة المربع والسهم للأعلى أسفل الشاشة.</p></div><Share size={21}/></li>
+                <li><span>3</span><div><b>إضافة إلى الشاشة الرئيسية</b><p>اختر «إضافة» وسيظهر التطبيق على شاشتك.</p></div><Check size={21}/></li>
+              </ol>
             ) : (
               <div className="bh-pwa-steps">
-                <div className="bh-pwa-tip"><Smartphone size={20}/><p>افتح قائمة المتصفح ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p></div>
-                <div className="bh-pwa-tip"><Apple size={20}/><p>إذا كنت تستخدم iPhone، افتح هذا الرابط في Safari ثم اتبع الخطوات.</p></div>
+                <div className="bh-pwa-tip"><Smartphone size={20}/><p>في Chrome اضغط ⋮ أعلى الشاشة، ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية» واتبع التأكيد.</p></div>
               </div>
             )}
             <button type="button" className="bh-pwa-sheet-done" onClick={() => setSheetOpen(false)}>حسنًا</button>

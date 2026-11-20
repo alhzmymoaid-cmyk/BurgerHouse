@@ -8,7 +8,7 @@ import { ArrowRight, Clock3, Printer, RefreshCw, CheckCircle2 } from 'lucide-rea
 const labels: Record<string,string> = {
   new: 'بانتظار قبول الفرع',
   pending_confirmation: 'بانتظار التأكيد',
-  accepted: 'تم قبول الطلب',
+  accepted: 'تم قبول الطلب — قيد التجهيز',
   preparing: 'قيد التجهيز',
   ready_for_pickup: 'جاهز للاستلام',
   completed: 'تم تسليم الطلب',

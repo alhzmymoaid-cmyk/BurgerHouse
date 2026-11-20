@@ -14,7 +14,8 @@ export async function POST(request:NextRequest) {
   const allowedTypes=['image/jpeg','image/png','image/webp'];
   if(!allowedTypes.includes(file.type)) return NextResponse.json({error:'UNSUPPORTED_IMAGE_TYPE'},{status:415});
   if(file.size>5*1024*1024) return NextResponse.json({error:'IMAGE_TOO_LARGE_MAX_5MB'},{status:413});
-  const extension=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif' } as Record<string,string>)[file.type];
+  const extension=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp' } as Record<string,string>)[file.type];
+  if(check.profile.role==='branch_manager' && !check.profile.assigned_branch_id) return NextResponse.json({error:'BRANCH_NOT_ASSIGNED'},{status:403});
   const branchSegment=check.profile.role==='branch_manager' ? check.profile.assigned_branch_id : 'global';
   const path=`promo-banners/${branchSegment}/${crypto.randomUUID()}.${extension}`;
   const service=createSupabaseServiceRoleClient();

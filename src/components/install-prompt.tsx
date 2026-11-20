@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Apple, Check, Copy, Download, Plus, Share, Smartphone, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -15,6 +16,7 @@ const DISMISS_KEY = 'bh-pwa-dismissed-at-v1';
 const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000;
 
 export default function SmartPwaInstallBanner() {
+  const pathname = usePathname();
   const promptRef = useRef<InstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -50,7 +52,7 @@ export default function SmartPwaInstallBanner() {
     }
 
     const showIfAllowed = () => {
-      if (isStandalone()) return;
+      if (pathname !== '/' || isStandalone()) return;
       const dismissed = Number(localStorage.getItem(DISMISS_KEY) || 0);
       if (dismissed && Date.now() - dismissed < DISMISS_TTL) return;
       setVisible(true);
@@ -93,7 +95,7 @@ export default function SmartPwaInstallBanner() {
       window.removeEventListener('bh:open-install', onManualOpen);
       window.removeEventListener('pointerdown', onFirstInteraction);
     };
-  }, [isStandalone]);
+  }, [isStandalone, pathname]);
 
   const dismiss = () => {
     localStorage.setItem(DISMISS_KEY, String(Date.now()));
@@ -133,7 +135,7 @@ export default function SmartPwaInstallBanner() {
     }
   };
 
-  if (!visible || installed) return null;
+  if (pathname !== '/' || !visible || installed) return null;
 
   const isIosSafari = device === 'ios-safari';
   const isIosOther = device === 'ios-other';

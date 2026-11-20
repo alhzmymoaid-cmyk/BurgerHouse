@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 async function customer() {
   const supabase = createSupabaseCustomerServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user || user.app_metadata?.customer_account !== true) return null;
+  if (error || !user || !(user.app_metadata?.customer_account === true || Boolean(user.phone) || String(user.email || '').endsWith('@login.burgerhouse.invalid'))) return null;
   return { supabase, user };
 }
 

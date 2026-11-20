@@ -15,7 +15,7 @@ create or replace function public.create_verified_pickup_order(
   p_tracking_token text,
   p_client_claimed_total numeric,
   p_check_timestamp timestamptz,
-  p_coupon_code text default null
+  p_coupon_code text
 )
 returns jsonb
 language plpgsql

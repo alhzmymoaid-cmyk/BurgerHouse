@@ -21,7 +21,6 @@ export default function SmartPwaInstallBanner() {
   const [visible, setVisible] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [device, setDevice] = useState<'ios-safari' | 'ios-other' | 'android' | 'other'>('other');
-  const [nativeReady, setNativeReady] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -61,12 +60,10 @@ export default function SmartPwaInstallBanner() {
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       promptRef.current = event as InstallPromptEvent;
-      setNativeReady(true);
       showIfAllowed();
     };
     const onInstalled = () => {
       promptRef.current = null;
-      setNativeReady(false);
       setInstalled(true);
       setVisible(false);
       setSheetOpen(false);
@@ -132,6 +129,7 @@ export default function SmartPwaInstallBanner() {
       const success = document.execCommand('copy');
       input.remove();
       setCopied(success);
+      setSheetOpen(true);
       window.setTimeout(() => setCopied(false), 2200);
     }
   };

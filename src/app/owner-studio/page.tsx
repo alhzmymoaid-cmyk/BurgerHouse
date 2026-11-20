@@ -1,5 +1,7 @@
 'use client';
 
+import PromoManager from '@/components/promo-manager';
+
 import React, { useState, useEffect, useCallback } from 'react';
 
 export default function OwnerStudioDashboard() {
@@ -70,6 +72,8 @@ export default function OwnerStudioDashboard() {
           </p>
         </div>
       </header>
+      <PromoManager />
+
 
       {data && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-[#171512] p-4"><div className="text-[11px] text-[#9E9488]">الفروع</div><div className="mt-2 text-2xl font-black text-white">{data.branches?.length || 0}</div></div>

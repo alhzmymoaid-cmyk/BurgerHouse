@@ -136,7 +136,8 @@ export async function handleCreateOrderRequest({
       p_risk_score: riskScore,
       p_tracking_token: preGeneratedToken,
       p_client_claimed_total: payload.client_claimed_total ?? null,
-      p_check_timestamp: nowDate.toISOString()
+      p_check_timestamp: nowDate.toISOString(),
+      p_coupon_code: typeof payload.coupon_code === 'string' ? payload.coupon_code.trim().toUpperCase() : null
     }
   );
 

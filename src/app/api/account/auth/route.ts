@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'node:crypto';
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
+import { createSupabaseCustomerServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -111,13 +111,14 @@ export async function POST(request: NextRequest) {
         const code = String((createError as any)?.code || '');
         const status = Number((createError as any)?.status || 0);
         console.error('Customer Auth createUser failed:', { code, status, message });
+        const phoneConflict = /customer_profiles_phone_key|duplicate key|unique constraint|database error creating new user/i.test(message) || code === '23505';
         const duplicate = /already|exists|registered|duplicate|unique constraint/i.test(message) || code === 'email_exists';
         const rateLimited = status === 429 || /rate.?limit|too many requests/i.test(message);
         const weakPassword = /weak password|password should|password is too short/i.test(message);
         return reply({
-          error: duplicate ? 'ACCOUNT_ALREADY_EXISTS' : rateLimited ? 'AUTH_RATE_LIMITED' : weakPassword ? 'WEAK_PASSWORD' : 'ACCOUNT_CREATE_FAILED',
-          message_ar: duplicate
-            ? 'يوجد حساب مرتبط بهذا الرقم. اختر «لدي حساب» وسجّل الدخول.'
+          error: phoneConflict || duplicate ? 'ACCOUNT_ALREADY_EXISTS' : rateLimited ? 'AUTH_RATE_LIMITED' : weakPassword ? 'WEAK_PASSWORD' : 'ACCOUNT_CREATE_FAILED',
+          message_ar: phoneConflict || duplicate
+            ? 'رقم الجوال مرتبط بحساب موجود. اختر «لدي حساب» وسجّل الدخول، ولا تنشئ حسابًا جديدًا.'
             : rateLimited
               ? 'وصلت إلى عدد المحاولات المسموح. انتظر قليلًا ثم حاول مجددًا.'
               : weakPassword
@@ -126,19 +127,46 @@ export async function POST(request: NextRequest) {
         }, duplicate ? 409 : rateLimited ? 429 : weakPassword ? 400 : 503);
       }
 
-      const { error: profileError } = await service
+      // The auth.users trigger creates the profile. Update by user ID only so a
+      // unique phone value is never reassigned to a different account.
+      const { data: existingProfile, error: profileLookupError } = await service
         .from('customer_profiles')
-        .upsert({ id: created.user.id, full_name: fullName, phone }, { onConflict: 'id' });
+        .select('id')
+        .eq('id', created.user.id)
+        .maybeSingle();
+
+      let profileError = profileLookupError;
+      if (!profileError && existingProfile) {
+        const { error } = await service
+          .from('customer_profiles')
+          .update({ full_name: fullName, updated_at: new Date().toISOString() })
+          .eq('id', created.user.id);
+        profileError = error;
+      } else if (!profileError) {
+        const { error } = await service
+          .from('customer_profiles')
+          .insert({ id: created.user.id, full_name: fullName, phone });
+        profileError = error;
+      }
 
       if (profileError) {
-        console.error('Customer profile creation failed:', profileError);
+        console.error('Customer profile persistence failed:', {
+          code: profileError.code,
+          message: profileError.message,
+        });
         await service.auth.admin.deleteUser(created.user.id);
-        return reply({ error: 'PROFILE_CREATE_FAILED', message_ar: 'تعذر حفظ بيانات الحساب. حاول مرة أخرى.' }, 500);
+        const phoneConflict = profileError.code === '23505' || /customer_profiles_phone_key|duplicate key/i.test(profileError.message || '');
+        return reply({
+          error: phoneConflict ? 'PHONE_ALREADY_LINKED' : 'PROFILE_CREATE_FAILED',
+          message_ar: phoneConflict
+            ? 'رقم الجوال مرتبط بحساب آخر. سجّل الدخول بالحساب السابق أو تواصل مع الدعم.'
+            : 'تعذر تجهيز ملف الحساب. حاول مرة أخرى بعد قليل.',
+        }, phoneConflict ? 409 : 503);
       }
     }
 
     // The server-side SSR client writes the authenticated session into secure Supabase cookies.
-    const auth = createSupabaseServerClient();
+    const auth = createSupabaseCustomerServerClient();
     const { error: loginError } = await auth.auth.signInWithPassword({
       email: alias,
       password,

@@ -478,3 +478,29 @@ html,body{background:#09090B!important;max-width:100%;overflow-x:clip}
  .bh-pwa-close{width:27px;height:27px}
 }
 @media(prefers-reduced-motion:reduce){.bh-pwa-banner,.bh-pwa-sheet{animation:none}}
+
+
+/* Shared product-card footer rhythm (desktop/tablet); mobile overrides stay below 768px. */
+.bh-menu-card-body{display:flex;flex-direction:column;gap:13px;min-width:0}
+.bh-menu-card-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.bh-menu-prep{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:#A1A1AA}
+.bh-menu-card-purchase{display:flex;align-items:center;gap:12px;min-width:0}
+.bh-menu-card-purchase strong{color:#F5B800;font-size:14px;font-weight:1000;white-space:nowrap}
+.bh-menu-card-purchase strong span{font-size:10px;color:#A1A1AA}
+.bh-menu-card-purchase button{min-height:36px;padding:0 12px;border:1px solid rgba(245,184,0,.34);border-radius:9px;color:#F5B800;background:rgba(245,184,0,.08);white-space:nowrap}
+.bh-menu-house-badge{border-radius:7px}
+.bh-branch-picker{background:#131317!important;border-color:rgba(255,255,255,.07)!important}
+.bh-branch-picker>div>div:first-child>div:first-child{color:#F5B800!important}
+.bh-branch-picker select{background:#09090B!important;color:#FAFAFA!important;border-color:rgba(255,255,255,.12)!important}
+.bh-branch-picker button{border-color:rgba(255,255,255,.14)!important;color:#FAFAFA!important}
+@media(max-width:767px){
+ .bh-storefront .bh-branch-picker{padding-block:0!important;background:#09090B!important;border-bottom:1px solid rgba(255,255,255,.07)!important}
+ .bh-storefront .bh-branch-picker>div{display:flex!important;align-items:center!important;gap:10px!important;padding:10px 15px!important}
+ .bh-storefront .bh-branch-picker>div>div:first-child{flex:0 0 auto!important;min-width:72px!important}
+ .bh-storefront .bh-branch-picker>div>div:first-child>div:first-child{font-size:10px!important}
+ .bh-storefront .bh-branch-picker>div>div:first-child>div:last-child{font-size:11px!important}
+ .bh-storefront .bh-branch-picker>div>div:last-child{display:flex!important;flex:1 1 auto!important;min-width:0!important;gap:7px!important}
+ .bh-storefront .bh-branch-picker>div>div:last-child>div{flex:1 1 auto!important;min-width:0!important}
+ .bh-storefront .bh-branch-picker select{min-height:42px!important;padding-block:8px!important;font-size:10px!important}
+ .bh-storefront .bh-branch-picker button{min-height:42px!important;padding:0 9px!important;font-size:9px!important;white-space:nowrap!important}
+}

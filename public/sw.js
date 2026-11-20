@@ -1,4 +1,4 @@
-const CACHE='burger-house-shell-v5';
+const CACHE='burger-house-shell-v6';
 const SHELL=['/','/brand-mark.svg','/manifest.webmanifest','/manifest-admin.webmanifest','/manifest-staff.webmanifest','/icons/customer-180.png','/icons/customer-192.png','/icons/customer-512.png','/icons/admin-180.png','/icons/admin-192.png','/icons/admin-512.png','/icons/staff-180.png','/icons/staff-192.png','/icons/staff-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('burger-house-shell-')&&key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()]));});

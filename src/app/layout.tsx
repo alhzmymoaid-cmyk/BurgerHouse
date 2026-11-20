@@ -22,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.svg" />
         <link
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"

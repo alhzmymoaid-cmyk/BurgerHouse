@@ -434,7 +434,7 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#ded8cd] bg-[#ebe7df]">
+        <section className="bh-branch-picker border-b border-[#ded8cd] bg-[#ebe7df]">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

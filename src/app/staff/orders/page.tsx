@@ -5,6 +5,8 @@ import BranchCatalogControls from '@/components/branch-catalog-controls';
 import PromoManager from '@/components/promo-manager';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   ORDER_STATUS_META,
   VALID_STATUS_TRANSITIONS,
@@ -20,6 +22,7 @@ const decodeVapidKey = (value: string) => {
 };
 
 export default function StaffLiveOrdersPage() {
+  const router = useRouter();
   const [actorProfile, setActorProfile] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -31,6 +34,7 @@ export default function StaffLiveOrdersPage() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [pendingSensitive, setPendingSensitive] = useState<{ code: string; status: string } | null>(null);
   const [sensitiveReason, setSensitiveReason] = useState<string>('');
+  const [busyOrderCode, setBusyOrderCode] = useState<string | null>(null);
 
   const playChime = useCallback(() => {
     if (!soundEnabled || typeof window === 'undefined') return;
@@ -109,7 +113,7 @@ export default function StaffLiveOrdersPage() {
 
   const fetchLiveOrders = useCallback(async () => {
     try {
-      const res = await fetch(`/api/orders?status=${encodeURIComponent(statusFilter)}`, { cache: 'no-store' });
+      const res = await fetch('/api/orders?status=all', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) {
         setErrorBanner(data.error || 'غير مصرح بالوصول — يرجى تسجيل الدخول بحساب موظف الفرع');
@@ -120,7 +124,7 @@ export default function StaffLiveOrdersPage() {
     } catch (err: any) {
       setErrorBanner(err?.message || 'تعذر الاتصال بخادم الطلبات');
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
     fetchLiveOrders();
@@ -165,23 +169,53 @@ export default function StaffLiveOrdersPage() {
    */
   const executeStatusTransition = async (orderCode: string, targetStatus: string, confirmed = false, reasonNote = '') => {
     setErrorBanner(null);
-    const res = await fetch(`/api/orders/${encodeURIComponent(orderCode)}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        target_status: targetStatus,
-        confirmed,
-        reason_note: reasonNote
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setErrorBanner(data.message || data.error || 'تعذر تحديث حالة الطلب');
-      return;
+    setBusyOrderCode(orderCode);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderCode)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_status: targetStatus,
+          confirmed,
+          reason_note: reasonNote
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorBanner(data.message || data.error || 'تعذر تحديث حالة الطلب');
+        return;
+      }
+      setPendingSensitive(null);
+      setSensitiveReason('');
+      await fetchLiveOrders();
+    } catch (error: any) {
+      setErrorBanner(error?.message || 'تعذر الاتصال بالخادم لتحديث الطلب');
+    } finally {
+      setBusyOrderCode(null);
     }
-    setPendingSensitive(null);
-    setSensitiveReason('');
-    await fetchLiveOrders();
+  };
+
+  const logout = async () => {
+    await createSupabaseBrowserClient().auth.signOut();
+    router.replace('/auth/login');
+    router.refresh();
+  };
+
+  const statusFilters = [
+    { id: 'all', label: 'كل الطلبات' },
+    { id: 'new', label: 'جديدة' },
+    { id: 'accepted', label: 'مقبولة' },
+    { id: 'preparing', label: 'قيد التجهيز' },
+    { id: 'ready_for_pickup', label: 'جاهزة للاستلام' },
+    { id: 'completed', label: 'مكتملة' },
+  ];
+
+  const primaryAction: Record<string, { target: string; label: string }> = {
+    new: { target: 'accepted', label: 'قبول الطلب' },
+    pending_confirmation: { target: 'accepted', label: 'تأكيد وقبول الطلب' },
+    accepted: { target: 'preparing', label: 'بدء التجهيز' },
+    preparing: { target: 'ready_for_pickup', label: 'الطلب جاهز للاستلام' },
+    ready_for_pickup: { target: 'completed', label: 'تأكيد التسليم' },
   };
 
   const allowedRoleTargets = actorProfile
@@ -189,34 +223,21 @@ export default function StaffLiveOrdersPage() {
     : [];
 
   return (
-    <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#ded8cd] pb-4">
-        <div>
-          <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#a65e36]">مركز تشغيل الطلبات</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#8a8175]">BURGER HOUSE · BRANCH OPERATIONS</p></div></div>
-          <p className="text-xs text-[#777064]">
-            {actorProfile
-              ? `الموظف المصادق عليه خادمياً: ${actorProfile.full_name} (${actorProfile.role}) • الفرع المعزول: ${actorProfile.assigned_branch_id || 'جميع الفروع'}`
-              : 'جاري التحقق من الجلسة الخادمية...'}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث برقم الطلب أو الجوال..."
-            className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs text-[#201e1a]"
-          />
-          <button
-            onClick={() => setSoundEnabled((enabled) => !enabled)}
-            className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs font-bold text-[#514b42]"
-          >
-            {soundEnabled ? '🔔 الصوت مفعل' : '🔕 الصوت صامت'}
-          </button>
-          <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-sm bg-[#f5c542] px-3 py-2 text-xs font-black text-[#17140b] disabled:opacity-50">
-            {pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل إشعار الطلبات'}
-          </button>
-          <button disabled={pushBusy} onClick={sendTestPush} className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs font-bold text-[#514b42] disabled:opacity-50">اختبار الإشعار</button>
+    <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f1efe9] p-3 text-[#201e1a] sm:p-6">
+      <header className="mb-6 overflow-hidden rounded-3xl border border-[#30332b] bg-[#151812] text-[#f7f1df] shadow-[0_18px_55px_rgba(0,0,0,.12)]">
+        <div className="flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f5c542]"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/></div>
+            <div><p className="text-[9px] font-black tracking-[.24em] text-[#f5c542]">BURGER HOUSE · LIVE KITCHEN</p><h1 className="mt-1 text-2xl font-black">مركز تشغيل الطلبات</h1><p className="mt-1 text-[11px] text-[#aaa995]">{actorProfile ? `${actorProfile.full_name} · ${actorProfile.role === 'kitchen_staff' ? 'فريق المطبخ' : actorProfile.role === 'cashier' ? 'الكاشير' : actorProfile.role === 'branch_manager' ? 'مدير الفرع' : 'الإدارة'} · ${actorProfile.assigned_branch_id || 'كل الفروع'}` : 'جارٍ التحقق من صلاحيات الموظف...'}</p></div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <input type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث برقم الطلب أو الجوال" className="col-span-2 min-w-0 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white outline-none placeholder:text-[#777b6b] sm:w-56"/>
+            <button onClick={() => setSoundEnabled((enabled) => !enabled)} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'الصوت يعمل' : 'الصوت صامت'}</button>
+            <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-xl bg-[#f5c542] px-3 py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل الإشعارات'}</button>
+            <button disabled={pushBusy} onClick={sendTestPush} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8] disabled:opacity-50">اختبار الإشعار</button>
+            <button onClick={fetchLiveOrders} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">تحديث الطلبات</button>
+            <button onClick={logout} className="rounded-xl border border-[#a65e36]/50 px-3 py-3 text-xs font-bold text-[#e6b58e]">تسجيل الخروج</button>
+          </div>
         </div>
       </header>
       {actorProfile?.role === 'branch_manager' && <><PromoManager /><BranchCatalogControls /></>}
@@ -224,63 +245,61 @@ export default function StaffLiveOrdersPage() {
 
       {pushMessage && <div className="mb-4 rounded-lg border border-[#68572b] bg-[#282313] p-3 text-xs font-bold text-[#f2df9d]" role="status">{pushMessage}</div>}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">كل الطلبات</div><div className="mt-2 text-2xl font-black">{orders.length}</div></div>
-        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">طلبات جديدة</div><div className="mt-2 text-2xl font-black text-[#a65e36]">{orders.filter(o=>['new','pending_confirmation'].includes(o.status)).length}</div></div>
-        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">قيد التجهيز</div><div className="mt-2 text-2xl font-black text-[#9b6a25]">{orders.filter(o=>o.status==='preparing').length}</div></div>
-        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">جاهزة للاستلام</div><div className="mt-2 text-2xl font-black text-[#426348]">{orders.filter(o=>o.status==='ready_for_pickup').length}</div></div>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-[#e2dfd6] bg-white p-4 shadow-sm"><p className="text-[10px] font-bold text-[#858477]">إجمالي الطلبات</p><p className="mt-2 text-3xl font-black tabular-nums">{orders.length}</p></div>
+        <div className="rounded-2xl border border-[#f0dfb7] bg-[#fffaf0] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#96743b]">تحتاج قبولًا</p><p className="mt-2 text-3xl font-black tabular-nums text-[#a65e36]">{orders.filter(o=>['new','pending_confirmation'].includes(o.status)).length}</p></div>
+        <div className="rounded-2xl border border-[#f0dfb7] bg-[#fffaf0] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#96743b]">قيد التجهيز</p><p className="mt-2 text-3xl font-black tabular-nums text-[#a66c22]">{orders.filter(o=>o.status==='preparing').length}</p></div>
+        <div className="rounded-2xl border border-[#cce5d2] bg-[#f3fbf4] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#4e7957]">جاهزة للاستلام</p><p className="mt-2 text-3xl font-black tabular-nums text-[#267a43]">{orders.filter(o=>o.status==='ready_for_pickup').length}</p></div>
       </div>
+      <nav aria-label="تصفية الطلبات" className="mb-5 flex gap-2 overflow-x-auto pb-2">
+        {statusFilters.map((filter) => <button key={filter.id} onClick={() => setStatusFilter(filter.id)} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-black transition ${statusFilter===filter.id?'bg-[#20231b] text-white shadow-md':'border border-[#ddd8cc] bg-white text-[#6e695e] hover:bg-[#f1eee7]'}`}>{filter.label}{filter.id==='all' ? ` · ${orders.length}` : ` · ${orders.filter(o=>o.status===filter.id).length}`}</button>)}
+      </nav>
       {errorBanner && (
         <div className="mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
           {errorBanner}
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid items-start gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         {orders
-          .filter((o) =>
-            searchQuery
-              ? String(o.order_number ?? '').includes(searchQuery) || o.order_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                o.customer_phone?.includes(searchQuery)
-              : true
-          )
+          .filter((order) => (statusFilter === 'all' || order.status === statusFilter) && (
+            !searchQuery ||
+            String(order.order_number ?? '').includes(searchQuery) ||
+            String(order.order_code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            String(order.customer_phone || '').includes(searchQuery) ||
+            String(order.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+          ))
           .map((order) => {
-            const nextStatuses = ((VALID_STATUS_TRANSITIONS as any)[order.status] || []).filter((st: string) =>
-              allowedRoleTargets.includes(st)
-            );
+            const nextStatuses = ((VALID_STATUS_TRANSITIONS as any)[order.status] || []).filter((st: string) => allowedRoleTargets.includes(st));
+            const action = primaryAction[order.status];
+            const canAdvance = Boolean(action && nextStatuses.includes(action.target));
+            const sensitiveStatuses = nextStatuses.filter((status: string) => status === 'rejected' || status === 'cancelled');
             return (
-              <div key={order.order_code} className="rounded-2xl border border-[#ded8cd] bg-[#fbfaf7] p-5 shadow-[0_12px_30px_rgba(35,29,22,.06)] space-y-4">
-                <div className="flex items-center justify-between border-b border-[#e4ded4] pb-3">
-                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">#{order.order_number ?? '—'}</span>
-                  <span className="rounded-sm bg-[#eee8df] px-2.5 py-1 text-xs font-bold text-[#655e53]">
-                    {(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}
-                  </span>
+              <article key={order.order_code} className="overflow-hidden rounded-3xl border border-[#e2dfd6] bg-white shadow-[0_12px_34px_rgba(32,29,22,.07)]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#eeeae2] bg-[#fbfaf7] px-4 py-4">
+                  <div><p className="text-[9px] font-black tracking-[.15em] text-[#a65e36]">ORDER NUMBER</p><p className="mt-1 font-mono text-2xl font-black tabular-nums text-[#29251f]">#{order.order_number ?? '—'}</p></div>
+                  <div className="text-left"><span className="inline-flex rounded-full bg-[#eee9df] px-3 py-2 text-[10px] font-black text-[#655e53]">{(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}</span><p className="mt-2 text-[9px] text-[#969083]">{order.created_at ? new Date(order.created_at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : ''}</p></div>
                 </div>
-                <div className="text-xs space-y-1">
-                  <div>العميل: <strong>{order.customer_name}</strong> ({order.customer_phone})</div>
-                  <div>الإجمالي: <strong className="text-[#426348]">{order.total_amount} ر.س</strong></div>
+                <div className="space-y-4 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><p className="text-[9px] font-bold text-[#969083]">العميل</p><p className="mt-1 truncate text-sm font-black text-[#28251f]">{order.customer_name}</p><a href={`tel:${order.customer_phone}`} dir="ltr" className="mt-1 inline-block text-xs font-bold text-[#8e6448]">{order.customer_phone}</a></div>
+                    <div className="shrink-0 text-left"><p className="text-[9px] font-bold text-[#969083]">الإجمالي</p><p className="mt-1 text-lg font-black tabular-nums text-[#34754a]">{Number(order.total_amount).toFixed(2)} ر.س</p></div>
+                  </div>
+                  <div className="rounded-2xl bg-[#f7f5ef] p-3">
+                    <div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-black text-[#766f62]">تفاصيل الأصناف</p><p className="text-[9px] text-[#969083]">{order.branch_snapshot?.name_ar || 'فرع برجر هاوس'}</p></div>
+                    <div className="space-y-3">{(order.order_items || []).map((item:any,index:number)=><div key={item.id || index} className="flex items-start justify-between gap-3 text-xs"><div className="min-w-0"><p className="font-black leading-5 text-[#343027]">{item.product_name_ar || 'صنف'}</p><p className="mt-0.5 text-[10px] text-[#80796d]">{item.size_name_ar || ''}{item.item_notes ? ' · '+item.item_notes : ''}</p></div><span className="shrink-0 rounded-lg bg-white px-2 py-1 text-[10px] font-black text-[#514b40]">× {item.quantity}</span></div>)}</div>
+                  </div>
+                  {order.customer_notes && <p className="rounded-xl border border-[#eee1cb] bg-[#fffaf0] p-3 text-[11px] leading-6 text-[#765e3e]">ملاحظة العميل: {order.customer_notes}</p>}
+                  <div className="space-y-2">
+                    {canAdvance && <button disabled={busyOrderCode===order.order_code} onClick={() => executeStatusTransition(order.order_code,action.target,false,'تحديث من شاشة تشغيل الفرع')} className={`w-full rounded-2xl px-4 py-4 text-sm font-black text-white shadow-sm transition disabled:opacity-50 ${action.target==='ready_for_pickup'?'bg-emerald-600 hover:bg-emerald-700':action.target==='completed'?'bg-[#292d25] hover:bg-black':'bg-[#a65e36] hover:bg-[#814728]'}`}>{busyOrderCode===order.order_code?'جارٍ تحديث الطلب...':action.label}</button>}
+                    {sensitiveStatuses.length>0 && <div className="flex gap-2">{sensitiveStatuses.map((nextSt:string)=><button key={nextSt} onClick={()=>setPendingSensitive({code:order.order_code,status:nextSt})} className="flex-1 rounded-xl border border-[#eadbd2] px-3 py-2.5 text-[10px] font-black text-[#a34c39]">{nextSt==='rejected'?'رفض الطلب':'إلغاء الطلب'}</button>)}</div>}
+                    {!canAdvance && sensitiveStatuses.length===0 && <p className="rounded-xl bg-[#f5f4ef] px-3 py-3 text-center text-[10px] font-bold text-[#898477]">لا توجد إجراءات متاحة لهذا الدور أو لحالة الطلب.</p>}
+                  </div>
                 </div>
-                {Array.isArray(order.order_items) && order.order_items.length > 0 && <div className="border-t border-[#e4ded4] pt-3"><div className="mb-2 text-[11px] font-black text-[#655e53]">تفاصيل الأصناف</div><div className="space-y-2">{order.order_items.map((item:any,index:number)=><div key={item.id || index} className="flex items-start justify-between gap-3 text-xs"><div><div className="font-bold">{item.product_name_ar || 'صنف'}</div><div className="mt-0.5 text-[10px] text-[#777064]">{item.size_name_ar || ''}{item.item_notes ? ' • '+item.item_notes : ''}</div></div><span className="shrink-0 font-bold">× {item.quantity}</span></div>)}</div></div>}
-                <div className="flex flex-wrap gap-2">
-                  {nextStatuses.map((nextSt: string) => (
-                    <button
-                      key={nextSt}
-                      onClick={() => {
-                        if (nextSt === 'rejected' || nextSt === 'cancelled') {
-                          setPendingSensitive({ code: order.order_code, status: nextSt });
-                        } else {
-                          executeStatusTransition(order.order_code, nextSt, false, 'تحديث مباشر من شاشة الفرع');
-                        }
-                      }}
-                      className="rounded-sm bg-[#a65e36] px-3 py-2 text-xs font-bold text-white"
-                    >
-                      {(ORDER_STATUS_META as any)[nextSt]?.label_ar}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </article>
             );
           })}
+        {orders.filter((order) => (statusFilter === 'all' || order.status === statusFilter) && (!searchQuery || String(order.order_number ?? '').includes(searchQuery) || String(order.customer_phone || '').includes(searchQuery))).length===0 && <div className="col-span-full rounded-3xl border border-dashed border-[#d8d2c5] bg-white p-12 text-center"><p className="text-lg font-black text-[#3a352d]">لا توجد طلبات في هذا القسم</p><p className="mt-2 text-xs text-[#8b8376]">ستظهر الطلبات الجديدة هنا تلقائيًا عند وصولها.</p></div>}
       </div>
 
       {pendingSensitive && (

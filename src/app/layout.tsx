@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   applicationName: 'BURGER HOUSE',
   appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black-translucent' },
   manifest: '/manifest.webmanifest',
-  icons: { icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }], apple: '/icons/icon-192.png' },
+  icons: { icon: [{ url: '/icons/customer-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icons/customer-512.png', sizes: '512x512', type: 'image/png' }], apple: '/icons/customer-192.png' },
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/customer-192.png" />
         <link
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"

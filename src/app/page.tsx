@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
 import SafeFoodImage from '@/components/safe-food-image';
 import {
@@ -85,7 +85,7 @@ export default function StorefrontPage() {
     let active = true;
     const loadCustomer = async () => {
       try {
-        const supabase = createSupabaseBrowserClient();
+        const supabase = createSupabaseCustomerBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!active) return;
         const isCustomer = user && (
@@ -222,7 +222,7 @@ export default function StorefrontPage() {
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message_ar || 'تعذر إكمال تسجيل الحساب. حاول مرة أخرى.');
-      const supabase = createSupabaseBrowserClient();
+      const supabase = createSupabaseCustomerBrowserClient();
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user || user.app_metadata?.customer_account !== true) {
         throw new Error('تم إنشاء الحساب لكن تعذر تحميل جلسة الدخول. أعد تسجيل الدخول.');

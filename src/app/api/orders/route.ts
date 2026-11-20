@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
 import { handleCreateOrderRequest } from '@/lib/supabase/api-handlers.mjs';
-import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
+import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';\nimport { sendBranchOrderPush } from '@/lib/web-push';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +53,17 @@ export async function POST(request: NextRequest) {
       const { data: savedOrder } = await serviceSupabase.from('orders').select('order_number').eq('id', result.body.id).maybeSingle();
       result.body.order_number = savedOrder?.order_number ?? null;
       delete result.body.tracking_token;
+      // Best-effort branch-scoped push: never block the customer's order if a device is offline.
+      try {
+        await sendBranchOrderPush(serviceSupabase, String(payload.branch_id), {
+          title: 'طلب جديد · BURGER HOUSE',
+          body: 'وصل طلب جديد رقم ' + String(savedOrder?.order_number ?? result.body.order_code ?? ''),
+          url: '/staff/orders',
+          tag: 'bh-order-' + String(result.body.id)
+        });
+      } catch {
+        // Order creation remains successful if push delivery is temporarily unavailable.
+      }
     }
     return NextResponse.json(result.body, { status: result.status });
   } catch (err: any) {

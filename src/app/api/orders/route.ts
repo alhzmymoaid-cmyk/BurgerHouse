@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
     if (!isCustomerIdentity) {
       return NextResponse.json({ error: 'CUSTOMER_SESSION_REQUIRED', message_ar: 'استخدم حساب العميل لإتمام الطلب. جلسة الموظفين والإدارة منفصلة.' }, { status: 403 });
     }
-    const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
+    const localizedPhone = String(payload?.customer_phone || '')
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+    const submittedPhone = localizedPhone.replace(/\D/g, '');
     const customerName = String(payload?.customer_name || '').trim();
     if (!/^9665\d{8}$/.test(submittedPhone)) {
       return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً يبدأ بـ 05.' }, { status: 400 });

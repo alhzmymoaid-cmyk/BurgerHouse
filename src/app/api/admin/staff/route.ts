@@ -20,7 +20,7 @@ export async function POST(request:NextRequest){
     if(fullName.length<2||fullName.length>100||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<12||password.length>72||!validRoles.includes(role)){
       return NextResponse.json({error:'INVALID_STAFF_FIELDS',message:'تحقق من الاسم والبريد وكلمة المرور والصلاحية.'},{status:400});
     }
-    if(role==='branch_manager'&&!branchId)return NextResponse.json({error:'BRANCH_REQUIRED',message:'يجب تحديد فرع لمدير الفرع.'},{status:400});
+    if(['branch_manager','cashier','kitchen_staff'].includes(role)&&!branchId)return NextResponse.json({error:'BRANCH_REQUIRED',message:'يجب تحديد فرع لمدير الفرع.'},{status:400});
     const service=createSupabaseServiceRoleClient();
     if(branchId){
       const {data:branch}=await service.from('branches').select('id').eq('id',branchId).maybeSingle();

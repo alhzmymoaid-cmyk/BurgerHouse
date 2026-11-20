@@ -27,7 +27,7 @@ function isStrictLocalSaudiPhone(value: unknown): boolean {
   const localized = String(value ?? '')
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  return /^05\\d{8}$/.test(localized.replace(/\\D/g, ''));
+  return /^05\d{8}$/.test(localized.replace(/\D/g, ''));
 }
 
 function hmac(secret: string, value: string) {

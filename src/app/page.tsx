@@ -66,6 +66,12 @@ export default function StorefrontPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
   const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
+  const [checkoutAuthMode, setCheckoutAuthMode] = useState<'login' | 'signup' | 'recovery'>('signup');
+  const [checkoutPassword, setCheckoutPassword] = useState('');
+  const [recoveryName, setRecoveryName] = useState('');
+  const [recoveryPhone, setRecoveryPhone] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -84,12 +90,18 @@ export default function StorefrontPage() {
         const supabase = createSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!active) return;
-        if (user) {
-          setCustomerLoggedIn(true);
+        const isCustomerAccount = user?.app_metadata?.customer_account === true;
+        if (user && isCustomerAccount) {
           const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
-          setCustomerName(profile?.full_name || user.user_metadata?.full_name || '');
-          setCustomerPhone(profile?.phone || user.phone || '');
-        } else setCustomerLoggedIn(false);
+          if (!active) return;
+          setCustomerLoggedIn(true);
+          setCustomerName(profile?.full_name || '');
+          setCustomerPhone(profile?.phone || user.app_metadata?.customer_phone || '');
+        } else {
+          setCustomerLoggedIn(false);
+          setCustomerName('');
+          setCustomerPhone('');
+        }
       } catch { if (active) setCustomerLoggedIn(false); }
       finally { if (active) setCustomerDataLoaded(true); }
     };
@@ -181,6 +193,39 @@ export default function StorefrontPage() {
   const updateQuantity = (key: string, delta: number) => setCart((current) => current
     .map((line) => line.key === key ? { ...line, quantity: line.quantity + delta } : line)
     .filter((line) => line.quantity > 0));
+
+  const authenticateCheckoutCustomer = async () => {
+    setAuthError('');
+    const phone = customerPhone.trim();
+    const fullName = customerName.trim();
+    if (!/^((05)\\d{8}|5\\d{8}|9665\\d{8}|\\+9665\\d{8})$/.test(phone.replace(/[\\s-]/g, ''))) {
+      setAuthError('أدخل رقم جوال سعودي صحيحًا.'); return;
+    }
+    if (checkoutAuthMode === 'signup' && fullName.length < 2) { setAuthError('اكتب اسمك الكامل.'); return; }
+    if (checkoutPassword.length < 8) { setAuthError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.'); return; }
+    setAuthBusy(true);
+    try {
+      const response = await fetch('/api/account/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', cache: 'no-store', body: JSON.stringify({ mode: checkoutAuthMode, phone, password: checkoutPassword, fullName }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.message_ar || 'تعذر إكمال العملية. حاول مرة أخرى.');
+      const supabase = createSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.app_metadata?.customer_account) throw new Error('تمت العملية لكن تعذر تحميل جلسة حساب العميل. أعد تسجيل الدخول.');
+      const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
+      setCustomerName(profile?.full_name || fullName);
+      setCustomerPhone(profile?.phone || phone);
+      setCustomerLoggedIn(true);
+      setCheckoutPassword('');
+      setAuthError('');
+    } catch (error: any) { setAuthError(error?.message || 'تعذر تسجيل الحساب الآن.'); }
+    finally { setAuthBusy(false); }
+  };
+
+  const openPasswordRecovery = () => {
+    const support = String(catalog?.settings?.support_whatsapp || catalog?.settings?.support_phone || '966535717670').replace(/\\D/g, '').replace(/^0/, '966');
+    const message = `مرحبًا دعم BURGER HOUSE، نسيت كلمة المرور وأرغب في استعادتها.\\nالاسم: ${recoveryName.trim()}\\nرقم الجوال المسجل: ${recoveryPhone.trim()}\\nأرجو مساعدتي في استعادة الوصول إلى حسابي.`;
+    window.open(`https://wa.me/${support}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const submitOrder = async () => {
     setOrderError('');
@@ -579,9 +624,11 @@ export default function StorefrontPage() {
       {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>
         <div className="mt-5 space-y-4">
-          <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input disabled={!customerLoggedIn} value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="اسمك"/></label>
-          <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input disabled={!customerLoggedIn} value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
-          {!customerLoggedIn && <div className="rounded-xl border border-[#68572b] bg-[#282313] p-4 text-xs leading-6 text-[#e7d69e]">لإتمام الطلب وحفظه في سجلّك، يلزم تسجيل الدخول أولاً. <a href="/account" className="font-black underline">تسجيل الدخول أو إنشاء حساب</a></div>}
+          {customerLoggedIn ? <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 p-4"><div className="text-xs font-bold text-emerald-300">أنت مسجل الدخول — بياناتك محفوظة</div><div className="mt-2 text-sm font-black text-white">{customerName}</div><div className="mt-1 text-xs text-[#c5c1b5]" dir="ltr">{customerPhone}</div><button type="button" onClick={async()=>{await createSupabaseBrowserClient().auth.signOut();setCustomerLoggedIn(false);setCustomerName('');setCustomerPhone('');}} className="mt-3 text-[11px] font-bold text-[#f5c542] underline">تغيير الحساب</button></div> : <div className="space-y-3 rounded-xl border border-[#68572b] bg-[#282313] p-4">
+            <div className="flex rounded-lg bg-black/20 p-1"><button type="button" onClick={()=>{setCheckoutAuthMode('signup');setAuthError('');}} className={`flex-1 rounded-md py-2 text-xs font-bold ${checkoutAuthMode==='signup'?'bg-[#f5c542] text-[#17140b]':'text-[#e7d69e]'}`}>إنشاء حساب</button><button type="button" onClick={()=>{setCheckoutAuthMode('login');setAuthError('');}} className={`flex-1 rounded-md py-2 text-xs font-bold ${checkoutAuthMode==='login'?'bg-[#f5c542] text-[#17140b]':'text-[#e7d69e]'}`}>لدي حساب</button></div>
+            {checkoutAuthMode==='recovery' ? <><p className="text-xs leading-6 text-[#e7d69e]">أدخل الاسم ورقم الجوال المسجل، وسنفتح محادثة واتساب الدعم برسالة جاهزة.</p><input value={recoveryName} onChange={e=>setRecoveryName(e.target.value)} placeholder="الاسم المسجل" className="w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white"/><input value={recoveryPhone} onChange={e=>setRecoveryPhone(e.target.value)} placeholder="رقم الجوال المسجل" inputMode="tel" dir="ltr" className="w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white"/><button type="button" disabled={recoveryName.trim().length<2||recoveryPhone.trim().length<8} onClick={openPasswordRecovery} className="w-full rounded-lg bg-[#25D366] py-3 text-xs font-black text-[#062b16] disabled:opacity-40">إرسال إلى الدعم عبر واتساب</button><button type="button" onClick={()=>setCheckoutAuthMode('login')} className="text-xs font-bold text-[#f5c542] underline">العودة لتسجيل الدخول</button></> : <><label className="block text-xs font-bold text-[#e9e2d2]">{checkoutAuthMode==='signup'?'الاسم الكامل':''}{checkoutAuthMode==='signup'&&<input value={customerName} onChange={e=>setCustomerName(e.target.value)} autoComplete="name" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white" placeholder="اكتب اسمك"/>}</label><label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} autoComplete="tel" inputMode="tel" dir="ltr" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white" placeholder="05xxxxxxxx"/></label><label className="block text-xs font-bold text-[#e9e2d2]">إنشاء كلمة مرور<input value={checkoutPassword} onChange={e=>setCheckoutPassword(e.target.value)} type="password" autoComplete={checkoutAuthMode==='signup'?'new-password':'current-password'} minLength={8} maxLength={72} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white" placeholder="8 أحرف على الأقل"/></label><button type="button" disabled={authBusy} onClick={authenticateCheckoutCustomer} className="w-full rounded-lg bg-[#f5c542] py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{authBusy?(checkoutAuthMode==='signup'?'جارٍ إنشاء الحساب...':'جارٍ تسجيل الدخول...'):(checkoutAuthMode==='signup'?'إنشاء الحساب وحفظ بياناتي':'تسجيل الدخول')}</button><button type="button" onClick={()=>setCheckoutAuthMode('recovery')} className="text-xs font-bold text-[#e7d69e] underline">هل نسيت كلمة المرور؟</button></>}
+            {authError&&<p role="alert" className="rounded-lg border border-red-900 bg-red-950/50 p-3 text-xs text-red-200">{authError}</p>}
+          </div>}
           <label className="block text-xs font-bold text-[#e9e2d2]">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold text-[#e9e2d2]">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold text-[#e9e2d2]">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="ملاحظات إضافية (اختياري)"/></label>

@@ -12,6 +12,9 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [previousOrderCode, setPreviousOrderCode] = useState('');
+  const [previousTrackingToken, setPreviousTrackingToken] = useState('');
+  const [notice, setNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -34,12 +37,17 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (mode === 'forgot') return;
+    if (mode === 'signup' && Boolean(previousOrderCode.trim()) !== Boolean(previousTrackingToken.trim())) {
+      setError('لربط طلب سابق، أدخل رقم الطلب ورمز التتبع معًا.');
+      return;
+    }
     if (mode === 'signup' && password !== confirmPassword) {
       setError('كلمتا المرور غير متطابقتين.');
       return;
     }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const response = await fetch('/api/account/auth', {
         method: 'POST',
@@ -52,9 +60,22 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
       if (!response.ok || !result.ok) {
         throw new Error(result.message_ar || 'تعذر إكمال العملية. تحقق من البيانات وحاول مرة أخرى.');
       }
+      setConfirmPassword('');
+      if (mode === 'signup' && previousOrderCode.trim() && previousTrackingToken.trim()) {
+        const claimResponse = await fetch('/api/account/claim-guest-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          cache: 'no-store',
+          body: JSON.stringify({ order_code: previousOrderCode.trim(), tracking_token: previousTrackingToken.trim() }),
+        });
+        if (!claimResponse.ok) {
+          setNotice('تم إنشاء حسابك، لكن لم نتمكن من ربط الطلب السابق. تأكد من رقم الطلب ورمز التتبع، ويمكنك متابعة طلباتك من هنا.');
+          return;
+        }
+      }
       router.replace('/account/orders');
       router.refresh();
-      setConfirmPassword('');
     } catch (caught: any) {
       setError(caught?.message || 'حدث خطأ غير متوقع. حاول مرة أخرى.');
     } finally {
@@ -105,6 +126,7 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
             <button type="button" onClick={() => { setMode('login'); setError(''); }} className="mb-4 text-xs font-bold text-[#a65e36] underline">العودة إلى تسجيل الدخول</button>
           )}
 
+          {notice && <div className="bh-account-notice mb-4" role="status">{notice} <a className="font-bold underline" href="/account/orders">عرض طلباتي</a></div>}
           <form onSubmit={submit} className="bh-account-form">
             {(mode === 'signup' || mode === 'forgot') && (
               <label className="bh-account-label">
@@ -140,6 +162,20 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
                 <input required minLength={8} maxLength={72} autoComplete="new-password" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"/>
               </div>
             </label>}
+            {mode === 'signup' && <div className="grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3">
+              <div>
+                <b className="text-xs text-[#F2B705]">طلبت سابقًا كضيف؟</b>
+                <p className="mt-1 text-[11px] leading-6 text-[#9E9BA3]">يمكنك ربط طلب سابق بإدخال رقم الطلب ورمز التتبع الموجود مع إيصال الطلب. لا نربط الطلبات اعتمادًا على رقم الجوال وحده.</p>
+              </div>
+              <label className="bh-account-label">
+                <span>رقم الطلب السابق (اختياري)</span>
+                <input dir="ltr" autoComplete="off" value={previousOrderCode} onChange={e => setPreviousOrderCode(e.target.value.toUpperCase().slice(0,40))} placeholder="BH-000000" className="w-full rounded-lg border border-white/10 bg-[#141417] px-3 py-3 text-sm text-[#F6F3EC]"/>
+              </label>
+              <label className="bh-account-label">
+                <span>رمز التتبع الخاص بالطلب (اختياري)</span>
+                <input dir="ltr" autoComplete="off" spellCheck={false} value={previousTrackingToken} onChange={e => setPreviousTrackingToken(e.target.value.trim().slice(0,256))} placeholder="trk_..." className="w-full rounded-lg border border-white/10 bg-[#141417] px-3 py-3 text-sm text-[#F6F3EC]"/>
+              </label>
+            </div>}
               {mode === 'login' && <button type="button" onClick={() => { setMode('forgot'); setError(''); setForgotName(name); setForgotPhone(phone); }} className="mt-2 text-xs font-bold text-[#a65e36] underline">نسيت كلمة المرور؟</button>}
               {mode === 'login' && <a href="/register" className="mt-2 block text-xs font-semibold text-[#9E9BA3] underline">طلبت سابقًا كضيف؟ أنشئ حسابًا لمتابعة طلباتك</a>}
             </label>}

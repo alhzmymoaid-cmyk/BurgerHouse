@@ -473,24 +473,36 @@ export default function StorefrontPage() {
       )}
 
       {activeView === 'menu' && <>
-        <section className="bh-home-hero relative overflow-hidden text-[#f7f3eb]">
-          <SafeFoodImage src="/images/hero-wagyu-smash.jpg" categoryId="cat-wagyu" alt="واغيو سماش هاوس من برجر هاوس" className="bh-home-hero-image" loading="eager"/>
-          <div className="bh-home-hero-shade"/>
-          <div className="bh-home-hero-content">
-            <div className="bh-home-kicker"><span/> BURGER HOUSE <i>·</i> CRAFTED OVER FIRE</div>
-            <p className="bh-home-overline">HOUSE SIGNATURE · MADE TO ORDER</p>
-            <h1>البرجر كما<br/><em>يجب أن يكون.</em></h1>
-            <p className="bh-home-description">واغيو طري، خبز بريوش محمّص، وصوصات البيت. اختر وجبتك واستلمها ساخنة من أقرب فرع.</p>
-            <div className="bh-home-actions">
-              <button onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>اكتشف المنيو <ArrowLeft size={18}/></button>
-              <button onClick={() => setActiveView('branches')}><MapPin size={17}/> فروع الاستلام</button>
+        <section className="bh-v2-hero" aria-labelledby="bh-home-title">
+          <div className="bh-v2-hero-copy">
+            <div className="bh-v2-eyebrow"><span/> BURGER HOUSE <i>·</i> CRAFTED OVER FIRE</div>
+            <p className="bh-v2-kicker">طازج من المطبخ إلى يدك</p>
+            <h1 id="bh-home-title">اختَر وجبتك.<br/><em>ونحن نجهّز الباقي.</em></h1>
+            <p className="bh-v2-lead">برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.</p>
+            <div className="bh-v2-hero-actions">
+              <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>ابدأ طلبك <ArrowLeft size={17}/></button>
+              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> مواقع الفروع</button>
+            </div>
+            <div className="bh-v2-branch-status">
+              <span className={activeBranch?.is_accepting_orders ? 'bh-v2-status-dot is-open' : 'bh-v2-status-dot'}/>
+              <div><b>{activeBranch?.name_ar || 'اختر فرع الاستلام'}</b><small>{activeBranch?.is_accepting_orders ? 'يستقبل الطلبات الآن' : 'تحقق من توفر الطلبات في الفرع'}</small></div>
+              <button type="button" onClick={() => setActiveView('branches')}>تغيير الفرع</button>
             </div>
           </div>
-          <div className="bh-home-price"><span>HOUSE SIGNATURE</span><b>واغيو سماش هاوس</b><small>ابدأ من ٣٨ ر.س</small></div>
-          <div className="bh-home-scroll" aria-hidden="true">SCROLL TO EXPLORE <span>↓</span></div>
+          <div className="bh-v2-hero-media">
+            <SafeFoodImage src="/images/hero-wagyu-smash.jpg" categoryId="cat-wagyu" alt="برجر واغيو سماش من برجر هاوس" loading="eager"/>
+            <div className="bh-v2-media-caption"><span>MADE TO ORDER</span><b>طازج. ساخن. على ذوقك.</b></div>
+            <div className="bh-v2-media-index">01 <i>/</i> 03</div>
+          </div>
         </section>
 
-        <section className="border-b border-[#e2dbcf] bg-[#fbf9f4]">
+        <section className="bh-v2-promise-strip" aria-label="مميزات الطلب">
+          <div><span>01</span><b>اختيارك بالكامل</b><small>حجم وإضافات كما تحب</small></div>
+          <div><span>02</span><b>تحضير عند الطلب</b><small>يبدأ بعد تأكيد الفرع</small></div>
+          <div><span>03</span><b>استلام واضح</b><small>تابع حالة طلبك خطوة بخطوة</small></div>
+        </section>
+
+
           <div className="bh-home-benefits mx-auto flex max-w-7xl items-center gap-3 px-4 py-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-x-reverse sm:divide-[#e5ded3] sm:px-8 sm:py-6">
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">مكونات مختارة</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">تفاصيل تصنع الفرق</p></div>
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">تحضير عند الطلب</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">من المطبخ مباشرة</p></div>
@@ -514,40 +526,7 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
-          <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">EXPLORE THE MENU</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">تصفّح حسب ذوقك</h2></div><button onClick={()=>document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">كل القائمة</button></div>
-          <div className="bh-category-rail grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {categories.map((category) => {
-              const categoryImage = products.find((product) => product.category_id === category.id)?.image_url || '/images/hero-wagyu-smash.jpg';
-              const count = products.filter((product) => product.category_id === category.id).length;
-              return <button key={category.id} onClick={()=>{setActiveCategory(category.id);document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="group relative min-h-[150px] overflow-hidden bg-[#24221d] text-right sm:min-h-[190px]">
-                <SafeFoodImage src={categoryImage} categoryId={category.id} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-90"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent"/>
-                <div className="absolute bottom-0 right-0 p-4 text-white"><div className="text-sm font-black sm:text-base">{category.name_ar}</div><div className="mt-1 text-[10px] text-white/75">{count} أصناف <span className="mr-1">←</span></div></div>
-              </button>;
-            })}
-          </div>
-        </section>
-
         <PromoCarousel banners={catalog?.promo_banners || []} branchId={branchId} products={products} onOpenProduct={(product) => openProduct(product as Product)} onSelectCategory={setActiveCategory} />
-
-        <section className="bh-signature-section mx-auto max-w-7xl px-4 pb-8 pt-5 lg:px-8">
-          <div className="bh-signature-heading">
-            <div><span>THE HOUSE SELECTION</span><h2>تجارب تستحق التجربة</h2><p>اختيارات البيت التي نبدأ بها معك.</p></div>
-            <button onClick={() => {setActiveCategory('all');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}}>استكشف القائمة <ArrowLeft size={15}/></button>
-          </div>
-          <div className="bh-signature-grid bh-signature-rail">
-            {products.filter(product => product.is_featured).slice(0,4).map((product,index) => {
-              const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
-              return <button type="button" key={product.id} onClick={()=>openProduct(product)} className={index===0?'bh-signature-card bh-signature-main':'bh-signature-card'}>
-                <SafeFoodImage src={product.image_url} categoryId={product.category_id} alt={product.name_ar} loading="lazy"/>
-                <span className="bh-signature-shade"/>
-                <span className="bh-signature-copy"><small>{index===0?'HOUSE SIGNATURE':'MADE FOR THE CRAVING'}</small><b>{product.name_ar}</b><em>من {money(Number(override?.custom_base_price ?? product.base_price))} ر.س</em></span>
-                <span className="bh-signature-plus"><Plus size={18}/></span>
-              </button>;
-            })}
-          </div>
-        </section>
 
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -565,18 +544,20 @@ export default function StorefrontPage() {
           : <div className="space-y-14">
             {categoryGroups.map((group) => <section key={group.id}>
               <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div>
-              <div className="bh-menu-product-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bh-v2-product-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {group.products.map((product)=>{
                   const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
-                  return <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa] transition hover:-translate-y-1 hover:shadow-[0_14px_35px_rgba(42,34,24,.09)]">
-                    <button onClick={()=>openProduct(product)} aria-label={`تخصيص ${product.name_ar}`} className="bh-menu-card-image relative block aspect-[5/3] w-full overflow-hidden bg-[#24242a] text-right">
-                      <SafeFoodImage src={product.image_url} categoryId={product.category_id} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.045]"/>
+                  return <article key={product.id} className="bh-v2-product-card">
+                    <button type="button" onClick={()=>openProduct(product)} aria-label={`تخصيص ${product.name_ar}`} className="bh-v2-product-photo">
+                      <SafeFoodImage src={product.image_url} categoryId={product.category_id} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover"/>
+                      {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
                     </button>
-                    <div className="bh-menu-card-body p-4 sm:p-5">
-                      <div className="bh-menu-card-main min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-black leading-7 text-[#24211d]">{product.name_ar}</h4>{product.is_featured && <span className="bh-menu-house-badge rounded-full bg-[#302914] px-2 py-1 text-[9px] font-bold text-[#f5c542]">مقترح البيت</span>}</div><p className="mt-1 line-clamp-2 min-h-[42px] text-xs leading-6 text-[#777064]">{product.description_ar}</p></div>
-                      <div className="bh-menu-card-meta">
-                        <span className="bh-menu-prep inline-flex items-center gap-1.5 whitespace-nowrap text-[10px] text-[#82796d]"><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span>
-                        <div className="bh-menu-card-purchase"><strong>{money(Number(override?.custom_base_price ?? product.base_price))}<span> ر.س</span></strong><button onClick={()=>openProduct(product)} className="inline-flex items-center justify-center gap-1.5 text-xs font-extrabold">+ تخصيص</button></div>
+                    <div className="bh-v2-product-info">
+                      <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
+                      <p>{product.description_ar}</p>
+                      <div className="bh-v2-product-bottom">
+                        <span><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span>
+                        <button type="button" onClick={()=>openProduct(product)}>خصّص طلبك <Plus size={15}/></button>
                       </div>
                     </div>
                   </article>;

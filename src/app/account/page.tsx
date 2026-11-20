@@ -21,10 +21,10 @@ export default function CustomerAccountPage() {
   }, []);
 
   const normalizeSaudiPhone = (value: string) => {
-    const digits = value.replace(/\\D/g, '');
-    if (/^05\\d{8}$/.test(digits)) return '+966' + digits.slice(1);
-    if (/^5\\d{8}$/.test(digits)) return '+966' + digits;
-    if (/^9665\\d{8}$/.test(digits)) return '+' + digits;
+    const digits = value.replace(/\D/g, '');
+    if (/^05\d{8}$/.test(digits)) return '+966' + digits.slice(1);
+    if (/^5\d{8}$/.test(digits)) return '+966' + digits;
+    if (/^9665\d{8}$/.test(digits)) return '+' + digits;
     return '';
   };
 

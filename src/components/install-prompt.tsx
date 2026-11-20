@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Smartphone, Share, Plus, MoreHorizontal, Download, CheckCircle2 } from 'lucide-react';
+import { X, Smartphone, Share, Plus, MoreHorizontal, Download, CheckCircle2, ExternalLink } from 'lucide-react';
 
 declare global { interface Window { deferredPwaPrompt?: any } }
 
@@ -10,43 +10,56 @@ export default function InstallPrompt() {
   const [ios, setIos] = useState(false);
   const [safari, setSafari] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [nativePromptReady, setNativePromptReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     const ua = navigator.userAgent;
-    const isIos = /iphone|ipad|ipod/i.test(ua);
-    const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios|opios/i.test(ua);
+    const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios|opios|tiktok|instagram|fbav|fban/i.test(ua);
     const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     setIos(isIos);
     setSafari(isSafari);
     setInstalled(standalone);
-    if (standalone || localStorage.getItem('bh-install-dismissed') === '1') return;
+    if (standalone || localStorage.getItem('bh-install-dismissed-v2') === '1') return;
 
     const onPrompt = (event: Event) => {
       event.preventDefault();
       window.deferredPwaPrompt = event;
+      setNativePromptReady(true);
+      setShow(true);
+    };
+    const onInstalled = () => {
+      window.deferredPwaPrompt = undefined;
+      setInstalled(true);
+      setShow(false);
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
-    const timer = window.setTimeout(() => setShow(true), 8500);
+    window.addEventListener('appinstalled', onInstalled);
+    const timer = window.setTimeout(() => setShow(true), 3500);
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
 
   const close = () => {
     setShow(false);
-    localStorage.setItem('bh-install-dismissed', '1');
+    localStorage.setItem('bh-install-dismissed-v2', '1');
   };
 
   const install = async () => {
-    if (window.deferredPwaPrompt) {
-      window.deferredPwaPrompt.prompt();
-      await window.deferredPwaPrompt.userChoice;
-      window.deferredPwaPrompt = null;
-      setShow(false);
+    const promptEvent = window.deferredPwaPrompt;
+    if (!promptEvent) {
+      setNativePromptReady(false);
+      return;
     }
+    window.deferredPwaPrompt = undefined;
+    setNativePromptReady(false);
+    promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if (choice?.outcome === 'accepted') setShow(false);
   };
 
   if (!show || installed) return null;
@@ -56,16 +69,23 @@ export default function InstallPrompt() {
       <section className="bh-install-card" role="dialog" aria-modal="true" aria-labelledby="bh-install-title">
         <button className="bh-install-close" onClick={close} aria-label="إغلاق"><X size={18}/></button>
         <div className="bh-install-brand"><img src="/brand-mark.svg" alt=""/><div><span>BURGER HOUSE</span><small>YOUR BURGER HOUSE, ONE TAP AWAY</small></div></div>
-        <div className="bh-install-heading"><span className="bh-install-icon"><Smartphone size={23}/></span><div><p className="bh-eyebrow">APP EXPERIENCE</p><h2 id="bh-install-title">خلّ برجر هاوس أقرب لك</h2><p>أضف الموقع إلى الشاشة الرئيسية وافتحه مثل التطبيق.</p></div></div>
+        <div className="bh-install-heading"><span className="bh-install-icon"><Smartphone size={23}/></span><div><p className="bh-eyebrow">APP EXPERIENCE</p><h2 id="bh-install-title">خلّ برجر هاوس أقرب لك</h2><p>أضف الموقع إلى الشاشة الرئيسية وافتحه كتطبيق مستقل.</p></div></div>
         {ios ? <div className="bh-install-steps">
-          <div className="bh-install-step"><span>١</span><div><b>افتح الموقع في Safari</b><p>{safari ? 'أنت تستخدم Safari بالفعل.' : 'إذا كنت تستخدم متصفحاً آخر، افتح الرابط في Safari أولاً.'}</p></div><Share size={20}/></div>
-          <div className="bh-install-step"><span>٢</span><div><b>اضغط زر مشاركة</b><p>ستجده أسفل الشاشة في Safari، وقد يظهر أعلى الشاشة في بعض إصدارات iPad.</p></div><Share size={20}/></div>
-          <div className="bh-install-step"><span>٣</span><div><b>اختر «إضافة إلى الشاشة الرئيسية»</b><p>مرّر خيارات المشاركة لأسفل إذا لم يظهر الخيار مباشرة.</p></div><Plus size={20}/></div>
-          <div className="bh-install-tip"><CheckCircle2 size={16}/> تأكد من تفعيل خيار «فتح كتطبيق ويب» إذا ظهر لك.</div>
+          {!safari && <div className="bh-install-tip"><ExternalLink size={16}/> افتح صفحة المتجر في Safari أولاً؛ المتصفح الحالي لا يدعم التثبيت المباشر.</div>}
+          <div className="bh-install-step"><span>١</span><div><b>افتح الموقع في Safari</b><p>{safari ? 'أنت تستخدم Safari بالفعل.' : 'من قائمة المشاركة في المتصفح اختر فتح في Safari أو انسخ الرابط وافتحه هناك.'}</p></div><ExternalLink size={20}/></div>
+          <div className="bh-install-step"><span>٢</span><div><b>اضغط زر مشاركة</b><p>المربع مع السهم للأعلى في شريط Safari.</p></div><Share size={20}/></div>
+          <div className="bh-install-step"><span>٣</span><div><b>اختر «إضافة إلى الشاشة الرئيسية»</b><p>من خيارات المشاركة، ثم اضغط «إضافة» أعلى الشاشة.</p></div><Plus size={20}/></div>
+          <div className="bh-install-tip"><CheckCircle2 size={16}/> على iPhone لا يظهر مربع تثبيت تلقائي؛ هذه هي طريقة Apple الرسمية.</div>
         </div> : <div className="bh-install-steps">
-          <p className="bh-install-android-copy">ثبّت BURGER HOUSE على جهازك للوصول السريع إلى المنيو وطلباتك.</p>
-          <button className="bh-install-action" onClick={install}><Download size={17}/> تثبيت التطبيق</button>
-          <div className="bh-install-tip"><CheckCircle2 size={16}/> يظهر التطبيق على الشاشة الرئيسية بعد الموافقة.</div>
+          {nativePromptReady ? <>
+            <p className="bh-install-android-copy">يمكن تثبيت BURGER HOUSE مباشرة على جهازك.</p>
+            <button className="bh-install-action" onClick={install}><Download size={17}/> تثبيت التطبيق الآن</button>
+          </> : <>
+            <p className="bh-install-android-copy">إذا لم يظهر زر التثبيت المباشر، افتح قائمة المتصفح ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p>
+            <div className="bh-install-step"><span>١</span><div><b>افتح قائمة المتصفح ⋮</b><p>في Chrome أعلى الشاشة.</p></div><MoreHorizontal size={20}/></div>
+            <div className="bh-install-step"><span>٢</span><div><b>اختر «تثبيت التطبيق»</b><p>أو «إضافة إلى الشاشة الرئيسية» ثم أكّد التثبيت.</p></div><Download size={20}/></div>
+          </>}
+          <div className="bh-install-tip"><CheckCircle2 size={16}/> سيظهر التطبيق على الشاشة الرئيسية بعد موافقتك.</div>
         </div>}
         <button className="bh-install-later" onClick={close}>ليس الآن</button>
       </section>

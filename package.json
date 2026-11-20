@@ -10,9 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/configure-supabase-auth.mjs --dry-run && node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs",
-    "auth:configure": "node scripts/configure-supabase-auth.mjs",
-    "auth:dry-run": "node scripts/configure-supabase-auth.mjs --dry-run"
+    "test": "node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
@@ -20,7 +18,8 @@
     "lucide-react": "^0.454.0",
     "next": "^14.2.35",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
@@ -31,6 +30,7 @@
     "eslint-config-next": "^14.2.35",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.14",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "@types/web-push": "^3.6.4"
   }
 }

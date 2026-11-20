@@ -129,3 +129,10 @@ html,body{background:var(--bh-bg)!important}
  .bh-checkout-dialog{max-height:94dvh!important;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){.bh-cart-drawer{animation:none}}
+
+
+/* Mobile menu: avoid fixed-position containing blocks created by sticky-header blur. */
+.bh-storefront>header{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.bh-storefront .bh-mobile-menu-overlay{position:fixed!important;inset:0!important;height:100dvh!important;min-height:100vh!important;z-index:9999!important;overscroll-behavior:contain}
+.bh-storefront #bh-mobile-menu{height:100dvh!important;max-height:100dvh!important;padding-bottom:calc(20px + env(safe-area-inset-bottom))!important}
+.bh-storefront>header button[aria-controls="bh-mobile-menu"]{touch-action:manipulation;min-width:42px;min-height:42px;display:grid;place-items:center}

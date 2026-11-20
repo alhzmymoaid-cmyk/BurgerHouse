@@ -3,17 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound, UtensilsCrossed } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound, UtensilsCrossed, Phone } from 'lucide-react';
 
 export default function CustomerAccountPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [needsOtp, setNeedsOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,6 +20,14 @@ export default function CustomerAccountPage() {
     if (window.location.hash === '#signup') setMode('signup');
   }, []);
 
+  const normalizeSaudiPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (/^05\d{8}$/.test(digits)) return '+966' + digits.slice(1);
+    if (/^5\d{8}$/.test(digits)) return '+966' + digits;
+    if (/^9665\d{8}$/.test(digits)) return '+' + digits;
+    return '';
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -30,81 +35,41 @@ export default function CustomerAccountPage() {
     setNotice('');
     try {
       const supabase = createSupabaseBrowserClient();
-      const normalizedEmail = email.trim().toLowerCase();
-      const digits = phone.replace(/\D/g, '');
-      const normalizedPhone = digits.startsWith('9665') ? digits : digits.startsWith('05') ? `966${digits.slice(1)}` : digits.startsWith('5') ? `966${digits}` : '';
+      const normalizedPhone = normalizeSaudiPhone(phone);
+      if (!normalizedPhone) throw new Error('أدخل رقم جوال سعودي صحيحًا يبدأ بـ 05 ويتكون من 10 أرقام.');
 
-      if (mode === 'signup' && !needsOtp) {
-        if (!/^9665\d{8}$/.test(normalizedPhone)) throw new Error('أدخل رقم جوال سعودي صحيحًا يبدأ بـ 05 ويتكون من 10 أرقام.');
+      if (mode === 'signup') {
+        if (!name.trim()) throw new Error('اكتب اسمك الكامل.');
         const { data, error: signupError } = await supabase.auth.signUp({
-          email: normalizedEmail,
+          phone: normalizedPhone,
           password,
           options: { data: { full_name: name.trim(), phone: normalizedPhone } }
         });
         if (signupError) throw signupError;
-        if (data.session && data.user?.email_confirmed_at) {
-          router.push('/account/orders');
-          router.refresh();
-          return;
+        if (!data.session) {
+          throw new Error('إعدادات المصادقة ما زالت تطلب رمز SMS. يجب تعطيل تأكيد الهاتف من Supabase Auth حتى يعمل التسجيل بالجوال وكلمة المرور دون رمز.');
         }
-        setNeedsOtp(true);
-        setNotice('أرسلنا رمز تحقق إلى بريدك الإلكتروني. أدخله لإكمال إنشاء الحساب.');
-        return;
-      }
-
-      if (needsOtp) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          email: normalizedEmail,
-          token: otp,
-          type: 'signup'
-        });
-        if (verifyError) throw verifyError;
         router.push('/account/orders');
         router.refresh();
         return;
       }
 
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        phone: normalizedPhone,
         password
       });
       if (loginError) throw loginError;
-      if (!data.user?.email_confirmed_at) {
-        await supabase.auth.signOut();
-        setNeedsOtp(true);
-        setMode('signup');
-        setNotice('يجب تأكيد بريدك الإلكتروني أولاً. أدخل رمز التحقق المرسل إلى بريدك.');
-        return;
-      }
       router.push('/account/orders');
       router.refresh();
     } catch (caught: any) {
-      const authCode = caught?.code || '';
-      if (mode === 'login' && (authCode === 'email_not_confirmed' || /email not confirmed/i.test(caught?.message || ''))) {
-        setMode('signup');
-        setNeedsOtp(true);
-        setNotice('بريدك غير مؤكد بعد. أرسلنا لك شاشة إدخال الرمز؛ استخدم إعادة إرسال الرمز إذا لم تصلك الرسالة.');
+      const code = caught?.code || '';
+      if (code === 'phone_provider_disabled') {
+        setError('تسجيل الجوال غير مفعّل في Supabase بعد. فعّل Phone من Auth → Providers ثم جرّب مجددًا.');
+      } else if (code === 'phone_not_confirmed') {
+        setError('تأكيد الهاتف ما زال مفعّلًا. عطّل Confirm phone لأن التسجيل هنا بكلمة مرور دون رمز SMS.');
       } else {
-        setError(caught?.message || 'تعذر إكمال العملية. تحقق من البيانات وحاول مجدداً.');
+        setError(caught?.message || 'تعذر إكمال العملية. تحقق من رقم الجوال وكلمة المرور.');
       }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resendOtp = async () => {
-    setBusy(true);
-    setError('');
-    setNotice('');
-    try {
-      const { error: resendError } = await createSupabaseBrowserClient().auth.resend({
-        type: 'signup',
-        email: email.trim().toLowerCase()
-      });
-      if (resendError) throw resendError;
-      setNotice('تم طلب إرسال رمز تحقق جديد إلى بريدك الإلكتروني.');
-    } catch (caught: any) {
-      setError(caught?.message || 'تعذر إعادة إرسال الرمز. حاول لاحقاً.');
     } finally {
       setBusy(false);
     }
@@ -134,28 +99,25 @@ export default function CustomerAccountPage() {
           <div className="bh-account-form-head">
             <div className="bh-account-icon"><UtensilsCrossed size={22}/></div>
             <p className="bh-eyebrow">MEMBER ACCESS</p>
-            <h2>{needsOtp ? 'تأكيد البريد الإلكتروني' : mode === 'login' ? 'أهلاً بعودتك' : 'ابدأ حسابك الآن'}</h2>
-            <p>{needsOtp ? 'أدخل رمز التحقق المرسل إلى بريدك الإلكتروني.' : mode === 'login' ? 'سجّل الدخول لتكمل طلبك وتتابع طلباتك السابقة.' : 'أنشئ حسابك ببريدك الإلكتروني وكلمة مرور.'}</p>
+            <h2>{mode === 'login' ? 'أهلاً بعودتك' : 'ابدأ حسابك الآن'}</h2>
+            <p>{mode === 'login' ? 'سجّل الدخول برقم جوالك وكلمة المرور لمتابعة طلباتك.' : 'أنشئ حسابك برقم الجوال وكلمة المرور دون انتظار رمز البريد.'}</p>
           </div>
 
           <div className="bh-account-switch" role="tablist" aria-label="نوع الحساب">
-            <button type="button" aria-selected={mode === 'login' && !needsOtp} className={mode === 'login' && !needsOtp ? 'active' : ''} onClick={() => { setMode('login'); setNeedsOtp(false); setError(''); setNotice(''); }}>تسجيل الدخول</button>
-            <button type="button" aria-selected={mode === 'signup' || needsOtp} className={mode === 'signup' || needsOtp ? 'active' : ''} onClick={() => { setMode('signup'); setNeedsOtp(false); setError(''); setNotice(''); }}>حساب جديد</button>
+            <button type="button" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setError(''); setNotice(''); }}>تسجيل الدخول</button>
+            <button type="button" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setError(''); setNotice(''); }}>حساب جديد</button>
           </div>
 
           <form onSubmit={submit} className="bh-account-form">
-            {mode === 'signup' && !needsOtp && <label>الاسم الكامل<div className="bh-field"><UserRound/><input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="اكتب اسمك"/></div></label>}
-            <label>البريد الإلكتروني<div className="bh-field"><Mail/><input required type="email" autoComplete="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} disabled={needsOtp} placeholder="name@example.com"/></div></label>
-            {mode === 'signup' && !needsOtp && <label>رقم الجوال السعودي<div className="bh-field"><input required type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9+]/g, '').slice(0, 16))} placeholder="05XXXXXXXX"/></div><small className="text-xs text-zinc-400">مطلوب للتواصل وربط الطلبات بحسابك.</small></label>}
-            {!needsOtp && <label>كلمة المرور<div className="bh-field"><LockKeyhole/><input required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="٨ أحرف على الأقل"/><button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>}
-            {needsOtp && <label>رمز التحقق<div className="bh-field bh-otp-field"><ShieldCheck/><input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" dir="ltr" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000"/></div></label>}
+            {mode === 'signup' && <label>الاسم الكامل<div className="bh-field"><UserRound/><input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="اكتب اسمك"/></div></label>}
+            <label>رقم الجوال السعودي<div className="bh-field"><Phone/><input required type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9+]/g, '').slice(0, 16))} placeholder="05XXXXXXXX"/></div></label>
+            <small className="text-xs text-zinc-400">رقمك هو معرّف تسجيل الدخول، ويُستخدم لتحديثات الطلب.</small>
+            <label>كلمة المرور<div className="bh-field"><LockKeyhole/><input required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="٨ أحرف على الأقل"/><button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button></div></label>
             {error && <div className="bh-account-alert" role="alert">{error}</div>}
             {notice && <div className="bh-account-notice" role="status">{notice}</div>}
-            <button type="submit" disabled={busy} className="bh-account-submit">{busy ? 'جارٍ التحقق...' : needsOtp ? 'تأكيد الحساب' : mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'} <span>←</span></button>
+            <button type="submit" disabled={busy} className="bh-account-submit">{busy ? 'جارٍ التحقق...' : mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'} <span>←</span></button>
           </form>
-          {needsOtp && <button type="button" disabled={busy} className="bh-account-secondary" onClick={resendOtp}>إعادة إرسال الرمز</button>}
-          {needsOtp && <button type="button" className="bh-account-secondary" onClick={() => { setNeedsOtp(false); setOtp(''); setError(''); setNotice(''); }}>تعديل البيانات</button>}
-          <div className="bh-account-security"><ShieldCheck size={16}/><span>يتم التحقق من البريد الإلكتروني قبل تفعيل الحساب، ويُحفظ رقم جوالك في ملف العميل.</span></div>
+          <div className="bh-account-security"><ShieldCheck size={16}/><span>تسجيل الدخول برقم الجوال وكلمة المرور. لا نطلب رمز تحقق عبر البريد.</span></div>
         </section>
       </div>
     </main>

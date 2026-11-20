@@ -120,6 +120,7 @@ export default function SmartPwaInstallBanner() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
+      setSheetOpen(true);
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
       const input = document.createElement('textarea');
@@ -146,17 +147,17 @@ export default function SmartPwaInstallBanner() {
         <div className="bh-pwa-app-icon"><img src="/icons/customer-192.png" alt="" /></div>
         <div className="bh-pwa-banner-copy">
           <strong>ثبّت تطبيق BURGER HOUSE</strong>
-          <span>{isIosOther ? 'افتح الرابط في Safari للتثبيت على iPhone' : 'وصول أسرع وتجربة مستقلة من الشاشة الرئيسية'}</span>
+          <span>{isIosOther ? 'افتح الرابط في Safari ثم أضفه إلى الشاشة الرئيسية' : 'ثبّت المتجر للوصول إليه بسرعة من الشاشة الرئيسية'}</span>
         </div>
         {isIosOther ? (
           <button type="button" className="bh-pwa-primary bh-pwa-copy" onClick={copyLink}>
-            {copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'تم النسخ' : 'نسخ الرابط'}
+            {copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'تم النسخ' : 'نسخ الرابط للإضافة'}
           </button>
         ) : isIosSafari ? (
-          <button type="button" className="bh-pwa-primary" onClick={() => setSheetOpen(true)}>طريقة التثبيت</button>
+          <button type="button" className="bh-pwa-primary" onClick={() => setSheetOpen(true)}>إضافة إلى الشاشة الرئيسية</button>
         ) : (
           <button type="button" className="bh-pwa-primary" onClick={install}>
-            <Download size={16}/> {nativeReady ? 'تثبيت' : 'طريقة التثبيت'}
+            <Download size={16}/> إضافة إلى الشاشة الرئيسية
           </button>
         )}
         <button type="button" className="bh-pwa-close" onClick={dismiss} aria-label="إغلاق إشعار التثبيت"><X size={17}/></button>
@@ -169,7 +170,7 @@ export default function SmartPwaInstallBanner() {
             <button type="button" className="bh-pwa-sheet-close" onClick={() => setSheetOpen(false)} aria-label="إغلاق"><X size={18}/></button>
             <div className="bh-pwa-sheet-app">
               <img src="/icons/customer-192.png" alt="" />
-              <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">أضف التطبيق إلى شاشتك</h2></div>
+              <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">إضافة BURGER HOUSE إلى الشاشة الرئيسية</h2></div>
             </div>
             {isIosSafari ? (
               <ol className="bh-pwa-steps">

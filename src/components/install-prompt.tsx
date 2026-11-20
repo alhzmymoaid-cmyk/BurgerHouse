@@ -143,7 +143,7 @@ export default function SmartPwaInstallBanner() {
   return (
     <>
       <aside className="bh-pwa-banner" dir="rtl" role="region" aria-label="تثبيت تطبيق برجر هاوس">
-        <div className="bh-pwa-app-icon"><img src="/icons/icon-192.png" alt="" /></div>
+        <div className="bh-pwa-app-icon"><img src="/icons/customer-192.png" alt="" /></div>
         <div className="bh-pwa-banner-copy">
           <strong>ثبّت تطبيق BURGER HOUSE</strong>
           <span>{isIosOther ? 'افتح الرابط في Safari للتثبيت على iPhone' : 'وصول أسرع وتجربة مستقلة من الشاشة الرئيسية'}</span>
@@ -168,7 +168,7 @@ export default function SmartPwaInstallBanner() {
             <div className="bh-pwa-sheet-handle"/>
             <button type="button" className="bh-pwa-sheet-close" onClick={() => setSheetOpen(false)} aria-label="إغلاق"><X size={18}/></button>
             <div className="bh-pwa-sheet-app">
-              <img src="/icons/icon-192.png" alt="" />
+              <img src="/icons/customer-192.png" alt="" />
               <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">أضف التطبيق إلى شاشتك</h2></div>
             </div>
             {isIosSafari ? (

@@ -97,7 +97,7 @@ export default function StorefrontPage() {
           const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
           setCustomerLoggedIn(true);
           const savedName = String(profile?.full_name || user.user_metadata?.full_name || '');
-          setCustomerName(savedName === 'مدير فرع الأمير سلطان' ? '' : savedName);
+          setCustomerName(/^مدير(?:ة)?\\s+فرع\\b/.test(savedName) ? '' : savedName);
           setCustomerPhone(profile?.phone || user.app_metadata?.customer_phone || user.phone || '');
         } else {
           setCustomerLoggedIn(false);

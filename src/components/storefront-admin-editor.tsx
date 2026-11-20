@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import PromoManager from '@/components/promo-manager';
 
 type ProductForm = {
   id:string; category_id:string; name_ar:string; name_en:string; description_ar:string; description_en:string;
@@ -20,7 +21,7 @@ export default function StorefrontAdminEditor(){
   const [data,setData]=useState<any>(null);
   const [enabled,setEnabled]=useState(false);
   const [open,setOpen]=useState(false);
-  const [tab,setTab]=useState<'products'|'categories'|'addons'>('products');
+  const [tab,setTab]=useState<'products'|'categories'|'addons'|'promos'>('products');
   const [productForm,setProductForm]=useState<ProductForm>(blankProduct());
   const [editing,setEditing]=useState(false);
   const [categoryForm,setCategoryForm]=useState<any>({id:'',name_ar:'',name_en:'',sort_order:'0',is_active:true});
@@ -153,7 +154,7 @@ export default function StorefrontAdminEditor(){
       <section className="mx-auto my-4 max-w-5xl rounded-2xl border border-white/10 bg-[#141417] p-4 text-[#F6F3EC] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.16em] text-[#F2B705]">VISUAL STORE EDITOR</span><h2 className="mt-1 text-xl font-bold">إدارة المتجر والمنيو</h2></div><button onClick={()=>{setOpen(false);setEditing(false);}} className="rounded-lg border border-white/10 px-3 py-2 text-xs">إغلاق</button></div>
         <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10 pb-4">
-          {(['products','categories','addons'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#9E9BA3]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':'الإضافات'}</button>)}
+          {(['products','categories','addons','promos'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#9E9BA3]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':'العروض'}</button>)}
         </div>
         {(error||message)&&<p role={error?'alert':'status'} className={error?'mt-4 text-xs text-red-300':'mt-4 text-xs text-emerald-300'}>{error||message}</p>}
 
@@ -193,6 +194,8 @@ export default function StorefrontAdminEditor(){
           <form onSubmit={saveCategory} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><h3 className="text-sm font-bold">إضافة أو تعديل قسم</h3><input value={categoryForm.name_ar} onChange={e=>setCategoryForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم القسم بالعربية" className={inputClass}/><input dir="ltr" value={categoryForm.name_en} onChange={e=>setCategoryForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Category name" className={inputClass}/><input type="number" value={categoryForm.sort_order} onChange={e=>setCategoryForm((v:any)=>({...v,sort_order:e.target.value}))} placeholder="ترتيب العرض" className={inputClass}/><button disabled={busy} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">حفظ القسم</button></form>
           <div className="space-y-2">{(data?.categories||[]).map((category:any)=><div key={category.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-3"><div><b className="text-xs">{category.name_ar}</b><p className="text-[10px] text-[#9E9BA3]">{category.is_active?'ظاهر':'مخفي'}</p></div><div className="flex gap-2"><button onClick={()=>setCategoryForm({...category,sort_order:String(category.sort_order)})} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button>{category.is_active&&<button onClick={()=>deactivate('DEACTIVATE_CATEGORY','category_id',category.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-[10px] text-red-300">إخفاء</button>}</div></div>)}</div>
         </div>}
+
+        {tab==='promos'&&<div className="mt-4"><PromoManager /></div>}
 
         {tab==='addons'&&<div className="mt-4 grid gap-4 lg:grid-cols-2">
           <form onSubmit={saveAddon} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><h3 className="text-sm font-bold">إضافة أو تعديل إضافة</h3><input value={addonForm.name_ar} onChange={e=>setAddonForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم الإضافة بالعربية" className={inputClass}/><input dir="ltr" value={addonForm.name_en} onChange={e=>setAddonForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Addon name" className={inputClass}/><input type="number" min="0" step="0.01" value={addonForm.price} onChange={e=>setAddonForm((v:any)=>({...v,price:e.target.value}))} placeholder="السعر" className={inputClass}/><input type="number" min="1" max="10" value={addonForm.max_per_item} onChange={e=>setAddonForm((v:any)=>({...v,max_per_item:e.target.value}))} placeholder="الحد الأقصى" className={inputClass}/><button disabled={busy} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">حفظ الإضافة</button></form>

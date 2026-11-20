@@ -31,20 +31,20 @@ begin
     return false;
   end if;
 
-  insert into public.customer_auth_rate_limits (key, window_started_at, attempt_count, updated_at)
+  insert into public.customer_auth_rate_limits as limits (key, window_started_at, attempt_count, updated_at)
   values (p_key, now(), 1, now())
   on conflict (key) do update
     set attempt_count = case
-          when public.customer_auth_rate_limits.window_started_at
+          when limits.window_started_at
                <= now() - make_interval(secs => p_window_seconds)
             then 1
-          else public.customer_auth_rate_limits.attempt_count + 1
+          else limits.attempt_count + 1
         end,
         window_started_at = case
-          when public.customer_auth_rate_limits.window_started_at
+          when limits.window_started_at
                <= now() - make_interval(secs => p_window_seconds)
             then now()
-          else public.customer_auth_rate_limits.window_started_at
+          else limits.window_started_at
         end,
         updated_at = now()
   returning attempt_count into current_attempts;

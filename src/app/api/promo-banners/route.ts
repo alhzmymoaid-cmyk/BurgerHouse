@@ -27,15 +27,15 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const branchId = elevated(check.profile.role) ? (body.branch_id || null) : check.profile.assigned_branch_id;
   if (!allowed(check.profile, branchId)) return NextResponse.json({ error:'BRANCH_SCOPE_FORBIDDEN' }, { status:403 });
-  if (!body.title_ar?.trim() || !body.image_url?.trim() || !(body.target_url || body.target_product_id || body.target_category_id)) {
-    return NextResponse.json({ error:'TITLE_IMAGE_AND_TARGET_REQUIRED' }, { status:400 });
+  if (!body.image_url?.trim()) {
+    return NextResponse.json({ error:'PROMO_IMAGE_REQUIRED' }, { status:400 });
   }
   const service = createSupabaseServiceRoleClient();
   const payload = {
-    branch_id: branchId, title_ar: String(body.title_ar).trim(), title_en: body.title_en || null,
+    branch_id: branchId, title_ar: String(body.title_ar || 'إعلان').trim(), title_en: body.title_en || null,
     subtitle_ar: body.subtitle_ar || null, subtitle_en: body.subtitle_en || null,
     image_url: String(body.image_url).trim(), badge_text: body.badge_text || 'عرض اليوم',
-    cta_label: body.cta_label || 'اطلب الآن', target_url: body.target_url || null,
+    cta_label: body.cta_label || 'اطلب الآن', target_url: body.target_url || '#menu-section',
     target_product_id: body.target_product_id || null, target_category_id: body.target_category_id || null,
     starts_at: body.starts_at || new Date().toISOString(), ends_at: body.ends_at || null,
     sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,

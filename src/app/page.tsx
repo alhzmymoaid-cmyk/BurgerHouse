@@ -472,7 +472,7 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <PromoCarousel banners={catalog?.promo_banners || []} branchId={branchId} products={products} onOpenProduct={openProduct} onSelectCategory={setActiveCategory} />
+        <PromoCarousel banners={catalog?.promo_banners || []} branchId={branchId} products={products} onOpenProduct={(product) => openProduct(product as Product)} onSelectCategory={setActiveCategory} />
 
         <section className="bh-signature-section mx-auto max-w-7xl px-4 pb-8 pt-5 lg:px-8">
           <div className="bh-signature-heading">

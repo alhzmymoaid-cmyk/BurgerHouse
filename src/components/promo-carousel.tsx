@@ -8,7 +8,7 @@ export type PromoBanner = {
   target_url?: string | null; target_product_id?: string | null; target_category_id?: string | null;
   sort_order?: number; starts_at?: string; ends_at?: string | null; is_active?: boolean;
 };
-type Product = { id: string; name_ar: string };
+type Product = { id: string; category_id: string; name_ar: string; description_ar: string; base_price: number; image_url: string; is_featured?: boolean; prep_minutes?: number; sizes?: { id: string; name_ar: string; price_delta: number; is_default?: boolean }[]; allowed_addon_ids?: string[] };
 type Props = { banners?: PromoBanner[]; branchId: string; products?: Product[];
   onOpenProduct?: (product: Product) => void; onSelectCategory?: (id: string) => void };
 

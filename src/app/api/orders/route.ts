@@ -25,14 +25,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'INVALID_CUSTOMER_NAME', message_ar: 'أدخل الاسم الكامل بشكل صحيح.' }, { status: 400 });
     }
 
-    // Save checkout details to the signed-in customer's profile before creating the order.
-    // This repairs older customer accounts with a missing profile phone.
-    if (user.phone) {
-      const authPhone = String(user.phone).replace(/\D/g, '');
-      if (authPhone && authPhone !== submittedPhone) {
-        return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'استخدم رقم الجوال المرتبط بحسابك.' }, { status: 403 });
-      }
+    // A phone/password customer identity is bound to server-managed app_metadata.
+    // Legacy phone-auth users fall back to their verified Auth phone; older email accounts
+    // fall back to their existing customer profile.
+    let trustedPhone = String(user.app_metadata?.customer_phone || user.phone || '').replace(/\D/g, '');
+    if (!trustedPhone) {
+      const { data: existingProfile } = await serviceSupabase
+        .from('customer_profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .maybeSingle();
+      trustedPhone = String(existingProfile?.phone || '').replace(/\D/g, '');
     }
+    if (trustedPhone && trustedPhone !== submittedPhone) {
+      return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'استخدم رقم الجوال المرتبط بحسابك.' }, { status: 403 });
+    }
+
     const { error: profileError } = await serviceSupabase
       .from('customer_profiles')
       .upsert({ id: user.id, full_name: customerName, phone: '+' + submittedPhone }, { onConflict: 'id' });

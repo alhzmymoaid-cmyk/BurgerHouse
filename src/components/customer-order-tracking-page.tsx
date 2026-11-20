@@ -38,6 +38,11 @@ export default function CustomerOrderTrackingPage() {
   const previousStatus=useRef<string|null>(null);
 
   useEffect(()=>{
+    if(!('serviceWorker' in navigator))return;
+    void navigator.serviceWorker.getRegistration('/sw.js').then(registration=>registration?.pushManager.getSubscription()).then(subscription=>{if(subscription)setPushEnabled(true);}).catch(()=>undefined);
+  },[]);
+
+  useEffect(()=>{
     if(!orderId) return;
     let active=true;
     const supabase=createSupabaseCustomerBrowserClient();
@@ -50,7 +55,7 @@ export default function CustomerOrderTrackingPage() {
         const found=(data.orders||[]).find((item:any)=>item.id===orderId);
         if(!found) throw new Error('الطلب غير موجود في حسابك.');
         if(!active) return;
-        if(previousStatus.current && previousStatus.current!=='ready_for_pickup' && found.status==='ready_for_pickup' && 'Notification' in window && Notification.permission==='granted'){
+        if(previousStatus.current && previousStatus.current!=='ready_for_pickup' && found.status==='ready_for_pickup' && !pushEnabled && 'Notification' in window && Notification.permission==='granted'){
           try{new Notification('طلبك جاهز للاستلام',{body:'يمكنك التوجه إلى الفرع لاستلام طلبك.'});}catch{}
         }
         previousStatus.current=found.status;
@@ -65,7 +70,7 @@ export default function CustomerOrderTrackingPage() {
       .subscribe();
     const fallback=window.setInterval(()=>{void load();},20000);
     return()=>{active=false;window.clearInterval(fallback);void supabase.removeChannel(channel);};
-  },[orderId,router]);
+  },[orderId,router,pushEnabled]);
 
   const enablePush=async()=>{
     setPushBusy(true);setPushMessage('');

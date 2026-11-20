@@ -14,8 +14,11 @@ export async function POST(request: NextRequest) {
     const endpoint = String(subscription?.endpoint || '');
     const p256dh = String(subscription?.keys?.p256dh || '');
     const authKey = String(subscription?.keys?.auth || '');
-    if (!endpoint.startsWith('https://') || !p256dh || !authKey) {
-      return NextResponse.json({ error: 'INVALID_PUSH_SUBSCRIPTION', message: 'بيانات الإشعار غير مكتملة.' }, { status: 400 });
+    let endpointUrl: URL;
+    try { endpointUrl = new URL(endpoint); } catch { return NextResponse.json({ error: 'INVALID_PUSH_SUBSCRIPTION' }, { status: 400 }); }
+    const trustedPushHost = /(^|\.)fcm\.googleapis\.com$|(^|\.)push\.services\.mozilla\.com$|(^|\.)push\.apple\.com$|(^|\.)notify\.windows\.com$/i.test(endpointUrl.hostname);
+    if (endpointUrl.protocol !== 'https:' || !trustedPushHost || !p256dh || !authKey) {
+      return NextResponse.json({ error: 'INVALID_PUSH_SUBSCRIPTION', message: 'مصدر الإشعارات غير مدعوم أو بيانات الاشتراك غير مكتملة.' }, { status: 400 });
     }
 
     const profile = access.profile;

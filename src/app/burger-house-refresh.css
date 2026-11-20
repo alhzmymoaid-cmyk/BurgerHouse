@@ -504,3 +504,34 @@ html,body{background:#09090B!important;max-width:100%;overflow-x:hidden;overflow
  .bh-storefront .bh-branch-picker select{min-height:42px!important;padding-block:8px!important;font-size:10px!important}
  .bh-storefront .bh-branch-picker button{min-height:42px!important;padding:0 9px!important;font-size:9px!important;white-space:nowrap!important}
 }
+
+
+/* iOS standalone PWA: keep all storefront chrome inside the device safe areas. */
+.bh-storefront>header {
+  position: sticky!important;
+  top: 0!important;
+  z-index: 40!important;
+  background: rgba(9,9,11,.96)!important;
+  -webkit-backdrop-filter: blur(16px)!important;
+  backdrop-filter: blur(16px)!important;
+}
+.bh-storefront>header>.bh-storefront-announcement {
+  min-height: 0!important;
+  background: #09090B!important;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.bh-storefront>header>div:not(.bh-storefront-announcement) {
+  background: transparent!important;
+}
+.bh-storefront section {
+  scroll-margin-top: calc(90px + env(safe-area-inset-top, 0px));
+}
+.bh-storefront .bh-mobile-orderbar {
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px))!important;
+}
+.bh-storefront footer {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+.bh-storefront.bh-has-cart-items {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}

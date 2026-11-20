@@ -297,12 +297,12 @@ export default function StorefrontPage() {
             <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a84f32] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#913f28]">
               <ShoppingBag size={15} /> السلة <span className="rounded-full bg-white/15 px-2 py-0.5">{cartCount}</span>
             </button>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen}><Menu size={18}/></button>
+            <button onClick={() => setMobileMenuOpen((open) => !open)} className="relative z-[101] rounded-full border border-[#d8d1c6] p-2" aria-label={mobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'} aria-expanded={mobileMenuOpen} aria-controls="bh-mobile-menu"><Menu size={18}/></button>
           </div>
         </div>
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 z-[100] flex justify-end bg-black/75 backdrop-blur-sm"
+            className="bh-mobile-menu-overlay fixed inset-0 z-[100] flex h-[100dvh] min-h-[100vh] justify-end bg-black/80"
             role="presentation"
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -312,7 +312,7 @@ export default function StorefrontPage() {
               aria-modal="true"
               aria-label="قائمة BURGER HOUSE"
               onClick={(event) => event.stopPropagation()}
-              className="flex h-full w-full max-w-[420px] flex-col overflow-y-auto border-s border-[#34372d] bg-[#10110f] p-5 text-[#f5f0df] shadow-2xl"
+              id="bh-mobile-menu" className="flex h-full max-h-[100dvh] w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain border-s border-[#34372d] bg-[#10110f] p-5 text-[#f5f0df] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[#292c24] pb-5">
                 <div className="flex items-center gap-3">

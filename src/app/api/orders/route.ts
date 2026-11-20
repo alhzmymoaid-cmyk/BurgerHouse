@@ -15,22 +15,28 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
     }
-    if (!user.email || !user.email_confirmed_at) {
-      return NextResponse.json({ error: 'CUSTOMER_EMAIL_NOT_VERIFIED', message_ar: 'تحقق من بريدك الإلكتروني أولاً قبل إرسال الطلب.' }, { status: 403 });
+    const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
+    const customerName = String(payload?.customer_name || '').trim();
+    if (!/^9665\d{8}$/.test(submittedPhone)) {
+      return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً يبدأ بـ 05.' }, { status: 400 });
+    }
+    if (customerName.length < 2 || customerName.length > 100) {
+      return NextResponse.json({ error: 'INVALID_CUSTOMER_NAME', message_ar: 'أدخل الاسم الكامل بشكل صحيح.' }, { status: 400 });
     }
 
-    const { data: customerProfile } = await serviceSupabase
-      .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
-    const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
-    const accountPhone = String(customerProfile?.phone || user.user_metadata?.phone || user.phone || '').replace(/\D/g, '');
-    if (!/^9665\d{8}$/.test(accountPhone)) {
-      return NextResponse.json({ error: 'CUSTOMER_PHONE_REQUIRED', message_ar: 'أكمل رقم جوالك السعودي في ملف حسابك قبل إرسال الطلب.' }, { status: 403 });
+    // Save checkout details to the signed-in customer's profile before creating the order.
+    // This repairs older customer accounts with a missing profile phone.
+    if (user.phone) {
+      const authPhone = String(user.phone).replace(/\D/g, '');
+      if (authPhone && authPhone !== submittedPhone) {
+        return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'استخدم رقم الجوال المرتبط بحسابك.' }, { status: 403 });
+      }
     }
-    if (!/^9665\d{8}$/.test(submittedPhone)) {
-      return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً لاستلام تحديثات الطلب.' }, { status: 400 });
-    }
-    if (submittedPhone !== accountPhone) {
-      return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
+    const { error: profileError } = await serviceSupabase
+      .from('customer_profiles')
+      .upsert({ id: user.id, full_name: customerName, phone: '+' + submittedPhone }, { onConflict: 'id' });
+    if (profileError) {
+      return NextResponse.json({ error: 'CUSTOMER_PROFILE_SAVE_FAILED', message_ar: 'تعذر حفظ بيانات الحساب. حاول مرة أخرى.' }, { status: 500 });
     }
 
     const result = await handleCreateOrderRequest({

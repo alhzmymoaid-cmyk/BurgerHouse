@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 type Banner = { id:string; branch_id:string|null; title_ar:string; subtitle_ar?:string|null; image_url:string; badge_text?:string|null; cta_label?:string|null; target_url?:string|null; starts_at?:string; ends_at?:string|null; sort_order?:number; is_active:boolean };
 type Branch = { id:string; name_ar:string };
@@ -36,7 +36,7 @@ export default function PromoManager() {
     target_url:row.target_url || '#menu-section', starts_at:row.starts_at ? new Date(row.starts_at).toISOString().slice(0,16) : '',
     ends_at:row.ends_at ? new Date(row.ends_at).toISOString().slice(0,16) : '', sort_order:String(row.sort_order ?? 0), is_active:row.is_active
   });
-  const save = async (event:React.FormEvent) => {
+  const save = async (event:FormEvent) => {
     event.preventDefault(); setBusy(true); setError(''); setMessage('');
     try {
       const body:any = {

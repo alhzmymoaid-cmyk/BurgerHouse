@@ -24,6 +24,8 @@ export default function StaffLiveOrdersPage() {
   const router = useRouter();
   const [actorProfile, setActorProfile] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -130,6 +132,24 @@ export default function StaffLiveOrdersPage() {
     fetchLiveOrders();
   }, [fetchLiveOrders]);
 
+  useEffect(() => {
+    let active = true;
+    const fetchBranchAvailability = async () => {
+      try {
+        const response = await fetch('/api/catalog', { cache: 'no-store' });
+        const data = await response.json();
+        if (!active || !response.ok) return;
+        setCatalogProducts(data.products || []);
+        setBranchProducts(data.branch_products || []);
+      } catch {
+        // The KDS remains usable if the read-only availability panel is offline.
+      }
+    };
+    void fetchBranchAvailability();
+    const timer = window.setInterval(() => { void fetchBranchAvailability(); }, 30000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
   // Poll as a resilient fallback so orders still appear if a device/browser misses a Realtime event.
   useEffect(() => {
     const timer = window.setInterval(() => { fetchLiveOrders(); }, 10000);
@@ -234,6 +254,14 @@ export default function StaffLiveOrdersPage() {
     ? (ROLE_ALLOWED_TARGET_STATUSES as any)[actorProfile.role] || []
     : [];
 
+  const unavailableProducts = branchProducts
+    .filter((row) => {
+      const branchMatches = !actorProfile?.assigned_branch_id || row.branch_id === actorProfile.assigned_branch_id;
+      const soldOutUntil = row.sold_out_until ? new Date(row.sold_out_until).getTime() : 0;
+      return branchMatches && (row.is_available === false || row.manual_disabled === true || soldOutUntil > Date.now());
+    })
+    .map((row) => catalogProducts.find((product) => product.id === row.product_id)?.name_ar || row.product_id);
+
   return (
     <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f1efe9] p-3 text-[#201e1a] sm:p-6">
       <header className="mb-6 overflow-hidden rounded-3xl border border-[#30332b] bg-[#151812] text-[#f7f1df] shadow-[0_18px_55px_rgba(0,0,0,.12)]">
@@ -256,6 +284,8 @@ export default function StaffLiveOrdersPage() {
 
 
       {pushMessage && <div className="mb-4 rounded-lg border border-[#68572b] bg-[#282313] p-3 text-xs font-bold text-[#f2df9d]" role="status">{pushMessage}</div>}
+
+      {unavailableProducts.length > 0 && <section className="mb-5 rounded-xl border border-amber-500/25 bg-amber-950/20 p-4" aria-label="الأصناف المتوقفة في الفرع"><div className="text-xs font-bold text-amber-300">أصناف متوقفة حاليًا في الفرع</div><div className="mt-2 flex flex-wrap gap-2">{unavailableProducts.map((name,index)=><span key={name+index} className="rounded-md border border-amber-500/20 bg-[#1B1B1F] px-3 py-2 text-[11px] text-[#F6F3EC]">{name}</span>)}</div></section>}
 
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-[#e2dfd6] bg-white p-4 shadow-sm"><p className="text-[10px] font-bold text-[#858477]">إجمالي الطلبات</p><p className="mt-2 text-3xl font-black tabular-nums">{orders.length}</p></div>

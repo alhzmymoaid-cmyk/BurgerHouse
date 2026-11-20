@@ -9,12 +9,13 @@ if (process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
   );
 }
 
-export function createSupabaseServerClient() {
+function createSessionClient(cookieName?: string) {
   const cookieStore = cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      ...(cookieName ? { cookieOptions: { name: cookieName } } : {}),
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -31,6 +32,15 @@ export function createSupabaseServerClient() {
       },
     }
   );
+}
+
+export function createSupabaseServerClient() {
+  return createSessionClient();
+}
+
+// Customer authentication is intentionally isolated from employee/admin cookies.
+export function createSupabaseCustomerServerClient() {
+  return createSessionClient('bh-customer-auth');
 }
 
 export function createSupabaseServiceRoleClient() {

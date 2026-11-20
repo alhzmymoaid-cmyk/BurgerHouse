@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Download, RefreshCw, TrendingUp, ShoppingBag, Users, CheckCircle2, XCircle } from 'lucide-react';
+import { Download, RefreshCw, ShoppingBag, Users, CheckCircle2, XCircle } from 'lucide-react';
 
 type AnalyticsData = {
   scope:{role:string;branch_id:string|null};

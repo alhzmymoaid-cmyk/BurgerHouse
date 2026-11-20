@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 const isTrustedPushEndpoint=(value:string)=>{
   try{
     const url=new URL(value);
-    const hostAllowed=/(^|\\.)fcm\\.googleapis\\.com$|(^|\\.)push\\.services\\.mozilla\\.com$|(^|\\.)push\\.apple\\.com$|(^|\\.)notify\\.windows\\.com$/i.test(url.hostname);
+    const hostAllowed=/(^|\.)fcm\.googleapis\.com$|(^|\.)push\.services\.mozilla\.com$|(^|\.)push\.apple\.com$|(^|\.)notify\.windows\.com$/i.test(url.hostname);
     return url.protocol==='https:'&&hostAllowed;
   }catch{return false;}
 };

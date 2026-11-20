@@ -16,6 +16,10 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
     }
+    const isCustomerIdentity = user.app_metadata?.customer_account === true || Boolean(user.phone);
+    if (!isCustomerIdentity) {
+      return NextResponse.json({ error: 'CUSTOMER_SESSION_REQUIRED', message_ar: 'استخدم حساب العميل لإتمام الطلب. جلسة الموظفين والإدارة منفصلة.' }, { status: 403 });
+    }
     const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
     const customerName = String(payload?.customer_name || '').trim();
     if (!/^9665\d{8}$/.test(submittedPhone)) {

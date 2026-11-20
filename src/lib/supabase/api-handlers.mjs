@@ -539,10 +539,35 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'UPSERT_PRODUCT') {
-    const productData = body.product;
+    const productData = body?.product || {};
+    const productId = String(productData.id || '');
+    const nextPrice = Number(productData.base_price);
+
+    if (!productId || !Number.isFinite(nextPrice) || nextPrice < 0 ||
+        typeof productData.is_active !== 'boolean' || typeof productData.is_featured !== 'boolean') {
+      return { status: 400, body: { error: 'INVALID_PRODUCT_UPDATE', message_ar: 'تحقق من السعر وحالة ظهور المنتج.' } };
+    }
+
+    const { data: existingProduct, error: lookupError } = await serviceSupabase
+      .from('products')
+      .select('id, base_price, is_active, is_featured')
+      .eq('id', productId)
+      .maybeSingle();
+
+    if (lookupError) return { status: 400, body: { error: lookupError.message } };
+    if (!existingProduct) return { status: 404, body: { error: 'PRODUCT_NOT_FOUND' } };
+
+    const updates = {
+      base_price: nextPrice,
+      is_active: productData.is_active,
+      is_featured: productData.is_featured,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await serviceSupabase
       .from('products')
-      .upsert(productData, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', productId)
       .select('*')
       .single();
 
@@ -552,10 +577,15 @@ export async function handleOwnerAdminRequest({
       actor_id: actor.id,
       actor_name: actor.full_name,
       actor_role: actor.role,
-      action: 'UPSERT_PRODUCT',
+      action: 'UPDATE_PRODUCT',
       target_type: 'product',
       target_id: data.id,
-      metadata: { base_price: data.base_price }
+      metadata: {
+        previous_base_price: existingProduct.base_price,
+        base_price: data.base_price,
+        is_active: data.is_active,
+        is_featured: data.is_featured
+      }
     });
 
     return { status: 200, body: { ok: true, product: data } };
@@ -577,22 +607,63 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'MANAGE_STAFF_MEMBER') {
-    const staff = body.staff;
-    // Owner can NEVER create or modify a super_admin or owner profile
-    if (actor.role === 'owner' && !['branch_manager', 'cashier', 'kitchen_staff'].includes(staff.role)) {
-      return {
-        status: 403,
-        body: { error: 'OWNER_CANNOT_ASSIGN_PRIVILEGED_ROLE' }
-      };
+    const staff = body?.staff || {};
+    const staffId = String(staff.id || '');
+    const allowedStaffRoles = ['branch_manager', 'cashier', 'kitchen_staff'];
+
+    if (!staffId || !allowedStaffRoles.includes(staff.role) || typeof staff.is_active !== 'boolean') {
+      return { status: 400, body: { error: 'INVALID_STAFF_UPDATE', message_ar: 'تحقق من الموظف والدور وحالة الحساب.' } };
     }
+
+    // This action updates an existing operational profile only. It never creates Auth users,
+    // changes credentials, edits privileged profiles, or accepts arbitrary profile fields.
+    const { data: existingStaff, error: lookupError } = await serviceSupabase
+      .from('user_profiles')
+      .select('id, role, full_name, assigned_branch_id')
+      .eq('id', staffId)
+      .maybeSingle();
+
+    if (lookupError) return { status: 400, body: { error: lookupError.message } };
+    if (!existingStaff) return { status: 404, body: { error: 'STAFF_MEMBER_NOT_FOUND' } };
+    if (!allowedStaffRoles.includes(existingStaff.role)) {
+      return { status: 403, body: { error: 'PROTECTED_PROFILE_CANNOT_BE_MODIFIED', message_ar: 'لا يمكن تعديل حساب المالك أو مدير النظام من هذه الشاشة.' } };
+    }
+    if (existingStaff.id === actor.id) {
+      return { status: 403, body: { error: 'SELF_MODIFICATION_BLOCKED', message_ar: 'لا يمكنك تغيير دور حسابك أو إيقافه من هذه الشاشة.' } };
+    }
+
+    const updates = {
+      role: staff.role,
+      assigned_branch_id: staff.assigned_branch_id ? String(staff.assigned_branch_id) : null,
+      is_active: staff.is_active,
+      updated_at: new Date().toISOString()
+    };
 
     const { data, error } = await serviceSupabase
       .from('user_profiles')
-      .upsert(staff, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', staffId)
       .select('*')
       .single();
 
     if (error) return { status: 400, body: { error: error.message } };
+
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id,
+      actor_name: actor.full_name,
+      actor_role: actor.role,
+      action: 'MANAGE_STAFF_MEMBER',
+      target_type: 'user_profile',
+      target_id: staffId,
+      metadata: {
+        previous_role: existingStaff.role,
+        role: data.role,
+        previous_branch_id: existingStaff.assigned_branch_id,
+        assigned_branch_id: data.assigned_branch_id,
+        is_active: data.is_active
+      }
+    });
+
     return { status: 200, body: { ok: true, staff: data } };
   }
 

@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',
   description: 'BURGER HOUSE — برجر محضّر بعناية. اطلب واستلم من الفرع.',
   applicationName: 'BURGER HOUSE',
-  appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black' },
   manifest: '/manifest.webmanifest',
-  icons: { icon: [{ url: '/icons/customer-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icons/customer-512.png', sizes: '512x512', type: 'image/png' }], apple: '/icons/customer-180.png' },
+  icons: { icon: [{ url: '/icons/customer-192.png?v=3', sizes: '192x192', type: 'image/png' }, { url: '/icons/customer-512.png?v=3', sizes: '512x512', type: 'image/png' }], apple: '/icons/apple-touch-icon.png?v=3' },
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/customer-180.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=3" />
         <link
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"

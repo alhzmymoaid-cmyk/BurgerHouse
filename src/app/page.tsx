@@ -334,12 +334,11 @@ export default function StorefrontPage() {
   };
 
   return (
-    <main className={`bh-storefront min-h-screen bg-[#09090B] text-[#FAFAFA] ${cartCount > 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
-      <div className="bg-[#1c1c18] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
-        تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
-      </div>
-
-      <header className="sticky top-0 z-40 border-b border-[#e2dbcf] bg-[#fbf9f4]/95 backdrop-blur-sm">
+    <main className={`bh-storefront min-h-screen pb-[env(safe-area-inset-bottom)] bg-[#09090B] text-[#FAFAFA] ${cartCount > 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#09090B]/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="bh-storefront-announcement bg-[#09090B] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
+          تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
+        </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
           <a href="/" className="flex items-center gap-3">
             <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="h-12 w-12 object-contain"/>

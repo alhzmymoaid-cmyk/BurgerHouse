@@ -8,7 +8,7 @@ import StorefrontAdminEditor from '@/components/storefront-admin-editor';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
-  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download
+  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download, Heart
 } from 'lucide-react';
 
 type Size = { id: string; name_ar: string; price_delta: number; is_default?: boolean };
@@ -77,6 +77,9 @@ export default function StorefrontPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<any>(null);
   const [orderError, setOrderError] = useState('');
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -140,6 +143,7 @@ export default function StorefrontPage() {
   const payments: Payment[] = catalog?.payment_methods || [];
   const activeBranch = branches.find((branch) => branch.id === branchId);
   const availableProducts = useMemo(() => products.filter((product) => {
+    if (showFavoritesOnly && !favoriteIds.includes(product.id)) return false;
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const branchControl = catalog?.branch_products?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const soldOutToday = branchControl?.sold_out_until && new Date(branchControl.sold_out_until).getTime() > Date.now();
@@ -151,13 +155,42 @@ export default function StorefrontPage() {
       .map((value) => normalizeSearchText(String(value)));
     const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
     return matchesCategory && matchesSearch && override?.is_available !== false && branchControl?.is_available !== false && !branchControl?.manual_disabled && !soldOutToday && branchCategory?.is_active !== false;
-  }), [products, activeCategory, search, catalog, branchId]);
+  }), [products, activeCategory, search, catalog, branchId, showFavoritesOnly, favoriteIds]);
 
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0 && catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === group.id)?.is_active !== false), [categories, availableProducts, catalog, branchId]);
 
 
+
+
+  useEffect(() => {
+    if (!customerLoggedIn) { setFavoriteIds([]); return; }
+    let active = true;
+    fetch('/api/account/favorites', { cache: 'no-store', credentials: 'same-origin' })
+      .then(async response => { if (!response.ok) return []; const data = await response.json(); return (data.favorites || []).map((item: any) => String(item.product_id)); })
+      .then(ids => { if (active) setFavoriteIds(ids); })
+      .catch(() => { if (active) setFavoriteIds([]); });
+    return () => { active = false; };
+  }, [customerLoggedIn]);
+
+  const toggleFavorite = async (productId: string) => {
+    if (!customerLoggedIn) { setOrderError('سجّل الدخول إلى حساب العميل لحفظ منتجاتك المفضلة.'); setCheckoutOpen(true); return; }
+    if (favoriteBusy) return;
+    setFavoriteBusy(productId);
+    const removing = favoriteIds.includes(productId);
+    try {
+      const response = await fetch('/api/account/favorites', {
+        method: removing ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin', cache: 'no-store',
+        body: JSON.stringify({ product_id: productId })
+      });
+      if (!response.ok) throw new Error('تعذر تحديث المفضلة. حاول مرة أخرى.');
+      setFavoriteIds(current => removing ? current.filter(id => id !== productId) : [...current, productId]);
+    } catch (error: any) { setOrderError(error.message || 'تعذر تحديث المفضلة'); }
+    finally { setFavoriteBusy(null); }
+  };
 
   const addonFor = (id: string) => addons.find((addon) => addon.id === id);
   const linePrice = (line: CartLine) => {
@@ -560,7 +593,7 @@ export default function StorefrontPage() {
           : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
           : <div className="space-y-14">
             {categoryGroups.map((group) => <section key={group.id}>
-              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div>
+              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><div className="flex items-center gap-3"><button type="button" onClick={()=>setShowFavoritesOnly(v=>!v)} className={showFavoritesOnly?'rounded-full bg-[#17191B] px-3 py-2 text-[10px] font-bold text-[#F2EBDD]':'rounded-full border border-[#d9d1c5] px-3 py-2 text-[10px] font-bold text-[#5f594f]'}>{showFavoritesOnly?'عرض كل المنتجات':'المفضلة'} ({favoriteIds.length})</button><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div></div>
               <div className="bh-v2-product-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {group.products.map((product)=>{
                   const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
@@ -570,6 +603,7 @@ export default function StorefrontPage() {
                       {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
                     </button>
                     <div className="bh-v2-product-info">
+                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8cd] bg-white/90 text-[#a84f32] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
                       <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
                       <p>{product.description_ar}</p>
                       <div className="bh-v2-product-bottom">

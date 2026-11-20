@@ -408,14 +408,25 @@ export async function handleSovereignAdminRequest({
 
   if (action === 'UNBLOCK_ENTITY') {
     const { entity_type, entity_value } = body;
-    const { error } = await serviceSupabase
+    const { data, error } = await serviceSupabase
       .from('blocked_entities')
-      .delete()
+      .update({ is_active: false })
       .eq('entity_type', entity_type)
-      .eq('entity_value', entity_value);
+      .eq('entity_value', entity_value)
+      .select('*')
+      .single();
 
     if (error) return { status: 400, body: { error: error.message } };
-    return { status: 200, body: { ok: true } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: superAdmin.id,
+      actor_name: superAdmin.full_name,
+      actor_role: superAdmin.role,
+      action: 'UNBLOCK_ENTITY',
+      target_type: entity_type,
+      target_id: entity_value,
+      metadata: { is_active: false }
+    });
+    return { status: 200, body: { ok: true, blocked: data } };
   }
 
   if (action === 'EXPORT_SYSTEM_SNAPSHOT') {

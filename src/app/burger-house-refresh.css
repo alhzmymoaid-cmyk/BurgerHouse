@@ -225,7 +225,7 @@ html,body{background:var(--bh-bg)!important}
   --bh-yellow:#F5B800;
   --bh-yellow-hot:#FFD036;
 }
-html,body{background:#09090B!important;max-width:100%;overflow-x:clip}
+html,body{background:#09090B!important;max-width:100%;overflow-x:hidden;overflow-x:clip}
 .bh-storefront{background:#09090B!important;color:#FAFAFA!important;overflow-x:clip}
 .bh-storefront>header{border-color:rgba(255,255,255,.07)!important}
 .bh-storefront>header button[class*="bg-[#a84f32]"]{background:#F5B800!important;color:#09090B!important}

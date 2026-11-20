@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 export async function GET() {
   try {
     const supabase = createSupabaseServerClient();
-    const [settingsRes, branchesRes, categoriesRes, productsRes, sizesRes, addonsRes, overridesRes, paymentsRes, promosRes] =
+    const [settingsRes, branchesRes, categoriesRes, productsRes, sizesRes, addonsRes, overridesRes, paymentsRes, promosRes, promoBannersRes, branchProductsRes, branchCategoriesRes] =
       await Promise.all([
         supabase.from('system_settings').select('site_online, maintenance_mode, maintenance_message_ar, maintenance_message_en, brand_name_ar, brand_name_en, support_phone, support_whatsapp, vat_percentage, published_theme').eq('id', 1).single(),
         supabase.from('branches').select('*').eq('is_active', true).order('created_at', { ascending: true }),
@@ -14,7 +14,10 @@ export async function GET() {
         supabase.from('product_addons').select('*').eq('is_active', true),
         supabase.from('branch_product_overrides').select('*'),
         supabase.from('payment_methods').select('*').eq('is_enabled', true).order('sort_order', { ascending: true }),
-        supabase.from('promotions').select('*').eq('is_active', true)
+        supabase.from('promotions').select('*').eq('is_active', true),
+        supabase.from('promo_banners').select('*').eq('is_active', true).lte('starts_at', new Date().toISOString()).or('ends_at.is.null,ends_at.gt.' + new Date().toISOString()).order('sort_order', { ascending: true }),
+        supabase.from('branch_products').select('*'),
+        supabase.from('branch_categories').select('*')
       ]);
 
     return NextResponse.json({
@@ -28,7 +31,10 @@ export async function GET() {
       addons: addonsRes.data || [],
       branch_overrides: overridesRes.data || [],
       payment_methods: paymentsRes.data || [],
-      promotions: promosRes.data || []
+      promotions: promosRes.data || [],
+      promo_banners: promoBannersRes.data || [],
+      branch_products: branchProductsRes.data || [],
+      branch_categories: branchCategoriesRes.data || []
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'CATALOG_FETCH_ERROR', message: err?.message }, { status: 500 });

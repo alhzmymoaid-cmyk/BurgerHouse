@@ -1,5 +1,9 @@
 'use client';
 
+import BranchCatalogControls from '@/components/branch-catalog-controls';
+
+import PromoManager from '@/components/promo-manager';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ORDER_STATUS_META,
@@ -215,6 +219,8 @@ export default function StaffLiveOrdersPage() {
           <button disabled={pushBusy} onClick={sendTestPush} className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs font-bold text-[#514b42] disabled:opacity-50">اختبار الإشعار</button>
         </div>
       </header>
+      {actorProfile?.role === 'branch_manager' && <><PromoManager /><BranchCatalogControls /></>}
+
 
       {pushMessage && <div className="mb-4 rounded-lg border border-[#68572b] bg-[#282313] p-3 text-xs font-bold text-[#f2df9d]" role="status">{pushMessage}</div>}
 

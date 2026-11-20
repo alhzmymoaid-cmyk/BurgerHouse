@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - rebuild/customer-app-experience
+      - feat/promo-carousel-independent-pwa
   pull_request:
     branches:
       - main

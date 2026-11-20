@@ -1,0 +1,29 @@
+{
+  "id": "/bh-sovereign-vault",
+  "name": "BH Admin",
+  "short_name": "BH Admin",
+  "description": "لوحة الإدارة العامة لبرجر هاوس",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/bh-sovereign-vault",
+  "scope": "/bh-sovereign-vault",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
+  "icons": [
+    { "src": "/icons/admin-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/admin-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/admin-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

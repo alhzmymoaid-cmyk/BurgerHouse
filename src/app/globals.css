@@ -360,3 +360,60 @@ a { text-decoration:none; }
  .bh-account-form{gap:9px!important}
  .bh-account-security{margin-top:9px!important}
 }
+
+
+/* Promo carousel and compact mobile storefront refinements */
+.bh-promo-rail{scrollbar-width:none;-ms-overflow-style:none;padding-inline:3vw}
+.bh-promo-rail::-webkit-scrollbar{display:none}
+.bh-promo-card{width:78vw;max-width:320px;aspect-ratio:10/11;background-size:cover;background-position:center}
+@media(min-width:768px){.bh-promo-rail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;padding-inline:0}.bh-promo-card{width:100%;max-width:none;aspect-ratio:4/3}}
+@media(min-width:1200px){.bh-promo-rail{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:767px){
+ .bh-storefront .bh-home-hero{min-height:58svh}
+ .bh-storefront .bh-home-hero-content{padding-top:24px;padding-bottom:28px}
+ .bh-storefront .bh-home-proof{display:flex;flex-wrap:wrap;gap:8px}
+ .bh-storefront .bh-home-proof>span{border:1px solid #ffffff1c;border-radius:999px;padding:7px 10px;background:#09090b88;font-size:10px}
+ .bh-storefront .bh-home-benefits{display:flex;overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+ .bh-storefront .bh-home-benefits>div{flex:0 0 auto;padding-inline:12px;white-space:nowrap}
+ .bh-storefront .bh-menu-product-grid{display:flex;flex-direction:column;gap:10px!important}
+ .bh-storefront .bh-menu-product-grid>article{display:flex;align-items:stretch;min-height:112px;border-radius:18px!important;overflow:visible!important}
+ .bh-storefront .bh-menu-product-grid>article>.bh-menu-card-image{width:96px;height:96px;min-width:96px;aspect-ratio:1!important;align-self:center;margin:8px;border-radius:14px}
+ .bh-storefront .bh-menu-product-grid>article>.bh-menu-card-image .bh-menu-image-plus{width:30px;height:30px;left:6px;bottom:6px}
+ .bh-storefront .bh-menu-product-grid>article>.bh-menu-card-body{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:space-between;padding:10px 8px 10px 12px!important}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-main h4{font-size:13px;line-height:1.5}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-main p{font-size:10px;line-height:1.55;min-height:0;margin-top:3px}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-meta{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-purchase{display:flex;width:100%;align-items:center;justify-content:space-between;gap:6px}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-purchase strong{font-size:13px;color:#f5b800;white-space:nowrap}
+ .bh-storefront .bh-menu-product-grid .bh-menu-card-purchase button{min-height:32px;padding:0 10px;border-radius:9px;background:#f5b800;color:#09090b;white-space:nowrap}
+ .bh-storefront .bh-menu-product-grid .bh-menu-house-badge{right:4px;top:4px;padding:3px 5px;font-size:8px}
+ .bh-storefront #menu-section{padding-bottom:100px}
+}
+
+
+/* Unified Obsidian / charcoal storefront surfaces */
+.bh-storefront>header{background:rgba(9,9,11,.94)!important;border-color:rgba(255,255,255,.07)!important;color:#FAFAFA!important}
+.bh-storefront .bh-branch-picker{background:#131317!important;border-color:rgba(255,255,255,.07)!important;color:#FAFAFA!important}
+.bh-storefront .bh-branch-picker select{background:#09090B!important;border-color:rgba(255,255,255,.12)!important;color:#FAFAFA!important}
+.bh-storefront .bh-home-benefits{color:#FAFAFA}
+.bh-storefront .bh-home-benefits>div>div{color:#FAFAFA!important}
+.bh-storefront .bh-home-benefits p{color:#A1A1AA!important}
+.bh-storefront #menu-section{color:#FAFAFA}
+.bh-storefront #menu-section input{background:#131317!important;border-color:rgba(255,255,255,.12)!important;color:#FAFAFA!important}
+.bh-storefront .bh-menu-product-grid>article{background:#131317!important;border-color:rgba(255,255,255,.07)!important}
+.bh-storefront .bh-menu-card-main h4{color:#FAFAFA!important}
+.bh-storefront .bh-menu-card-main p{color:#A1A1AA!important}
+.bh-storefront .bh-menu-card-meta{color:#A1A1AA}
+.bh-storefront .bh-menu-card-purchase strong{color:#F5B800!important}
+.bh-storefront .bh-menu-card-purchase button{color:#09090B}
+.bh-storefront .bh-category-rail button{border-radius:20px}
+.bh-storefront .bh-signature-card{border-radius:22px}
+@media(max-width:767px){
+ .bh-storefront .bh-category-rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:8px}
+ .bh-storefront .bh-category-rail::-webkit-scrollbar{display:none}
+ .bh-storefront .bh-category-rail>button{flex:0 0 76vw;min-height:0;aspect-ratio:4/3;scroll-snap-align:center;border-radius:20px}
+ .bh-storefront .bh-signature-grid.bh-signature-rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(76vw,1fr);grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:8px}
+ .bh-storefront .bh-signature-grid.bh-signature-rail::-webkit-scrollbar{display:none}
+ .bh-storefront .bh-signature-card{min-height:220px;scroll-snap-align:center}
+ .bh-storefront .bh-branch-picker{padding-block:2px}
+}

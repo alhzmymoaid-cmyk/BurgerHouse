@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import PromoCarousel from '@/components/promo-carousel';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
@@ -123,18 +124,21 @@ export default function StorefrontPage() {
   const activeBranch = branches.find((branch) => branch.id === branchId);
   const availableProducts = useMemo(() => products.filter((product) => {
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
+    const branchControl = catalog?.branch_products?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
+    const soldOutToday = branchControl?.sold_out_until && new Date(branchControl.sold_out_until).getTime() > Date.now();
+    const branchCategory = catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === product.category_id);
     const matchesCategory = activeCategory === 'all' || product.category_id === activeCategory;
     const normalizedSearch = normalizeSearchText(search);
     const searchableFields = [product.name_ar, product.name_en, product.description_ar, (product as any).description_en]
       .filter(Boolean)
       .map((value) => normalizeSearchText(String(value)));
     const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
-    return matchesCategory && matchesSearch && override?.is_available !== false;
+    return matchesCategory && matchesSearch && override?.is_available !== false && branchControl?.is_available !== false && !branchControl?.manual_disabled && !soldOutToday && branchCategory?.is_active !== false;
   }), [products, activeCategory, search, catalog, branchId]);
 
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
-    .filter((group) => group.products.length > 0), [categories, availableProducts]);
+    .filter((group) => group.products.length > 0 && catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === group.id)?.is_active !== false), [categories, availableProducts, catalog, branchId]);
 
 
 
@@ -388,6 +392,9 @@ export default function StorefrontPage() {
                     <Phone size={15} className="text-[#ffc82c]" /> تواصل مع المطعم
                   </a>
                 )}
+                <button type="button" onClick={() => { window.dispatchEvent(new Event('bh:open-install')); setMobileMenuOpen(false); }} className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F5B800]/35 bg-[#F5B800]/10 text-xs font-bold text-[#FFD036]">
+                  <Download size={15}/> تثبيت التطبيق على جهازك
+                </button>
                 <p className="mt-4 text-center text-[10px] leading-6 text-[#777b69]">BURGER HOUSE · Crafted over fire</p>
               </div>
             </aside>
@@ -464,6 +471,8 @@ export default function StorefrontPage() {
             })}
           </div>
         </section>
+
+        <PromoCarousel banners={catalog?.promo_banners || []} branchId={branchId} products={products} onOpenProduct={openProduct} onSelectCategory={setActiveCategory} />
 
         <section className="bh-signature-section mx-auto max-w-7xl px-4 pb-8 pt-5 lg:px-8">
           <div className="bh-signature-heading">

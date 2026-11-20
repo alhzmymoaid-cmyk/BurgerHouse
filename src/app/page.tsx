@@ -356,7 +356,8 @@ export default function StorefrontPage() {
   }
 
   return (
-    <main className={`bh-storefront min-h-screen pb-[env(safe-area-inset-bottom)] bg-[#09090B] text-[#FAFAFA] ${cartCount > 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
+    <main className={`bh-storefront min-h-screen pb-[env(safe-area-inset-bottom)] bg-[#09090B] text-[#FAFAFA] ${cartCount >
+      <StorefrontAdminEditor /> 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#09090B]/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="bh-storefront-announcement bg-[#09090B] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
           تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا

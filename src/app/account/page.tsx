@@ -62,7 +62,14 @@ export default function CustomerAccountPage() {
       router.push('/account/orders');
       router.refresh();
     } catch (caught: any) {
-      setError(caught?.message || 'تعذر إكمال العملية. تحقق من رقم الجوال وكلمة المرور.');
+      const code = caught?.code || '';
+      if (code === 'phone_provider_disabled') {
+        setError('تسجيل الجوال غير مفعّل في Supabase بعد. فعّل Phone من Auth → Providers ثم جرّب مجددًا.');
+      } else if (code === 'phone_not_confirmed') {
+        setError('تأكيد الهاتف ما زال مفعّلًا. عطّل Confirm phone لأن التسجيل هنا بكلمة مرور دون رمز SMS.');
+      } else {
+        setError(caught?.message || 'تعذر إكمال العملية. تحقق من رقم الجوال وكلمة المرور.');
+      }
     } finally {
       setBusy(false);
     }

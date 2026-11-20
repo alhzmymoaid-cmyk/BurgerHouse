@@ -108,13 +108,22 @@ export async function POST(request: NextRequest) {
 
       if (createError || !created.user) {
         const message = createError?.message || '';
-        const duplicate = /already|exists|registered|duplicate/i.test(message);
+        const code = String((createError as any)?.code || '');
+        const status = Number((createError as any)?.status || 0);
+        console.error('Customer Auth createUser failed:', { code, status, message });
+        const duplicate = /already|exists|registered|duplicate|unique constraint/i.test(message) || code === 'email_exists';
+        const rateLimited = status === 429 || /rate.?limit|too many requests/i.test(message);
+        const weakPassword = /weak password|password should|password is too short/i.test(message);
         return reply({
-          error: duplicate ? 'ACCOUNT_ALREADY_EXISTS' : 'ACCOUNT_CREATE_FAILED',
+          error: duplicate ? 'ACCOUNT_ALREADY_EXISTS' : rateLimited ? 'AUTH_RATE_LIMITED' : weakPassword ? 'WEAK_PASSWORD' : 'ACCOUNT_CREATE_FAILED',
           message_ar: duplicate
-            ? 'يوجد حساب مرتبط بهذا الرقم. جرّب تسجيل الدخول بدل إنشاء حساب جديد.'
-            : 'تعذر إنشاء الحساب الآن. تحقق من البيانات وحاول مرة أخرى.',
-        }, duplicate ? 409 : 400);
+            ? 'يوجد حساب مرتبط بهذا الرقم. اختر «لدي حساب» وسجّل الدخول.'
+            : rateLimited
+              ? 'وصلت إلى عدد المحاولات المسموح. انتظر قليلًا ثم حاول مجددًا.'
+              : weakPassword
+                ? 'كلمة المرور ضعيفة. اختر كلمة مرور أقوى من 8 أحرف.'
+                : 'تعذر إنشاء الحساب الآن بسبب مشكلة في خدمة الحسابات. حاول لاحقًا أو تواصل مع الدعم.',
+        }, duplicate ? 409 : rateLimited ? 429 : weakPassword ? 400 : 503);
       }
 
       const { error: profileError } = await service

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound, UtensilsCrossed, Phone } from 'lucide-react';
 
 export default function CustomerAccountPage() {
@@ -18,13 +19,20 @@ export default function CustomerAccountPage() {
   const [supportWhatsApp, setSupportWhatsApp] = useState('');
 
   useEffect(() => {
+    let active = true;
+    createSupabaseCustomerBrowserClient().auth.getUser().then(({ data: { user } }) => {
+      if (active && user && (user.app_metadata?.customer_account === true || Boolean(user.phone))) {
+        router.replace('/account/orders');
+      }
+    }).catch(() => undefined);
     if (window.location.hash === '#signup') setMode('signup');
     if (window.location.hash === '#forgot') setMode('forgot');
     fetch('/api/catalog', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
       const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\D/g, '');
       if (number) setSupportWhatsApp(number);
     }).catch(() => undefined);
-  }, []);
+    return () => { active = false; };
+  }, [router]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

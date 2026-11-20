@@ -106,7 +106,7 @@ export default function CustomerOrderTrackingPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
             <button type="button" onClick={()=>window.print()} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-xs font-bold"><Printer size={15}/> طباعة الفاتورة</button>
-            <button type="button" onClick={()=>router.refresh()} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-xs font-bold text-[#F2B705]"><RefreshCw size={15}/> تحديث</button>
+            <button type="button" onClick={()=>window.location.reload()} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-xs font-bold text-[#F2B705]"><RefreshCw size={15}/> تحديث</button>
           </div>
         </section>
       </>}

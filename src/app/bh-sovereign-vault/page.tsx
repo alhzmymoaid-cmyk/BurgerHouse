@@ -22,6 +22,7 @@ export default function SovereignSuperAdminVaultPage(){
   const [maintenanceMessage,setMaintenanceMessage]=useState('');
   const [busy,setBusy]=useState(false);
   const [notice,setNotice]=useState('');
+  const [newStaff,setNewStaff]=useState({full_name:'',email:'',temporary_password:'',role:'cashier',assigned_branch_id:''});
 
   const loadSovereignData=useCallback(async()=>{
     try{
@@ -32,6 +33,19 @@ export default function SovereignSuperAdminVaultPage(){
     }catch(e:any){setAccessDenied(e?.message||'تعذر تحميل بيانات الإدارة.');}
   },[]);
   useEffect(()=>{void loadSovereignData();},[loadSovereignData]);
+
+  const createStaff=async(event:any)=>{
+    event.preventDefault();setBusy(true);setNotice('');
+    try{
+      const response=await fetch('/api/admin/staff',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(newStaff)});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.message||result.error||'تعذر إنشاء حساب الموظف.');
+      setNotice('تم إنشاء حساب الموظف بنجاح.');
+      setNewStaff({full_name:'',email:'',temporary_password:'',role:'cashier',assigned_branch_id:''});
+      await loadSovereignData();
+    }catch(e:any){setNotice(e.message||'تعذر إنشاء حساب الموظف.');}
+    finally{setBusy(false);}
+  };
 
   const executeSovereignAction=async(payload:any)=>{
     setBusy(true);setNotice('');
@@ -84,6 +98,14 @@ export default function SovereignSuperAdminVaultPage(){
 
       <section className="rounded-2xl border border-white/10 bg-[#141417] p-5">
         <div className="flex items-center gap-2"><Users size={18} className="text-[#F2B705]"/><h2 className="text-sm font-bold">الموظفون ومديرو الفروع</h2></div>
+        <form onSubmit={createStaff} className="mt-4 grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4 sm:grid-cols-2 xl:grid-cols-5">
+          <input required minLength={2} value={newStaff.full_name} onChange={e=>setNewStaff(v=>({...v,full_name:e.target.value}))} placeholder="اسم الموظف" className={field}/>
+          <input required type="email" dir="ltr" value={newStaff.email} onChange={e=>setNewStaff(v=>({...v,email:e.target.value}))} placeholder="البريد الإلكتروني" className={field}/>
+          <input required minLength={12} maxLength={72} type="password" autoComplete="new-password" value={newStaff.temporary_password} onChange={e=>setNewStaff(v=>({...v,temporary_password:e.target.value}))} placeholder="كلمة مرور مؤقتة (12 حرفًا)" className={field}/>
+          <select value={newStaff.role} onChange={e=>setNewStaff(v=>({...v,role:e.target.value}))} className={field}>{roles.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select>
+          <div className="flex gap-2"><select value={newStaff.assigned_branch_id} onChange={e=>setNewStaff(v=>({...v,assigned_branch_id:e.target.value}))} className={field}><option value="">اختر الفرع</option>{(vaultData.branches||[]).map((branch:any)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select><button disabled={busy} className="shrink-0 rounded-lg bg-[#F2B705] px-4 text-xs font-bold text-[#0A0A0C] disabled:opacity-50">إضافة</button></div>
+          <p className="text-[10px] leading-5 text-[#9E9BA3] sm:col-span-2 xl:col-span-5">أنشئ حساب الدخول ثم سلّم كلمة المرور المؤقتة للموظف بطريقة آمنة. يمكن تغيير الصلاحية والفرع أو إيقاف الحساب من القائمة أدناه.</p>
+        </form>
         <div className="mt-4 space-y-2">{(vaultData.user_profiles||[]).map((staff:any)=><article key={staff.id} className="grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3 lg:grid-cols-[1.2fr_1fr_1fr_auto] lg:items-center">
           <div><b className="text-xs">{staff.full_name}</b><p className="mt-1 text-[10px] text-[#9E9BA3]" dir="ltr">{staff.email}</p></div>
           <select value={staff.role} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,new_role:e.target.value})} className={field}>{roles.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select>

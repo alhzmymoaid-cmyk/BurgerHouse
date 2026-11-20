@@ -165,10 +165,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Older customer accounts may use a verified email as their Auth identifier,
+    // while the current UI accepts only a phone number. Resolve that legacy email
+    // through the unique server-side customer profile before checking the password.
+    let loginEmail = alias;
+    let legacyUserId: string | null = null;
+    if (mode === 'login') {
+      const { data: profile, error: profileError } = await service
+        .from('customer_profiles')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Customer profile lookup failed during login:', profileError.message);
+        return reply({ error: 'AUTH_TEMPORARILY_UNAVAILABLE', message_ar: 'تعذر التحقق من الحساب الآن. حاول بعد قليل.' }, 503);
+      }
+
+      if (profile?.id) {
+        const { data: authUser, error: authUserError } = await service.auth.admin.getUserById(profile.id);
+        if (authUserError) {
+          console.error('Legacy customer Auth lookup failed:', authUserError.message);
+          return reply({ error: 'AUTH_TEMPORARILY_UNAVAILABLE', message_ar: 'تعذر التحقق من الحساب الآن. حاول بعد قليل.' }, 503);
+        }
+        if (authUser.user?.email) {
+          loginEmail = authUser.user.email;
+          legacyUserId = authUser.user.id;
+        }
+      }
+    }
+
     // The server-side SSR client writes the authenticated session into secure Supabase cookies.
     const auth = createSupabaseCustomerServerClient();
     const { error: loginError } = await auth.auth.signInWithPassword({
-      email: alias,
+      email: loginEmail,
       password,
     });
 
@@ -180,6 +210,27 @@ export async function POST(request: NextRequest) {
           ? 'رقم الجوال أو كلمة المرور غير صحيحة.'
           : 'تعذر تسجيل الدخول الآن. حاول مرة أخرى.',
       }, invalid ? 401 : 503);
+    }
+
+    // Upgrade legacy email-based customer sessions to the current customer claim.
+    // This happens only after the account password has been accepted.
+    if (legacyUserId) {
+      const { data: existingAuthUser } = await service.auth.admin.getUserById(legacyUserId);
+      const appMetadata = existingAuthUser.user?.app_metadata || {};
+      const { error: metadataError } = await service.auth.admin.updateUserById(legacyUserId, {
+        app_metadata: { ...appMetadata, customer_account: true, customer_phone: phone },
+      });
+
+      if (metadataError) {
+        console.error('Legacy customer metadata upgrade failed:', metadataError.message);
+        return reply({ error: 'ACCOUNT_UPGRADE_FAILED', message_ar: 'تم التحقق من كلمة المرور، لكن تعذر تجهيز جلسة الحساب. حاول مرة أخرى.' }, 503);
+      }
+
+      const { error: refreshError } = await auth.auth.refreshSession();
+      if (refreshError) {
+        console.error('Legacy customer session refresh failed:', refreshError.message);
+        return reply({ error: 'ACCOUNT_UPGRADE_FAILED', message_ar: 'تم التحقق من الحساب، لكن تعذر تحديث الجلسة. سجّل الدخول مرة أخرى.' }, 503);
+      }
     }
 
     return reply({ ok: true });

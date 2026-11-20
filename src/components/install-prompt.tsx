@@ -151,7 +151,7 @@ export default function SmartPwaInstallBanner() {
         </div>
         {isIosOther ? (
           <button type="button" className="bh-pwa-primary bh-pwa-copy" onClick={copyLink}>
-            {copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'تم النسخ' : 'نسخ الرابط للإضافة'}
+            {copied ? <Check size={16}/> : <Copy size={16}/>} إضافة إلى الشاشة الرئيسية
           </button>
         ) : isIosSafari ? (
           <button type="button" className="bh-pwa-primary" onClick={() => setSheetOpen(true)}>إضافة إلى الشاشة الرئيسية</button>

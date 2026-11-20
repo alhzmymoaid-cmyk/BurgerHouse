@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
 import { handleCreateOrderRequest } from '@/lib/supabase/api-handlers.mjs';
-import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';\nimport { sendBranchOrderPush } from '@/lib/web-push';
+import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
+import { sendBranchOrderPush } from '@/lib/web-push';
 
 export async function POST(request: NextRequest) {
   try {

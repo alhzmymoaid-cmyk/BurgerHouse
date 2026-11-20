@@ -107,3 +107,21 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
 .bh-pwa-banner { z-index:70; }
 .bh-account-topline,.bh-orders>header,.bh-staff-shell>header,.bh-owner-shell>header,.bh-superadmin>header { padding-top:calc(12px + env(safe-area-inset-top)); }
 .bh-account,.bh-orders,.bh-staff-shell,.bh-owner-shell,.bh-superadmin { padding-bottom:env(safe-area-inset-bottom); }
+
+.bh-staff-shell { background:var(--bh-bg)!important; color:var(--bh-text)!important; }
+.bh-staff-shell>div[class*="grid"]>div { background:var(--bh-surface)!important; border-color:var(--bh-line)!important; color:var(--bh-text)!important; box-shadow:none!important; }
+.bh-staff-shell nav button { background:var(--bh-card)!important; color:var(--bh-muted)!important; border-color:var(--bh-line)!important; box-shadow:none!important; }
+.bh-staff-shell nav button[class*="bg-[#20231b]"] { background:var(--bh-yellow)!important; color:#0A0A0C!important; }
+.bh-staff-shell article { background:var(--bh-surface)!important; border-color:var(--bh-line)!important; color:var(--bh-text)!important; box-shadow:none!important; }
+.bh-staff-shell article>div:first-child { background:#1B1B1F!important; border-color:var(--bh-line)!important; }
+.bh-staff-shell article p,.bh-staff-shell article span { font-variant-numeric:tabular-nums; }
+.bh-staff-shell article a { color:var(--bh-yellow)!important; }
+.bh-staff-shell article button { box-shadow:none!important; }
+@media print {
+  @page { size:80mm auto; margin:0; }
+  body * { visibility:hidden!important; }
+  .bh-print-order,.bh-print-order * { visibility:visible!important; }
+  .bh-print-order { position:absolute!important; inset:0 auto auto 0!important; width:80mm!important; max-width:80mm!important; margin:0!important; padding:5mm!important; border:0!important; border-radius:0!important; background:#fff!important; color:#000!important; box-shadow:none!important; }
+  .bh-print-order * { color:#000!important; box-shadow:none!important; text-shadow:none!important; }
+  .bh-print-order button,.bh-print-order a,.bh-print-order .no-print { display:none!important; }
+}

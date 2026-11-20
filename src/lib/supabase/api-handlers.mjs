@@ -152,6 +152,15 @@ export async function handleCreateOrderRequest({
     if (msg.includes('RATE_LIMIT_EXCEEDED')) {
       return { status: 429, body: { error: 'RATE_LIMIT_EXCEEDED', message: msg } };
     }
+    if (msg.includes('COUPON_INVALID_OR_EXPIRED')) {
+      return { status: 422, body: { error: 'COUPON_INVALID_OR_EXPIRED', message_ar: 'رمز الخصم غير صالح أو منتهي أو استُنفدت مرات استخدامه.' } };
+    }
+    if (msg.includes('COUPON_MINIMUM_ORDER_NOT_MET')) {
+      return { status: 422, body: { error: 'COUPON_MINIMUM_ORDER_NOT_MET', message_ar: 'قيمة الطلب أقل من الحد الأدنى لهذا الخصم.' } };
+    }
+    if (msg.includes('COUPON_INVALID_DISCOUNT')) {
+      return { status: 422, body: { error: 'COUPON_INVALID_DISCOUNT', message_ar: 'إعدادات الخصم غير صالحة. تواصل مع المطعم.' } };
+    }
     if (
       msg.includes('BRANCH_NOT_ACCEPTING_ORDERS') ||
       msg.includes('BRANCH_CLOSED_TODAY') ||

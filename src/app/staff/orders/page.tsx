@@ -204,6 +204,7 @@ export default function StaffLiveOrdersPage() {
   const statusFilters = [
     { id: 'all', label: 'كل الطلبات' },
     { id: 'new', label: 'جديدة' },
+    { id: 'pending_confirmation', label: 'بانتظار التأكيد' },
     { id: 'accepted', label: 'مقبولة' },
     { id: 'preparing', label: 'قيد التجهيز' },
     { id: 'ready_for_pickup', label: 'جاهزة للاستلام' },

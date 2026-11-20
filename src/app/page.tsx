@@ -124,18 +124,21 @@ export default function StorefrontPage() {
   const activeBranch = branches.find((branch) => branch.id === branchId);
   const availableProducts = useMemo(() => products.filter((product) => {
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
+    const branchControl = catalog?.branch_products?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
+    const soldOutToday = branchControl?.sold_out_until && new Date(branchControl.sold_out_until).getTime() > Date.now();
+    const branchCategory = catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === product.category_id);
     const matchesCategory = activeCategory === 'all' || product.category_id === activeCategory;
     const normalizedSearch = normalizeSearchText(search);
     const searchableFields = [product.name_ar, product.name_en, product.description_ar, (product as any).description_en]
       .filter(Boolean)
       .map((value) => normalizeSearchText(String(value)));
     const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
-    return matchesCategory && matchesSearch && override?.is_available !== false;
+    return matchesCategory && matchesSearch && override?.is_available !== false && branchControl?.is_available !== false && !branchControl?.manual_disabled && !soldOutToday && branchCategory?.is_active !== false;
   }), [products, activeCategory, search, catalog, branchId]);
 
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
-    .filter((group) => group.products.length > 0), [categories, availableProducts]);
+    .filter((group) => group.products.length > 0 && catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === group.id)?.is_active !== false), [categories, availableProducts, catalog, branchId]);
 
 
 

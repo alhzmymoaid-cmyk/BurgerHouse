@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type SafeFoodImageProps = {
   src?: string | null;
@@ -24,8 +24,14 @@ const LAST_RESORT = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 
 export default function SafeFoodImage({ src, categoryId, alt, className = '', loading = 'lazy' }: SafeFoodImageProps) {
   const fallback = FALLBACK_BY_CATEGORY[categoryId || ''] || DEFAULT_FALLBACK;
-  const [imageSrc, setImageSrc] = useState(src?.trim() || fallback);
+  const initialSrc = src?.trim() || fallback;
+  const [imageSrc, setImageSrc] = useState(initialSrc);
   const [fallbackFailed, setFallbackFailed] = useState(false);
+
+  useEffect(() => {
+    setImageSrc(initialSrc);
+    setFallbackFailed(false);
+  }, [initialSrc, fallback]);
 
   return (
     <img

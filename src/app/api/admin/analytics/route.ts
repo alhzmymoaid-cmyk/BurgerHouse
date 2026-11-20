@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
-import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard';
+import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
 
 export const runtime = 'nodejs';
 

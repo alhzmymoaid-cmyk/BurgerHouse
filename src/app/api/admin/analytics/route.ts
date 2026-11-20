@@ -93,7 +93,9 @@ export async function GET() {
 
     const branchComparison = profile.role === 'branch_manager'
       ? Array.from(branchMap.values())
-      : Array.from(branchMap.values()).sort((a, b) => b.revenue - a.revenue);
+      : (branchesRes.data || []).map((branch: any) => branchMap.get(branch.id) || {
+          branch_id: branch.id, branch_name: branch.name_ar, orders: 0, revenue: 0
+        }).sort((a: any, b: any) => b.revenue - a.revenue);
 
     return NextResponse.json({
       scope: { role: profile.role, branch_id: profile.assigned_branch_id || null },

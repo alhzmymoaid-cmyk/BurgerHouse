@@ -79,7 +79,7 @@ export default function SmartPwaInstallBanner() {
     window.addEventListener('appinstalled', onInstalled);
     window.addEventListener('bh:open-install', onManualOpen);
     window.addEventListener('pointerdown', onFirstInteraction, { once: true, passive: true });
-    const timer = window.setTimeout(showIfAllowed, 3800);
+    const timer = window.setTimeout(showIfAllowed, 4000);
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => undefined);
@@ -141,7 +141,7 @@ export default function SmartPwaInstallBanner() {
   return (
     <>
       <aside className="bh-pwa-banner" dir="rtl" role="region" aria-label="تثبيت تطبيق برجر هاوس">
-        <div className="bh-pwa-app-icon"><img src="/icons/customer-192.png" alt="" /></div>
+        <div className="bh-pwa-app-icon"><img src="/icons/customer-192.png?v=4" alt="" /></div>
         <div className="bh-pwa-banner-copy">
           <strong>ثبّت تطبيق BURGER HOUSE</strong>
           <span>{isIosOther ? 'افتح الرابط في Safari ثم أضفه إلى الشاشة الرئيسية' : 'ثبّت المتجر للوصول إليه بسرعة من الشاشة الرئيسية'}</span>
@@ -166,7 +166,7 @@ export default function SmartPwaInstallBanner() {
             <div className="bh-pwa-sheet-handle"/>
             <button type="button" className="bh-pwa-sheet-close" onClick={() => setSheetOpen(false)} aria-label="إغلاق"><X size={18}/></button>
             <div className="bh-pwa-sheet-app">
-              <img src="/icons/customer-192.png" alt="" />
+              <img src="/icons/customer-192.png?v=4" alt="" />
               <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">إضافة BURGER HOUSE إلى الشاشة الرئيسية</h2></div>
             </div>
             {isIosSafari ? (

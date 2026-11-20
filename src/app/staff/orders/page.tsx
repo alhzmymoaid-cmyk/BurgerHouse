@@ -34,6 +34,7 @@ export default function StaffLiveOrdersPage() {
   const [pendingSensitive, setPendingSensitive] = useState<{ code: string; status: string } | null>(null);
   const [sensitiveReason, setSensitiveReason] = useState<string>('');
   const [busyOrderCode, setBusyOrderCode] = useState<string | null>(null);
+  const [printOrderCode, setPrintOrderCode] = useState<string | null>(null);
 
   const playChime = useCallback(() => {
     if (!soundEnabled || typeof window === 'undefined') return;
@@ -194,6 +195,17 @@ export default function StaffLiveOrdersPage() {
     }
   };
 
+  useEffect(() => {
+    const clearPrintTarget = () => setPrintOrderCode(null);
+    window.addEventListener('afterprint', clearPrintTarget);
+    return () => window.removeEventListener('afterprint', clearPrintTarget);
+  }, []);
+
+  const printOrder = (orderCode: string) => {
+    setPrintOrderCode(orderCode);
+    window.setTimeout(() => window.print(), 120);
+  };
+
   const logout = async () => {
     await createSupabaseBrowserClient().auth.signOut();
     router.replace('/auth/login');
@@ -273,12 +285,14 @@ export default function StaffLiveOrdersPage() {
             const nextStatuses = ((VALID_STATUS_TRANSITIONS as any)[order.status] || []).filter((st: string) => allowedRoleTargets.includes(st));
             const action = primaryAction[order.status];
             const canAdvance = Boolean(action && nextStatuses.includes(action.target));
+            const elapsedMinutes = Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
+            const timeTone = elapsedMinutes >= 20 ? 'bg-red-950/40 text-red-300 border-red-500/30' : elapsedMinutes >= 12 ? 'bg-amber-950/40 text-amber-300 border-amber-500/30' : 'bg-white/5 text-[#9E9BA3] border-white/10';
             const sensitiveStatuses = nextStatuses.filter((status: string) => status === 'rejected' || status === 'cancelled');
             return (
-              <article key={order.order_code} className="overflow-hidden rounded-3xl border border-[#e2dfd6] bg-white shadow-[0_12px_34px_rgba(32,29,22,.07)]">
+              <article key={order.order_code} className={printOrderCode === order.order_code ? "bh-staff-order-card bh-print-order" : "bh-staff-order-card"}>
                 <div className="flex items-center justify-between gap-3 border-b border-[#eeeae2] bg-[#fbfaf7] px-4 py-4">
                   <div><p className="text-[9px] font-black tracking-[.15em] text-[#a65e36]">ORDER NUMBER</p><p className="mt-1 font-mono text-2xl font-black tabular-nums text-[#29251f]">#{order.order_number ?? '—'}</p></div>
-                  <div className="text-left"><span className="inline-flex rounded-full bg-[#eee9df] px-3 py-2 text-[10px] font-black text-[#655e53]">{(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}</span><p className="mt-2 text-[9px] text-[#969083]">{order.created_at ? new Date(order.created_at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : ''}</p></div>
+                  <div className="text-left"><span className="inline-flex rounded-full border border-white/10 bg-[#1B1B1F] px-3 py-2 text-[10px] font-black text-[#F2B705]">{(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}</span><p className="mt-2 text-[9px] text-[#9E9BA3]">{order.created_at ? new Date(order.created_at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : ''}</p><div className="mt-2 flex flex-wrap justify-end gap-2"><span className={"rounded-md border px-2 py-1 text-[9px] font-bold tabular-nums " + timeTone}>{elapsedMinutes} دقيقة</span><button type="button" onClick={()=>printOrder(order.order_code)} className="no-print rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold text-[#F2B705]">طباعة 80mm</button></div></div>
                 </div>
                 <div className="space-y-4 p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -291,7 +305,7 @@ export default function StaffLiveOrdersPage() {
                   </div>
                   {order.customer_notes && <p className="rounded-xl border border-[#eee1cb] bg-[#fffaf0] p-3 text-[11px] leading-6 text-[#765e3e]">ملاحظة العميل: {order.customer_notes}</p>}
                   <div className="space-y-2">
-                    {canAdvance && <button disabled={busyOrderCode===order.order_code} onClick={() => executeStatusTransition(order.order_code,action.target,false,'تحديث من شاشة تشغيل الفرع')} className={`w-full rounded-2xl px-4 py-4 text-sm font-black text-white shadow-sm transition disabled:opacity-50 ${action.target==='ready_for_pickup'?'bg-emerald-600 hover:bg-emerald-700':action.target==='completed'?'bg-[#292d25] hover:bg-black':'bg-[#a65e36] hover:bg-[#814728]'}`}>{busyOrderCode===order.order_code?'جارٍ تحديث الطلب...':action.label}</button>}
+                    {canAdvance && <button disabled={busyOrderCode===order.order_code} onClick={() => executeStatusTransition(order.order_code,action.target,false,'تحديث من شاشة تشغيل الفرع')} className={"w-full rounded-xl px-4 py-4 text-sm font-black shadow-sm transition disabled:opacity-50 " + (action.target==='accepted'?'bg-[#F2B705] text-[#0A0A0C] hover:bg-[#FFCA28]':action.target==='ready_for_pickup'?'bg-emerald-600 text-white hover:bg-emerald-700':action.target==='completed'?'bg-[#292d25] text-white hover:bg-black':'bg-[#a65e36] text-white hover:bg-[#814728]')}>{busyOrderCode===order.order_code?'جارٍ تحديث الطلب...':action.label}</button>}
                     {sensitiveStatuses.length>0 && <div className="flex gap-2">{sensitiveStatuses.map((nextSt:string)=><button key={nextSt} onClick={()=>setPendingSensitive({code:order.order_code,status:nextSt})} className="flex-1 rounded-xl border border-[#eadbd2] px-3 py-2.5 text-[10px] font-black text-[#a34c39]">{nextSt==='rejected'?'رفض الطلب':'إلغاء الطلب'}</button>)}</div>}
                     {!canAdvance && sensitiveStatuses.length===0 && <p className="rounded-xl bg-[#f5f4ef] px-3 py-3 text-center text-[10px] font-bold text-[#898477]">لا توجد إجراءات متاحة لهذا الدور أو لحالة الطلب.</p>}
                   </div>
@@ -306,18 +320,24 @@ export default function StaffLiveOrdersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
           <div className="w-full max-w-md rounded-sm border border-red-200 bg-[#fbfaf7] p-6 text-[#201e1a] space-y-4">
             <h3 className="text-lg font-bold text-red-400">تأكيد إجراء حساس ({pendingSensitive.code})</h3>
-            <input
-              type="text"
+            <select
+              required
               value={sensitiveReason}
               onChange={(e) => setSensitiveReason(e.target.value)}
-              placeholder="اكتب سبب الرفض أو الإلغاء..."
-              className="w-full rounded-xl border border-[#d8d0c4] bg-white px-3 py-2 text-xs"
-            />
+              className="w-full rounded-xl border border-white/10 bg-[#1B1B1F] px-3 py-3 text-xs text-[#F6F3EC]"
+            >
+              <option value="">اختر سبب الرفض أو الإلغاء</option>
+              <option value="نفاد الصنف">نفاد الصنف</option>
+              <option value="الفرع مزدحم">الفرع مزدحم</option>
+              <option value="تعذر تأكيد الطلب">تعذر تأكيد الطلب</option>
+              <option value="سبب آخر">سبب آخر</option>
+            </select>
             <div className="flex justify-end gap-2">
               <button onClick={() => setPendingSensitive(null)} className="rounded-sm border border-[#d8d0c4] px-4 py-2 text-xs">تراجع</button>
               <button
+                disabled={!sensitiveReason.trim() || busyOrderCode===pendingSensitive.code}
                 onClick={() => executeStatusTransition(pendingSensitive.code, pendingSensitive.status, true, sensitiveReason)}
-                className="rounded-sm bg-red-700 px-4 py-2 text-xs font-bold text-white"
+                className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-40"
               >
                 تأكيد التنفيذ
               </button>

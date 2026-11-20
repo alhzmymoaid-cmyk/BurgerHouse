@@ -12,6 +12,7 @@ export default function PromoManager() {
   const [role,setRole] = useState('');
   const [form,setForm] = useState(blank);
   const [busy,setBusy] = useState(false);
+  const [uploading,setUploading] = useState(false);
   const [message,setMessage] = useState('');
   const [error,setError] = useState('');
 
@@ -30,6 +31,19 @@ export default function PromoManager() {
   useEffect(()=>{ load().catch(()=>setError('تعذر الاتصال بخدمة العروض')); },[load]);
 
   const update = (key:string,value:any) => setForm(current=>({...current,[key]:value}));
+  const uploadImage = async (file:File) => {
+    setUploading(true); setError(''); setMessage('');
+    try {
+      const data=new FormData(); data.append('file',file);
+      const response=await fetch('/api/promo-banners/upload',{method:'POST',body:data});
+      const result=await response.json();
+      if(!response.ok) throw new Error(result.error||'فشل رفع الصورة');
+      setForm(current=>({...current,image_url:result.image_url}));
+      setMessage('تم رفع صورة العرض إلى Supabase Storage');
+    } catch(e:any) { setError(e.message||'تعذر رفع الصورة'); }
+    finally { setUploading(false); }
+  };
+
   const edit = (row:Banner) => setForm({
     id:row.id, branch_id:row.branch_id || '', title_ar:row.title_ar, subtitle_ar:row.subtitle_ar || '',
     image_url:row.image_url, badge_text:row.badge_text || 'عرض اليوم', cta_label:row.cta_label || 'اطلب الآن',
@@ -80,6 +94,7 @@ export default function PromoManager() {
     <form onSubmit={save} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <input className={field} placeholder="عنوان العرض *" required value={form.title_ar} onChange={e=>update('title_ar',e.target.value)}/>
       <input className={field} placeholder="نص مختصر" value={form.subtitle_ar} onChange={e=>update('subtitle_ar',e.target.value)}/>
+      <label className="flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-[#F5B800]/40 bg-[#09090B] px-3 text-xs text-[#FFD036]"><span>{uploading?'جارٍ رفع الصورة…':'رفع صورة العرض إلى Storage'}</span><input className="min-w-0 flex-1 text-[10px] text-[#A1A1AA]" type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={e=>{const file=e.target.files?.[0];if(file) uploadImage(file);e.currentTarget.value='';}}/></label>
       <input className={field} placeholder="رابط صورة العرض *" type="url" required value={form.image_url} onChange={e=>update('image_url',e.target.value)}/>
       <input className={field} placeholder="الشارة: عرض اليوم / جديد" value={form.badge_text} onChange={e=>update('badge_text',e.target.value)}/>
       <input className={field} placeholder="نص الزر" value={form.cta_label} onChange={e=>update('cta_label',e.target.value)}/>

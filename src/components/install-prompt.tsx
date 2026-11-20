@@ -35,7 +35,7 @@ export default function InstallPrompt() {
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
     window.addEventListener('appinstalled', onInstalled);
-    const timer = window.setTimeout(() => setShow(true), 3500);
+    const timer = window.setTimeout(() => setShow(true), 1200);
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined);
     return () => {
       window.clearTimeout(timer);

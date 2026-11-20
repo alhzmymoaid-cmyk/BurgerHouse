@@ -229,3 +229,64 @@ body { background:var(--bh-bg); color:var(--bh-text); }
   .bh-staff-shell { padding:12px!important; }
   .bh-owner-shell { padding:16px!important; }
 }
+
+
+/* Product customizer, cart and checkout — light operational surfaces */
+.bh-storefront .bh-product-overlay,.bh-storefront .bh-cart-overlay,.bh-storefront .bh-checkout-overlay { isolation:isolate; background:rgba(35,29,24,.58)!important; backdrop-filter:blur(3px); }
+.bh-storefront .bh-product-dialog,.bh-storefront .bh-checkout-dialog { background:#fff!important; color:#292522!important; border:1px solid #E5DED5!important; border-radius:16px!important; box-shadow:0 24px 80px rgba(30,24,19,.22)!important; }
+.bh-storefront .bh-product-layout { min-height:520px; }
+.bh-storefront .bh-product-visual { position:sticky; top:0; align-self:start; min-height:100%; max-height:740px; background:#F1EEE8!important; }
+.bh-storefront .bh-product-content { min-width:0; color:#292522!important; }
+.bh-storefront .bh-product-content h2,.bh-storefront .bh-product-content h3 { color:#292522!important; }
+.bh-storefront .bh-choice-section h3 { letter-spacing:-.01em; }
+.bh-storefront .bh-option-card,.bh-storefront .bh-addon-option { background:#fff!important; color:#514A43!important; border:1px solid #E3DDD4!important; border-radius:10px!important; transition:background .18s,border-color .18s,transform .18s,box-shadow .18s; }
+.bh-storefront .bh-option-card:hover,.bh-storefront .bh-addon-option:hover { border-color:#D8A6A1!important; background:#FCF7F6!important; }
+.bh-storefront .bh-option-card.is-selected,.bh-storefront .bh-addon-option.is-selected { border-color:#C65C55!important; background:#FBEFEE!important; box-shadow:inset 0 0 0 1px #C65C5522; }
+.bh-storefront .bh-addon-option input { accent-color:var(--bh-red); width:17px; height:17px; }
+.bh-storefront .bh-product-actions { position:sticky; bottom:0; margin-inline:-2px; padding:16px 2px 2px; background:linear-gradient(180deg,transparent,#fff 18%); }
+.bh-storefront .bh-product-actions button { transition:background .18s,transform .18s; }
+.bh-storefront .bh-product-actions button:active { transform:scale(.98); }
+.bh-storefront .bh-cart-overlay { display:flex; justify-content:flex-start; }
+.bh-storefront .bh-cart-drawer { background:#fff!important; color:#292522!important; border-left:1px solid #E8E3DA!important; box-shadow:-12px 0 40px rgba(35,27,20,.12); animation:bh-drawer-in .24s ease-out; }
+.bh-storefront .bh-cart-item { background:#FAF9F6!important; border:1px solid #E8E3DA!important; color:#292522!important; transition:border-color .18s,background .18s; }
+.bh-storefront .bh-cart-item:hover { border-color:#D8C2BE!important; background:#fff!important; }
+.bh-storefront .bh-cart-item img { background:#F1EEE8!important; }
+.bh-storefront .bh-cart-summary { background:#fff!important; box-shadow:0 -12px 35px rgba(35,27,20,.08); }
+.bh-storefront .bh-checkout-overlay { overflow-y:auto; }
+.bh-storefront .bh-checkout-dialog { color:#292522!important; }
+.bh-storefront .bh-checkout-dialog input:focus,.bh-storefront .bh-checkout-dialog select:focus,.bh-storefront .bh-checkout-dialog textarea:focus { border-color:#C65C55!important; box-shadow:0 0 0 3px #B9272712; }
+.bh-storefront .bh-checkout-dialog button:not(:disabled):active { transform:scale(.99); }
+.bh-storefront .bh-mobile-menu-overlay { position:fixed!important; inset:0!important; height:100dvh!important; min-height:100vh!important; z-index:9999!important; overscroll-behavior:contain; background:rgba(35,29,24,.55)!important; }
+.bh-storefront #bh-mobile-menu { height:100dvh!important; max-height:100dvh!important; padding-bottom:calc(20px + env(safe-area-inset-bottom))!important; background:#fff!important; color:#292522!important; }
+.bh-storefront>header button[aria-controls="bh-mobile-menu"] { touch-action:manipulation; min-width:42px; min-height:42px; display:grid; place-items:center; }
+.bh-storefront .bh-menu-prep { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; color:#81786F!important; }
+.bh-storefront .bh-menu-prep svg { width:12px!important; height:12px!important; flex:none!important; }
+.bh-storefront .bh-signature-grid { display:grid; grid-template-columns:1.35fr 1fr 1fr 1fr; gap:12px; }
+.bh-storefront .bh-signature-main { height:240px; }
+.bh-storefront .bh-signature-rail { min-width:0; }
+@keyframes bh-drawer-in { from { transform:translateX(24px); opacity:.7; } to { transform:translateX(0); opacity:1; } }
+@media(max-width:850px) {
+  .bh-storefront .bh-signature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .bh-storefront .bh-signature-card,.bh-storefront .bh-signature-main { height:170px; }
+}
+@media(max-width:767px) {
+  .bh-storefront .bh-product-dialog { border-radius:18px 18px 0 0!important; max-height:94dvh!important; }
+  .bh-storefront .bh-product-layout { display:flex; flex-direction:column; min-height:0; }
+  .bh-storefront .bh-product-visual { position:relative; min-height:230px; height:230px; max-height:230px; flex:none; }
+  .bh-storefront .bh-product-content { padding:18px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .bh-storefront .bh-product-content h2 { font-size:21px; }
+  .bh-storefront .bh-choice-section { margin-top:18px; }
+  .bh-storefront .bh-addon-option { min-height:56px; padding:10px; }
+  .bh-storefront .bh-product-actions { padding-bottom:calc(8px + env(safe-area-inset-bottom)); }
+  .bh-storefront .bh-cart-drawer { width:100%; max-width:none; height:100dvh; }
+  .bh-storefront .bh-cart-summary { padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+  .bh-storefront .bh-checkout-dialog { max-height:94dvh!important; padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+  .bh-storefront .bh-signature-grid.bh-signature-rail { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(76vw,1fr); grid-template-columns:none; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; padding-bottom:8px; }
+  .bh-storefront .bh-signature-card { min-height:220px; scroll-snap-align:center; }
+}
+@media(max-width:480px) {
+  .bh-storefront .bh-signature-card,.bh-storefront .bh-signature-main { height:155px; }
+  .bh-storefront .bh-signature-copy { right:11px; bottom:11px; }
+  .bh-storefront .bh-signature-copy b { font-size:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .bh-storefront .bh-cart-drawer { animation:none; } }

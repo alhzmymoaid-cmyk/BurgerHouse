@@ -21,7 +21,7 @@ export default function CustomerAccountPage() {
     if (window.location.hash === '#signup') setMode('signup');
     if (window.location.hash === '#forgot') setMode('forgot');
     fetch('/api/catalog', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\\D/g, '');
+      const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\D/g, '');
       if (number) setSupportWhatsApp(number);
     }).catch(() => undefined);
   }, []);
@@ -129,8 +129,8 @@ export default function CustomerAccountPage() {
             {error && <div className="bh-account-alert" role="alert">{error}</div>}
             {mode === 'forgot' ? (
               <button type="button" disabled={!forgotName.trim() || !forgotPhone.trim() || !supportWhatsApp} onClick={() => {
-                const digits = forgotPhone.replace(/\\D/g, '').replace(/^0/, '966');
-                if (!/^9665\\d{8}$/.test(digits)) { setError('أدخل رقم جوال سعودي صحيحًا.'); return; }
+                const digits = forgotPhone.replace(/\D/g, '').replace(/^0/, '966');
+                if (!/^9665\d{8}$/.test(digits)) { setError('أدخل رقم جوال سعودي صحيحًا.'); return; }
                 const message = 'السلام عليكم، أنا ' + forgotName.trim() + '، ورقم الجوال المسجل في حسابي هو ' + forgotPhone.trim() + '. نسيت كلمة المرور وأريد استعادتها لحسابي في BURGER HOUSE. أرجو مساعدتي بعد التحقق من ملكية الرقم.';
                 window.open('https://wa.me/' + supportWhatsApp + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
               }} className="bh-account-submit">إرسال إلى الدعم عبر واتساب <span aria-hidden="true">←</span></button>

@@ -275,6 +275,7 @@ export default function StaffLiveOrdersPage() {
             <button onClick={() => setSoundEnabled((enabled) => !enabled)} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'الصوت يعمل' : 'الصوت صامت'}</button>
             <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-xl bg-[#f5c542] px-3 py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل الإشعارات'}</button>
             <button disabled={pushBusy} onClick={sendTestPush} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8] disabled:opacity-50">اختبار الإشعار</button>
+            {actorProfile?.role === "branch_manager" && <a href="/manager/analytics" className="rounded-xl border border-white/10 px-3 py-3 text-center text-xs font-bold text-[#F2B705]">إحصائيات الفرع</a>}
             <button onClick={fetchLiveOrders} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">تحديث الطلبات</button>
             <button onClick={logout} className="rounded-xl border border-[#a65e36]/50 px-3 py-3 text-xs font-bold text-[#e6b58e]">تسجيل الخروج</button>
           </div>

@@ -6,6 +6,8 @@ create table if not exists public.customer_auth_rate_limits (
   updated_at timestamptz not null default now()
 );
 
+create index if not exists customer_auth_rate_limits_updated_at_idx on public.customer_auth_rate_limits (updated_at);
+
 alter table public.customer_auth_rate_limits enable row level security;
 revoke all on table public.customer_auth_rate_limits from public, anon, authenticated;
 grant all on table public.customer_auth_rate_limits to service_role;
@@ -23,6 +25,8 @@ as $function$
 declare
   current_attempts integer;
 begin
+  delete from public.customer_auth_rate_limits where updated_at < now() - interval '1 day';
+
   if p_key is null
      or char_length(p_key) <> 64
      or p_max_attempts < 1

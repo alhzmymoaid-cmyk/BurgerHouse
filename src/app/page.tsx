@@ -97,7 +97,7 @@ export default function StorefrontPage() {
           const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
           setCustomerLoggedIn(true);
           const savedName = String(profile?.full_name || user.user_metadata?.full_name || '');
-          setCustomerName(/^مدير(?:ة)?\\s+فرع\\b/.test(savedName) ? '' : savedName);
+          setCustomerName(/^مدير(?:ة)?\s+فرع\b/.test(savedName) ? '' : savedName);
           setCustomerPhone(profile?.phone || user.app_metadata?.customer_phone || user.phone || '');
         } else {
           setCustomerLoggedIn(false);
@@ -641,7 +641,7 @@ export default function StorefrontPage() {
             <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>
           ) : customerLoggedIn ? (
             <div className="rounded-xl border border-[#5c512b] bg-[#242116] p-4">
-              <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold text-[#e5c45a]">بيانات حسابك المحفوظة</p><p className="mt-1 text-sm font-black text-white">{customerName || 'عميل برجر هاوس'}</p><p className="mt-1 text-xs text-[#c5bdab]" dir="ltr">{customerPhone}</p></div><span className="rounded-full bg-emerald-900/40 px-3 py-1 text-[10px] font-bold text-emerald-300">مسجل الدخول</span></div>
+              <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold text-[#e5c45a]">بيانات حسابك المحفوظة</p>{customerName ? <p className="mt-1 text-sm font-black text-white">{customerName}</p> : <label className="mt-2 block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input value={customerName} onChange={e=>setCustomerName(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="اكتب اسمك الكامل"/></label>}<p className="mt-1 text-xs text-[#c5bdab]" dir="ltr">{customerPhone}</p></div><span className="rounded-full bg-emerald-900/40 px-3 py-1 text-[10px] font-bold text-emerald-300">مسجل الدخول</span></div>
             </div>
           ) : (
             <div className="rounded-xl border border-[#68572b] bg-[#282313] p-4">

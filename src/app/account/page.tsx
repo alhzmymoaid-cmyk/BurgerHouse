@@ -5,18 +5,19 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound, UtensilsCrossed, Phone } from 'lucide-react';
 
-export default function CustomerAccountPage() {
+export default function CustomerAccountPage({ initialMode = 'login' }: { initialMode?: 'login' | 'signup' | 'forgot' }) {
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(initialMode);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [forgotName, setForgotName] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
-  const [supportWhatsApp, setSupportWhatsApp] = useState('');
+  const supportWhatsApp = '966535717670';
 
   useEffect(() => {
     let active = true;
@@ -37,6 +38,10 @@ export default function CustomerAccountPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (mode === 'forgot') return;
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -53,6 +58,7 @@ export default function CustomerAccountPage() {
       }
       router.replace('/account/orders');
       router.refresh();
+      setConfirmPassword('');
     } catch (caught: any) {
       setError(caught?.message || 'حدث خطأ غير متوقع. حاول مرة أخرى.');
     } finally {
@@ -131,7 +137,15 @@ export default function CustomerAccountPage() {
                 <button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button>
               </div>
               {mode === 'signup' && <small>استخدم كلمة مرور يصعب تخمينها ولا تشاركها مع أحد.</small>}
+            {mode === 'signup' && <label className="bh-account-label">
+              <span>تأكيد كلمة المرور</span>
+              <div className="bh-field">
+                <LockKeyhole aria-hidden="true"/>
+                <input required minLength={8} maxLength={72} autoComplete="new-password" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"/>
+              </div>
+            </label>}
               {mode === 'login' && <button type="button" onClick={() => { setMode('forgot'); setError(''); setForgotName(name); setForgotPhone(phone); }} className="mt-2 text-xs font-bold text-[#a65e36] underline">نسيت كلمة المرور؟</button>}
+              {mode === 'login' && <a href="/register" className="mt-2 block text-xs font-semibold text-[#9E9BA3] underline">طلبت سابقًا كضيف؟ أنشئ حسابًا لمتابعة طلباتك</a>}
             </label>}
 
             {error && <div className="bh-account-alert" role="alert">{error}</div>}

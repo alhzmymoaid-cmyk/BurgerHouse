@@ -107,7 +107,6 @@ export default function SmartPwaInstallBanner() {
       return;
     }
     promptRef.current = null;
-    setNativeReady(false);
     await prompt.prompt();
     const choice = await prompt.userChoice;
     if (choice.outcome === 'accepted') setVisible(false);

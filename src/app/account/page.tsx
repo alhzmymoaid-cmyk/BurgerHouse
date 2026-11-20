@@ -129,7 +129,8 @@ export default function CustomerAccountPage() {
             {error && <div className="bh-account-alert" role="alert">{error}</div>}
             {mode === 'forgot' ? (
               <button type="button" disabled={!forgotName.trim() || !forgotPhone.trim() || !supportWhatsApp} onClick={() => {
-                const digits = forgotPhone.replace(/\D/g, '').replace(/^0/, '966');
+                const localized = forgotPhone.replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+                const digits = localized.replace(/\D/g, '').replace(/^0/, '966');
                 if (!/^9665\d{8}$/.test(digits)) { setError('أدخل رقم جوال سعودي صحيحًا.'); return; }
                 const message = 'السلام عليكم، أنا ' + forgotName.trim() + '، ورقم الجوال المسجل في حسابي هو ' + forgotPhone.trim() + '. نسيت كلمة المرور وأريد استعادتها لحسابي في BURGER HOUSE. أرجو مساعدتي بعد التحقق من ملكية الرقم.';
                 window.open('https://wa.me/' + supportWhatsApp + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');

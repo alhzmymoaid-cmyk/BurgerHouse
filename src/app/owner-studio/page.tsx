@@ -2,7 +2,7 @@
 
 import PromoManager from '@/components/promo-manager';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, Building2, CreditCard, History, LayoutDashboard, Package, RefreshCw, Search, ShoppingBag, Users } from 'lucide-react';
+import { Activity, Building2, CreditCard, History, LayoutDashboard, Package, RefreshCw, Search, ShoppingBag, Users } from 'lucide-react';
 
 type Section = 'overview' | 'orders' | 'branches' | 'menu' | 'team' | 'promotions' | 'audit';
 const sections: { id: Section; label: string; icon: React.ElementType }[] = [

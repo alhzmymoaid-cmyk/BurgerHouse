@@ -38,6 +38,7 @@ export default function OwnerStudioDashboard() {
   const [staffRole, setStaffRole] = useState<'branch_manager' | 'cashier' | 'kitchen_staff'>('cashier');
   const [staffBranch, setStaffBranch] = useState('');
   const [staffActive, setStaffActive] = useState(true);
+  const [productDrafts, setProductDrafts] = useState<Record<string, { base_price: string; is_active: boolean; is_featured: boolean }>>({});
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -50,6 +51,11 @@ export default function OwnerStudioDashboard() {
         return;
       }
       setData(json);
+      setProductDrafts(Object.fromEntries((json.products || []).map((product: any) => [product.id, {
+        base_price: String(product.base_price ?? 0),
+        is_active: Boolean(product.is_active),
+        is_featured: Boolean(product.is_featured)
+      }])));
       setErrorMsg(null);
     } catch (err: any) {
       setErrorMsg(err?.message || 'حدث خطأ أثناء تحميل بيانات لوحة المالك');
@@ -97,6 +103,23 @@ export default function OwnerStudioDashboard() {
     } catch (err: any) {
       setErrorMsg(err?.message || 'تعذر رفع الصورة');
     }
+  };
+
+  const saveProduct = async (product: any) => {
+    const draft = productDrafts[product.id] || {
+      base_price: String(product.base_price ?? 0),
+      is_active: Boolean(product.is_active),
+      is_featured: Boolean(product.is_featured)
+    };
+    const price = Number(draft.base_price);
+    if (!Number.isFinite(price) || price < 0) {
+      setErrorMsg('أدخل سعرًا صحيحًا يساوي صفرًا أو أكثر.');
+      return;
+    }
+    await executeOwnerAction({
+      action: 'UPSERT_PRODUCT',
+      product: { id: product.id, base_price: price, is_active: draft.is_active, is_featured: draft.is_featured }
+    });
   };
 
   const orders = data?.orders || [];
@@ -273,14 +296,26 @@ export default function OwnerStudioDashboard() {
         <section className={panel}>
           <div className={heading}><div><h2 className="text-lg font-black">المنيو والمنتجات</h2><p className="mt-1 text-xs text-[#77716A]">تحديث صور المنتجات ينعكس على المتجر بعد نجاح الرفع</p></div><Package size={19} className="text-[#B92727]" /></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {(data.products || []).map((p: any) => (
-              <article key={p.id} className="overflow-hidden rounded-lg border border-[#E8E3DA] bg-white">
-                <img src={p.image_url} alt={p.name_ar} className="h-40 w-full bg-[#F1EEE8] object-cover" />
-                <div className="p-3"><div className="flex items-start justify-between gap-2"><b className="text-sm">{p.name_ar}</b><b className="shrink-0 text-sm text-[#B92727]">{money(Number(p.base_price))} ر.س</b></div><p className="mt-1 text-[10px] text-[#77716A]">{p.is_active ? 'ظاهر في المنيو العام' : 'غير نشط'}</p>
-                  <label className="mt-3 inline-flex cursor-pointer items-center rounded-lg border border-[#E2DCD3] px-3 py-2 text-xs font-bold text-[#514A43] hover:bg-[#F7F5F0]">تغيير صورة المنتج<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={e => { const file = e.target.files?.[0]; if (file) handleRealStorageImageUpload(p.id, file); e.currentTarget.value = ''; }} /></label>
-                </div>
-              </article>
-            ))}
+            {(data.products || []).map((p: any) => {
+              const draft = productDrafts[p.id] || { base_price: String(p.base_price ?? 0), is_active: Boolean(p.is_active), is_featured: Boolean(p.is_featured) };
+              return (
+                <article key={p.id} className="overflow-hidden rounded-lg border border-[#E8E3DA] bg-white">
+                  <img src={p.image_url} alt={p.name_ar} className="h-40 w-full bg-[#F1EEE8] object-cover" />
+                  <div className="space-y-3 p-3">
+                    <div className="flex items-start justify-between gap-2"><b className="text-sm">{p.name_ar}</b><span className="text-[10px] text-[#77716A]">إدارة المنتج</span></div>
+                    <label className="grid gap-1 text-xs font-bold text-[#514A43]">السعر (ر.س)<input type="number" min="0" step="0.5" inputMode="decimal" value={draft.base_price} onChange={e => setProductDrafts(current => ({ ...current, [p.id]: { ...draft, base_price: e.target.value } }))} className="h-10 rounded-lg border border-[#DDD7CE] bg-white px-3" /></label>
+                    <div className="flex flex-wrap gap-3 text-[11px] text-[#514A43]">
+                      <label className="inline-flex items-center gap-2"><input type="checkbox" checked={draft.is_active} onChange={e => setProductDrafts(current => ({ ...current, [p.id]: { ...draft, is_active: e.target.checked } }))} className="accent-[#B92727]" /> ظاهر في المنيو</label>
+                      <label className="inline-flex items-center gap-2"><input type="checkbox" checked={draft.is_featured} onChange={e => setProductDrafts(current => ({ ...current, [p.id]: { ...draft, is_featured: e.target.checked } }))} className="accent-[#B92727]" /> منتج مميز</label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" disabled={busyAction} onClick={() => saveProduct(p)} className="rounded-lg bg-[#B92727] px-3 py-2 text-xs font-bold text-white disabled:opacity-50">حفظ بيانات المنتج</button>
+                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-[#E2DCD3] px-3 py-2 text-xs font-bold text-[#514A43] hover:bg-[#F7F5F0]">تغيير الصورة<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={e => { const file = e.target.files?.[0]; if (file) handleRealStorageImageUpload(p.id, file); e.currentTarget.value = ''; }} /></label>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}

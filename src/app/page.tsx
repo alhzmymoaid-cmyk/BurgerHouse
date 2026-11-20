@@ -417,12 +417,8 @@ export default function StorefrontPage() {
           تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
         </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
-          <a href="/" className="flex items-center gap-3">
-            <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="h-12 w-12 object-contain"/>
-            <div>
-              <div className="font-[Cairo] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
-              <div className="mt-0.5 text-[10px] font-bold tracking-[.18em] text-[#82796d]">CRAFTED OVER FIRE</div>
-            </div>
+          <a href="/" className="flex items-center gap-3" aria-label="Burger House">
+            <img src="/brand-logo.svg" alt="BURGER HOUSE — Good Food, Great Mood" className="h-12 w-auto max-w-[220px] object-contain"/>
           </a>
 
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">

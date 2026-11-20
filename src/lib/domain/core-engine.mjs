@@ -699,7 +699,7 @@ export const ROLE_ALLOWED_TARGET_STATUSES = {
   super_admin: ['pending_confirmation', 'accepted', 'preparing', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'],
   owner: ['pending_confirmation', 'accepted', 'preparing', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'],
   branch_manager: ['pending_confirmation', 'accepted', 'preparing', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'],
-  cashier: ['pending_confirmation', 'accepted', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'],
+  cashier: ['pending_confirmation', 'accepted', 'preparing', 'ready_for_pickup', 'completed', 'rejected', 'cancelled'],
   kitchen_staff: ['preparing', 'ready_for_pickup']
 };
 

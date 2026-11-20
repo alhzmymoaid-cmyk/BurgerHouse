@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function StaffAndAdminLoginContent() {
@@ -20,41 +19,23 @@ function StaffAndAdminLoginContent() {
     setErrorMsg(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const response = await fetch('/api/staff/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-
-      if (error || !data.user) {
-        setErrorMsg('بيانات الدخول غير صحيحة أو الحساب غير مسجل.');
-        setLoading(false);
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        setErrorMsg(result.message_ar || 'البريد الوظيفي أو كلمة المرور غير صحيحة.');
         return;
       }
 
-      const { data: profile, error: profErr } = await supabase
-        .from('user_profiles')
-        .select('role, is_active')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profErr || !profile || !profile.is_active) {
-        await supabase.auth.signOut();
-        setErrorMsg('هذا الحساب غير مفعل أو لا يملك صلاحيات تشغيلية.');
-        setLoading(false);
-        return;
-      }
-
-      if (profile.role === 'super_admin') {
-        router.push(redirectTo.startsWith('/bh-sovereign-vault') ? redirectTo : '/bh-sovereign-vault');
-      } else if (profile.role === 'owner') {
-        router.push(redirectTo.startsWith('/owner-studio') ? redirectTo : '/owner-studio');
-      } else {
-        router.push('/staff/orders');
-      }
+      router.replace(result.redirect_to || '/staff/orders');
       router.refresh();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'حدث خطأ أثناء تسجيل الدخول');
+      setErrorMsg(err?.message || 'تعذر الاتصال بخدمة تسجيل الدخول.');
     } finally {
       setLoading(false);
     }
@@ -94,7 +75,7 @@ function StaffAndAdminLoginContent() {
 
           <button type="submit" disabled={loading}
             className="w-full rounded-xl bg-[#a65e36] py-3.5 text-sm font-black text-white shadow-none disabled:opacity-50">
-            {loading ? 'جاري التحقق من الجلسة والصلاحيات...' : 'تسجيل الدخول الآمن'}
+            {loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول الآمن'}
           </button>
         </form>
       </div>

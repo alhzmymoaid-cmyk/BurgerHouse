@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
+import { createSupabaseCustomerServerClient, createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
 import { handleCreateOrderRequest } from '@/lib/supabase/api-handlers.mjs';
 import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
 import { sendBranchOrderPush } from '@/lib/web-push';
@@ -11,12 +11,19 @@ export async function POST(request: NextRequest) {
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
     const sessionFingerprint = request.headers.get('x-bh-session') || request.cookies.get('bh_session_id')?.value || 'anon-session';
     const payload = await request.json();
-    const authSupabase = createSupabaseServerClient();
+    const authSupabase = createSupabaseCustomerServerClient();
     const { data: { user } } = await authSupabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
     }
-    const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
+    const isCustomerIdentity = user.app_metadata?.customer_account === true || Boolean(user.phone);
+    if (!isCustomerIdentity) {
+      return NextResponse.json({ error: 'CUSTOMER_SESSION_REQUIRED', message_ar: 'استخدم حساب العميل لإتمام الطلب. جلسة الموظفين والإدارة منفصلة.' }, { status: 403 });
+    }
+    const localizedPhone = String(payload?.customer_phone || '')
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+    const submittedPhone = localizedPhone.replace(/\D/g, '');
     const customerName = String(payload?.customer_name || '').trim();
     if (!/^9665\d{8}$/.test(submittedPhone)) {
       return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً يبدأ بـ 05.' }, { status: 400 });
@@ -41,11 +48,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'استخدم رقم الجوال المرتبط بحسابك.' }, { status: 403 });
     }
 
-    const { error: profileError } = await serviceSupabase
+    // Never overwrite the unique phone key during checkout. The phone is bound
+    // to the authenticated customer identity; only update that user's display name.
+    const { data: customerProfile, error: profileLookupError } = await serviceSupabase
       .from('customer_profiles')
-      .upsert({ id: user.id, full_name: customerName, phone: '+' + submittedPhone }, { onConflict: 'id' });
-    if (profileError) {
-      return NextResponse.json({ error: 'CUSTOMER_PROFILE_SAVE_FAILED', message_ar: 'تعذر حفظ بيانات الحساب. حاول مرة أخرى.' }, { status: 500 });
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      console.error('Customer profile lookup failed during checkout:', profileLookupError.message);
+    } else if (customerProfile) {
+      const { error: profileUpdateError } = await serviceSupabase
+        .from('customer_profiles')
+        .update({ full_name: customerName, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (profileUpdateError) {
+        console.error('Customer profile name update failed; continuing order:', {
+          code: profileUpdateError.code,
+          message: profileUpdateError.message,
+        });
+      }
+    } else {
+      const { error: profileInsertError } = await serviceSupabase
+        .from('customer_profiles')
+        .insert({ id: user.id, full_name: customerName, phone: '+' + submittedPhone });
+      if (profileInsertError) {
+        // A legacy profile may already own this unique phone. This must not block
+        // a valid order; the order itself remains linked to the authenticated user.
+        console.error('Customer profile insert skipped; continuing order:', {
+          code: profileInsertError.code,
+          message: profileInsertError.message,
+        });
+      }
     }
 
     const result = await handleCreateOrderRequest({

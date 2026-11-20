@@ -23,7 +23,7 @@ const steps = [
   { status:'completed', label:'تم التسليم' },
 ];
 const money=(n:number)=>new Intl.NumberFormat('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
-const decodeVapidKey=(key:string)=>{const padding='='.repeat((4-key.length%4)%4);const base64=(key+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=window.atob(base64);return Uint8Array.from([...raw].map(char=>char.charCodeAt(0)));};
+const decodeVapidKey=(key:string)=>{const padding='='.repeat((4-key.length%4)%4);const base64=(key+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=window.atob(base64);return Uint8Array.from(raw.split('').map(char=>char.charCodeAt(0)));};
 
 export default function CustomerOrderTrackingPage() {
   const params=useParams<{id:string}>();

@@ -12,7 +12,6 @@ import {
   VALID_STATUS_TRANSITIONS,
   ROLE_ALLOWED_TARGET_STATUSES
 } from '@/lib/domain/core-engine.mjs';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const decodeVapidKey = (value: string) => {
   const padding = '='.repeat((4 - value.length % 4) % 4);

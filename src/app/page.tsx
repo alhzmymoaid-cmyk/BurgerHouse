@@ -66,6 +66,10 @@ export default function StorefrontPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
   const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
+  const [customerAuthMode, setCustomerAuthMode] = useState<'signup' | 'login'>('signup');
+  const [customerPassword, setCustomerPassword] = useState('');
+  const [customerAuthBusy, setCustomerAuthBusy] = useState(false);
+  const [customerAuthError, setCustomerAuthError] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -84,12 +88,22 @@ export default function StorefrontPage() {
         const supabase = createSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!active) return;
-        if (user) {
-          setCustomerLoggedIn(true);
+        const isCustomer = user && (
+          user.app_metadata?.customer_account === true ||
+          String(user.email || '').endsWith('@login.burgerhouse.invalid') ||
+          Boolean(user.phone)
+        );
+        if (isCustomer) {
           const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
-          setCustomerName(profile?.full_name || user.user_metadata?.full_name || '');
-          setCustomerPhone(profile?.phone || user.phone || '');
-        } else setCustomerLoggedIn(false);
+          setCustomerLoggedIn(true);
+          const savedName = String(profile?.full_name || user.user_metadata?.full_name || '');
+          setCustomerName(savedName === 'مدير فرع الأمير سلطان' ? '' : savedName);
+          setCustomerPhone(profile?.phone || user.app_metadata?.customer_phone || user.phone || '');
+        } else {
+          setCustomerLoggedIn(false);
+          setCustomerName('');
+          setCustomerPhone('');
+        }
       } catch { if (active) setCustomerLoggedIn(false); }
       finally { if (active) setCustomerDataLoaded(true); }
     };
@@ -181,6 +195,50 @@ export default function StorefrontPage() {
   const updateQuantity = (key: string, delta: number) => setCart((current) => current
     .map((line) => line.key === key ? { ...line, quantity: line.quantity + delta } : line)
     .filter((line) => line.quantity > 0));
+
+  const authenticateCustomer = async () => {
+    setCustomerAuthError('');
+    const normalized = normalizePhone(customerPhone);
+    if (normalized.length !== 13) {
+      setCustomerAuthError('أدخل رقم جوال سعودي صحيحًا يبدأ بـ 05.');
+      return;
+    }
+    if (customerAuthMode === 'signup' && customerName.trim().length < 2) {
+      setCustomerAuthError('اكتب اسمك الكامل.');
+      return;
+    }
+    if (customerPassword.length < 8) {
+      setCustomerAuthError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+      return;
+    }
+    setCustomerAuthBusy(true);
+    try {
+      const response = await fetch('/api/account/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ mode: customerAuthMode, phone: normalized, password: customerPassword, fullName: customerName.trim() })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.message_ar || 'تعذر إكمال تسجيل الحساب. حاول مرة أخرى.');
+      const supabase = createSupabaseBrowserClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user || user.app_metadata?.customer_account !== true) {
+        throw new Error('تم إنشاء الحساب لكن تعذر تحميل جلسة الدخول. أعد تسجيل الدخول.');
+      }
+      const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
+      setCustomerName(profile?.full_name || customerName.trim());
+      setCustomerPhone(profile?.phone || normalized);
+      setCustomerLoggedIn(true);
+      setCustomerPassword('');
+      setCustomerAuthError('');
+    } catch (error: any) {
+      setCustomerAuthError(error?.message || 'تعذر إكمال العملية. حاول مرة أخرى.');
+    } finally {
+      setCustomerAuthBusy(false);
+    }
+  };
 
   const submitOrder = async () => {
     setOrderError('');
@@ -572,16 +630,33 @@ export default function StorefrontPage() {
 
       {cartOpen && <div className="bh-cart-overlay fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm" onClick={()=>setCartOpen(false)}><aside className="bh-cart-drawer absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col bg-[#171713] text-[#f7f3e9] shadow-2xl" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 sm:px-6"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">YOUR ORDER</span><div className="mt-1 text-xl font-black text-white">سلة طلبك <span className="mr-1 text-sm font-semibold text-[#aaa493]">({cartCount})</span></div></div><button onClick={()=>setCartOpen(false)} aria-label="إغلاق السلة" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5"><X/></button></div>
-        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">{cart.length===0?<div className="flex h-full flex-col items-center justify-center py-16 text-center"><div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#55471f] bg-[#282313] text-[#f5c542]"><ShoppingBag size={30}/></div><h3 className="mt-5 text-lg font-black text-white">سلتك تنتظر اختيارك</h3><p className="mt-2 text-sm text-[#aaa493]">أضف وجبتك المفضلة ونجهزها لك طازجة.</p><button onClick={()=>setCartOpen(false)} className="mt-6 rounded-xl bg-[#f5c542] px-6 py-3 text-sm font-black text-[#17140b]">استكشف المنيو</button></div>:cart.map((line)=><article key={line.key} className="bh-cart-item flex gap-3 rounded-xl border border-white/10 bg-[#202019] p-3"><SafeFoodImage src={line.product.image_url} categoryId={line.product.category_id} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover"/><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="text-sm font-black leading-6 text-white">{line.product.name_ar}</div><b className="shrink-0 text-sm text-[#ffd65b]">{money(linePrice(line))} ر.س</b></div>{line.size?.name_ar&&<div className="mt-1 text-[11px] text-[#c8b879]">{line.size.name_ar}</div>}{line.addonIds.length>0&&<div className="mt-2 flex flex-wrap gap-1">{line.addonIds.map((id)=><span key={id} className="rounded-md bg-[#302914] px-2 py-1 text-[10px] text-[#e6d28e]">{addonFor(id)?.name_ar}</span>)}</div>}{line.note&&<div className="mt-2 line-clamp-2 text-[10px] leading-5 text-[#aaa493]">ملاحظة: {line.note}</div>}<div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-[#aaa493]">الكمية</span><div className="flex h-8 items-center gap-3 rounded-lg border border-white/10 bg-[#11110e] px-2"><button aria-label="تقليل الكمية" onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="min-w-3 text-center text-xs font-bold">{line.quantity}</span><button aria-label="زيادة الكمية" onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></article>)}</div>
+        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">{cart.length===0?<div className="flex h-full flex-col items-center justify-center py-16 text-center"><div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#55471f] bg-[#282313] text-[#f5c542]"><ShoppingBag size={30}/></div><h3 className="mt-5 text-lg font-black text-white">سلتك تنتظر اختيارك</h3><p className="mt-2 text-sm text-[#aaa493]">أضف وجبتك المفضلة ونجهزها لك طازجة.</p><button onClick={()=>setCartOpen(false)} className="mt-6 rounded-xl bg-[#f5c542] px-6 py-3 text-sm font-black text-[#17140b]">استكشف المنيو</button></div>:cart.map((line)=><article key={line.key} className="bh-cart-item flex gap-2 rounded-lg border border-white/10 bg-[#202019] p-2"><SafeFoodImage src={line.product.image_url} categoryId={line.product.category_id} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover"/><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="text-xs font-bold leading-5 text-white">{line.product.name_ar}</div><b className="shrink-0 text-xs text-[#ffd65b]">{money(linePrice(line))} ر.س</b></div>{line.size?.name_ar&&<div className="mt-1 text-[11px] text-[#c8b879]">{line.size.name_ar}</div>}{line.addonIds.length>0&&<div className="mt-2 flex flex-wrap gap-1">{line.addonIds.map((id)=><span key={id} className="rounded-md bg-[#302914] px-2 py-1 text-[10px] text-[#e6d28e]">{addonFor(id)?.name_ar}</span>)}</div>}{line.note&&<div className="mt-2 line-clamp-2 text-[10px] leading-5 text-[#aaa493]">ملاحظة: {line.note}</div>}<div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-[#aaa493]">الكمية</span><div className="flex h-8 items-center gap-3 rounded-lg border border-white/10 bg-[#11110e] px-2"><button aria-label="تقليل الكمية" onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="min-w-3 text-center text-xs font-bold">{line.quantity}</span><button aria-label="زيادة الكمية" onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></article>)}</div>
         {cart.length>0&&<div className="bh-cart-summary border-t border-white/10 bg-[#11110e] p-5 sm:p-6"><div className="space-y-2 text-xs text-[#aaa493]"><div className="flex justify-between"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="flex justify-between"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div></div><div className="mt-4 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm font-bold text-white">الإجمالي شامل الضريبة</span><strong className="text-2xl font-black text-[#ffd65b]">{money(total)} <small className="text-xs">ر.س</small></strong></div><button onClick={()=>{setCartOpen(false);setCheckoutOpen(true);}} className="mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-[#f5c542] py-4 text-sm font-black text-[#17140b] transition hover:bg-[#ffd65b]">متابعة وإتمام الطلب <ArrowLeft size={17}/></button><p className="mt-3 text-center text-[10px] text-[#8d8878]">استلام من الفرع · الدفع عند الاستلام</p></div>}
       </aside></div>}
 
       {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>
         <div className="mt-5 space-y-4">
-          <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input disabled={!customerLoggedIn} value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="اسمك"/></label>
-          <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input disabled={!customerLoggedIn} value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
-          {!customerLoggedIn && <div className="rounded-xl border border-[#68572b] bg-[#282313] p-4 text-xs leading-6 text-[#e7d69e]">لإتمام الطلب وحفظه في سجلّك، يلزم تسجيل الدخول أولاً. <a href="/account" className="font-black underline">تسجيل الدخول أو إنشاء حساب</a></div>}
+          {!customerDataLoaded ? (
+            <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>
+          ) : customerLoggedIn ? (
+            <div className="rounded-xl border border-[#5c512b] bg-[#242116] p-4">
+              <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold text-[#e5c45a]">بيانات حسابك المحفوظة</p><p className="mt-1 text-sm font-black text-white">{customerName || 'عميل برجر هاوس'}</p><p className="mt-1 text-xs text-[#c5bdab]" dir="ltr">{customerPhone}</p></div><span className="rounded-full bg-emerald-900/40 px-3 py-1 text-[10px] font-bold text-emerald-300">مسجل الدخول</span></div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-[#68572b] bg-[#282313] p-4">
+              <div className="mb-3"><p className="text-sm font-black text-white">{customerAuthMode === 'signup' ? 'أنشئ حسابك وأكمل طلبك' : 'تسجيل الدخول لإكمال الطلب'}</p><p className="mt-1 text-[11px] leading-5 text-[#cfc39c]">بياناتك تُحفظ مرة واحدة وتظهر تلقائيًا في طلباتك القادمة.</p></div>
+              <div className="mb-4 grid grid-cols-2 rounded-lg bg-black/25 p-1 text-xs font-bold"><button type="button" onClick={()=>{setCustomerAuthMode('signup');setCustomerAuthError('');}} className={\`rounded-md py-2 \${customerAuthMode==='signup'?'bg-[#f5c542] text-[#17140b]':'text-[#d4cba9]'}\`}>إنشاء حساب</button><button type="button" onClick={()=>{setCustomerAuthMode('login');setCustomerAuthError('');}} className={\`rounded-md py-2 \${customerAuthMode==='login'?'bg-[#f5c542] text-[#17140b]':'text-[#d4cba9]'}\`}>لدي حساب</button></div>
+              <div className="space-y-3">
+                {customerAuthMode==='signup' && <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input value={customerName} onChange={e=>setCustomerName(e.target.value)} autoComplete="name" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="اكتب اسمك"/></label>}
+                <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} autoComplete="tel" inputMode="tel" dir="ltr" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="05xxxxxxxx"/></label>
+                <label className="block text-xs font-bold text-[#e9e2d2]">أنشئ كلمة مرور<input type="password" minLength={8} autoComplete={customerAuthMode==='signup'?'new-password':'current-password'} value={customerPassword} onChange={e=>setCustomerPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="8 أحرف على الأقل"/></label>
+                {customerAuthMode==='login' && <a href="/account#forgot" className="inline-block text-[11px] font-bold text-[#f5d66b] underline">نسيت كلمة المرور؟</a>}
+                {customerAuthError && <p role="alert" className="rounded-lg bg-red-950/50 p-2.5 text-xs text-red-200">{customerAuthError}</p>}
+                <button type="button" disabled={customerAuthBusy} onClick={authenticateCustomer} className="w-full rounded-lg bg-[#f5c542] py-3 text-sm font-black text-[#17140b] disabled:opacity-50">{customerAuthBusy?'جارٍ تجهيز حسابك...':customerAuthMode==='signup'?'إنشاء الحساب والمتابعة':'تسجيل الدخول والمتابعة'}</button>
+              </div>
+            </div>
+          )}
           <label className="block text-xs font-bold text-[#e9e2d2]">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold text-[#e9e2d2]">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
           <label className="block text-xs font-bold text-[#e9e2d2]">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="ملاحظات إضافية (اختياري)"/></label>

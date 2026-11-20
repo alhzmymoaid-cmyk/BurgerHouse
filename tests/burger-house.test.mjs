@@ -251,6 +251,12 @@ class SharedSupabaseCloudState {
             if (!first) return { data: null, error: { message: 'Row not found' } };
             return { data: first, error: null };
           },
+          async maybeSingle() {
+            const res = await builder._exec();
+            if (res.error) return res;
+            const first = Array.isArray(res.data) ? res.data[0] : res.data;
+            return { data: first || null, error: null };
+          },
           then(resolve, reject) {
             return builder._exec().then(resolve, reject);
           },
@@ -1095,6 +1101,86 @@ test('10. Closed Branch Order Blocking & Unintegrated Online Payment Gateway Dis
   });
   assert.equal(enableApplePayAttempt.status, 422);
   assert.equal(enableApplePayAttempt.body.error, 'PAYMENT_GATEWAY_NOT_CONFIGURED');
+});
+
+test('10b. Owner staff and product changes are scoped, validated and audited', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const ownerClient = cloud.createClientInstance('uid-owner');
+  const serviceClient = cloud.createClientInstance('uid-super-admin');
+
+  const staffUpdate = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: {
+        id: 'uid-cashier-sultan',
+        role: 'kitchen_staff',
+        assigned_branch_id: 'br-jed-hamra',
+        is_active: false
+      }
+    }
+  });
+  assert.equal(staffUpdate.status, 200);
+  const changedStaff = cloud.user_profiles.find((profile) => profile.id === 'uid-cashier-sultan');
+  assert.equal(changedStaff.role, 'kitchen_staff');
+  assert.equal(changedStaff.assigned_branch_id, 'br-jed-hamra');
+  assert.equal(changedStaff.is_active, false);
+  assert.equal(cloud.audit_logs[0].action, 'MANAGE_STAFF_MEMBER');
+
+  const protectedProfileUpdate = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: { id: 'uid-owner', role: 'cashier', assigned_branch_id: null, is_active: true }
+    }
+  });
+  assert.equal(protectedProfileUpdate.status, 403);
+  assert.equal(protectedProfileUpdate.body.error, 'PROTECTED_PROFILE_CANNOT_BE_MODIFIED');
+
+  const invalidRoleUpdate = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: { id: 'uid-cashier-sultan', role: 'super_admin', assigned_branch_id: null, is_active: true }
+    }
+  });
+  assert.equal(invalidRoleUpdate.status, 400);
+
+  const originalProductName = cloud.products.find((product) => product.id === 'prd-wagyu-smash').name_ar;
+  const productUpdate = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'UPSERT_PRODUCT',
+      product: {
+        id: 'prd-wagyu-smash',
+        base_price: 39,
+        is_active: false,
+        is_featured: true,
+        name_ar: 'محاولة تعديل غير مسموحة'
+      }
+    }
+  });
+  assert.equal(productUpdate.status, 200);
+  const changedProduct = cloud.products.find((product) => product.id === 'prd-wagyu-smash');
+  assert.equal(Number(changedProduct.base_price), 39);
+  assert.equal(changedProduct.is_active, false);
+  assert.equal(changedProduct.is_featured, true);
+  assert.equal(changedProduct.name_ar, originalProductName);
+  assert.equal(cloud.audit_logs[0].action, 'UPDATE_PRODUCT');
+
+  const negativePriceUpdate = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'UPSERT_PRODUCT',
+      product: { id: 'prd-wagyu-smash', base_price: -1, is_active: true, is_featured: false }
+    }
+  });
+  assert.equal(negativePriceUpdate.status, 400);
 });
 
 test('11. Production Secret Enforcement & Single-Use Nonce CAPTCHA Replay Prevention', async () => {

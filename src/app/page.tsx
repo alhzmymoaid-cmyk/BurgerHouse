@@ -5,7 +5,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
-  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck
+  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download
 } from 'lucide-react';
 
 type Size = { id: string; name_ar: string; price_delta: number; is_default?: boolean };
@@ -271,7 +271,7 @@ export default function StorefrontPage() {
   };
 
   return (
-    <main className="bh-storefront min-h-screen bg-[#f4f1eb] text-[#201e1a]" dir="rtl">
+    <main className={`bh-storefront min-h-screen bg-[#09090B] text-[#FAFAFA] ${cartCount > 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
       <div className="bg-[#1c1c18] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
         تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
       </div>
@@ -374,6 +374,9 @@ export default function StorefrontPage() {
                 <a href="/account" className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
                   <span className="flex items-center gap-3"><ShieldCheck size={17} className="text-[#ffc82c]" /> حسابي وبياناتي</span><ArrowLeft size={15} className="text-[#777b69]" />
                 </a>
+                <button type="button" onClick={() => { setMobileMenuOpen(false); window.setTimeout(() => window.dispatchEvent(new Event('bh:open-install')), 180); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><Download size={17} className="text-[#ffc82c]" /> تثبيت التطبيق على جهازك</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </button>
                 <button type="button" onClick={() => { setMobileMenuOpen(false); setCartOpen(true); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
                   <span className="flex items-center gap-3"><ShoppingBag size={17} className="text-[#ffc82c]" /> سلة المشتريات</span><span className="rounded-full bg-[#ffc82c] px-2.5 py-1 text-[10px] font-black text-[#11120e]">{cartCount}</span>
                 </button>
@@ -392,15 +395,17 @@ export default function StorefrontPage() {
         )}
       </header>
 
-      <div className="bh-mobile-orderbar" dir="rtl">
-        <div className="bh-mobile-orderbar-meta">
-          <span className="bh-mobile-orderbar-count">{cartCount}</span>
-          <div><b>{cartCount > 0 ? 'طلبك جاهز للتأكيد' : 'برجر هاوس على مزاجك'}</b><small>{cartCount > 0 ? 'راجع اختياراتك في السلة' : 'اختر وجبتك وابدأ الطلب'}</small></div>
+      {cartCount > 0 && (
+        <div className="bh-mobile-orderbar" dir="rtl" role="region" aria-label="ملخص السلة">
+          <div className="bh-mobile-orderbar-meta">
+            <span className="bh-mobile-orderbar-count">{cartCount}</span>
+            <div><b>طلبك جاهز للتأكيد</b><small>الإجمالي شامل الضريبة · {money(total)} ر.س</small></div>
+          </div>
+          <button onClick={() => setCartOpen(true)}>
+            إتمام الطلب <ArrowLeft size={16}/>
+          </button>
         </div>
-        <button onClick={() => cartCount > 0 ? setCartOpen(true) : document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>
-          {cartCount > 0 ? <>عرض السلة · {money(total)} ر.س <ArrowLeft size={16}/></> : <>تصفح المنيو <ArrowLeft size={16}/></>}
-        </button>
-      </div>
+      )}
 
       {activeView === 'menu' && <>
         <section className="bh-home-hero relative overflow-hidden text-[#f7f3eb]">
@@ -418,11 +423,11 @@ export default function StorefrontPage() {
             <div className="bh-home-proof"><span><b>{branches.length}</b> فروع</span><span><b>طازج</b> عند الطلب</span><span><b>استلام</b> مباشر</span></div>
           </div>
           <div className="bh-home-price"><span>HOUSE SIGNATURE</span><b>واغيو سماش هاوس</b><small>ابدأ من ٣٨ ر.س</small></div>
-          <div className="bh-home-scroll">SCROLL TO EXPLORE <span>↓</span></div>
+          <div className="bh-home-scroll" aria-hidden="true">SCROLL TO EXPLORE <span>↓</span></div>
         </section>
 
         <section className="border-b border-[#e2dbcf] bg-[#fbf9f4]">
-          <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-x-reverse divide-[#e5ded3] px-3 py-5 sm:px-8 sm:py-6">
+          <div className="bh-home-benefits mx-auto flex max-w-7xl items-center gap-3 px-4 py-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-x-reverse sm:divide-[#e5ded3] sm:px-8 sm:py-6">
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">مكونات مختارة</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">تفاصيل تصنع الفرق</p></div>
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">تحضير عند الطلب</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">من المطبخ مباشرة</p></div>
             <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">استلام من الفرع</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">اختر موقعك المناسب</p></div>
@@ -447,7 +452,7 @@ export default function StorefrontPage() {
 
         <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
           <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">EXPLORE THE MENU</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">تصفّح حسب ذوقك</h2></div><button onClick={()=>document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">كل القائمة</button></div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="bh-category-rail grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((category) => {
               const categoryImage = products.find((product) => product.category_id === category.id)?.image_url || '/images/hero-wagyu-smash.jpg';
               const count = products.filter((product) => product.category_id === category.id).length;
@@ -465,7 +470,7 @@ export default function StorefrontPage() {
             <div><span>THE HOUSE SELECTION</span><h2>تجارب تستحق التجربة</h2><p>اختيارات البيت التي نبدأ بها معك.</p></div>
             <button onClick={() => {setActiveCategory('all');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}}>استكشف القائمة <ArrowLeft size={15}/></button>
           </div>
-          <div className="bh-signature-grid">
+          <div className="bh-signature-grid bh-signature-rail">
             {products.filter(product => product.is_featured).slice(0,4).map((product,index) => {
               const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
               return <button type="button" key={product.id} onClick={()=>openProduct(product)} className={index===0?'bh-signature-card bh-signature-main':'bh-signature-card'}>
@@ -494,7 +499,7 @@ export default function StorefrontPage() {
           : <div className="space-y-14">
             {categoryGroups.map((group) => <section key={group.id}>
               <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bh-menu-product-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {group.products.map((product)=>{
                   const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
                   return <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa] transition hover:-translate-y-1 hover:shadow-[0_14px_35px_rgba(42,34,24,.09)]">

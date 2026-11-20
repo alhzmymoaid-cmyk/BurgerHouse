@@ -388,3 +388,16 @@ body { background:var(--bh-bg); color:var(--bh-text); }
   .bh-pwa-close { width:27px; height:27px; }
 }
 @media(prefers-reduced-motion:reduce) { .bh-pwa-banner,.bh-pwa-sheet { animation:none; } }
+
+
+/* Shared promo and branch-catalog tools embedded in the admin/staff consoles */
+.bh-owner-shell .bg-\\[\\#131317\\],.bh-owner-shell .bg-\\[\\#09090B\\] { background:#FAF9F6!important; }
+.bh-owner-shell [class*="border-[#27272A]"],.bh-owner-shell [class*="border-white/10"] { border-color:#E5DFD6!important; }
+.bh-owner-shell [class*="text-[#F5B800]"],.bh-owner-shell [class*="text-[#FFD036]"] { color:var(--bh-red)!important; }
+.bh-owner-shell [class*="text-[#A1A1AA]"] { color:#77716A!important; }
+.bh-owner-shell [class*="bg-[#F5B800]"] { background:var(--bh-red)!important; color:#fff!important; }
+.bh-staff-shell section .bg-\\[\\#131317\\],.bh-staff-shell section .bg-\\[\\#09090B\\] { background:#fff!important; }
+.bh-staff-shell section [class*="border-white/10"] { border-color:#E5DFD6!important; }
+.bh-staff-shell section [class*="text-white"],.bh-staff-shell section [class*="text-[#c8c8cf]"],.bh-staff-shell section [class*="text-[#F5B800]"] { color:#292522!important; }
+.bh-staff-shell section [class*="text-[#A1A1AA]"] { color:#77716A!important; }
+.bh-staff-shell section [class*="bg-[#F5B800]"] { background:var(--bh-red)!important; color:#fff!important; }

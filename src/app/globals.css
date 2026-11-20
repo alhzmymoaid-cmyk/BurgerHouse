@@ -289,3 +289,74 @@ a { text-decoration:none; }
 .bh-storefront, .bh-account, .bh-orders, .bh-staff-shell, .bh-owner-shell, .bh-superadmin {
   color-scheme:dark;
 }
+
+
+/* November mobile-first storefront and account redesign */
+.bh-home-hero{position:relative;isolation:isolate;min-height:690px;background:#0c0d0a;overflow:hidden}
+.bh-home-hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 42%;z-index:-2}
+.bh-home-hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(7,8,6,.86) 0%,rgba(7,8,6,.48) 52%,rgba(7,8,6,.08) 100%),linear-gradient(0deg,#080906 0%,transparent 44%,rgba(0,0,0,.16) 100%)}
+.bh-home-hero-content{position:relative;max-width:1280px;margin:auto;padding:112px 7vw 95px;min-height:690px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.bh-home-kicker{display:flex;align-items:center;gap:11px;color:#f5c83d;font-size:10px;font-weight:1000;letter-spacing:.2em}
+.bh-home-kicker span{width:30px;height:1px;background:#f5c83d}
+.bh-home-kicker i{font-style:normal;color:#a68a36}
+.bh-home-overline{margin-top:45px;color:#e6c75e;font-size:10px;font-weight:900;letter-spacing:.2em}
+.bh-home-hero h1{margin-top:14px;font-size:clamp(48px,7vw,88px);line-height:1.2;font-weight:1000;letter-spacing:-.055em;color:#fff8e7}
+.bh-home-hero h1 em{font-style:normal;color:#f4c735}
+.bh-home-description{max-width:490px;margin-top:18px;color:#e3dcc9;font-size:15px;line-height:2.1}
+.bh-home-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.bh-home-actions button{min-height:54px;padding:0 23px;display:inline-flex;align-items:center;justify-content:center;gap:12px;font-size:13px;font-weight:1000}
+.bh-home-actions button:first-child{background:#f4c735;color:#14140e}
+.bh-home-actions button:last-child{border:1px solid #ffffff60;background:#10110e80;color:#fff7df}
+.bh-home-proof{display:flex;gap:25px;margin-top:40px;padding-top:19px;border-top:1px solid #ffffff3a;color:#c7bea8;font-size:11px}
+.bh-home-proof span{display:flex;gap:6px;align-items:center}
+.bh-home-proof b{color:#fff4d0;font-size:13px}
+.bh-home-price{position:absolute;bottom:48px;left:7vw;display:grid;gap:5px;padding-left:13px;border-left:2px solid #f4c735;text-align:left}
+.bh-home-price span{font-size:9px;letter-spacing:.2em;color:#f4d77b}
+.bh-home-price b{font-size:14px;color:#fff7e3}
+.bh-home-price small{font-size:11px;color:#c8bea8}
+.bh-home-scroll{position:absolute;bottom:18px;right:7vw;color:#d5cbb1;font-size:8px;letter-spacing:.18em}
+.bh-home-scroll span{margin-right:9px;color:#f4c735;font-size:15px}
+@media(max-width:767px){
+ .bh-home-hero{min-height:690px}
+ .bh-home-hero-image{object-position:58% center}
+ .bh-home-hero-shade{background:linear-gradient(0deg,#080906 0%,rgba(8,9,6,.88) 17%,rgba(8,9,6,.2) 66%,rgba(8,9,6,.12) 100%),linear-gradient(90deg,rgba(0,0,0,.18),transparent)}
+ .bh-home-hero-content{min-height:690px;justify-content:flex-end;padding:310px 22px 115px}
+ .bh-home-overline{margin-top:22px;font-size:9px}
+ .bh-home-hero h1{font-size:clamp(43px,12vw,60px);line-height:1.18}
+ .bh-home-description{font-size:12px;line-height:1.9;margin-top:12px;max-width:360px}
+ .bh-home-actions{width:100%;margin-top:20px;gap:8px}
+ .bh-home-actions button{flex:1;min-height:49px;padding:0 12px;font-size:11px}
+ .bh-home-proof{gap:15px;margin-top:24px;padding-top:14px;font-size:9px}
+ .bh-home-proof b{font-size:11px}
+ .bh-home-price{display:none}
+ .bh-home-scroll{display:none}
+}
+/* Account form is the first screen on phones: no oversized promo panel above it */
+@media(max-width:850px){
+ .bh-account{min-height:100svh}
+ .bh-account-topline{min-height:34px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center}
+ .bh-account-layout{display:flex!important;flex-direction:column!important;min-height:calc(100svh - 34px);justify-content:center}
+ .bh-account-visual{display:none!important}
+ .bh-account-panel{width:100%;max-width:520px;margin:0 auto;padding:24px 20px 28px!important}
+ .bh-account-form-head{display:grid;grid-template-columns:48px 1fr;column-gap:12px;align-items:center;margin-bottom:17px}
+ .bh-account-icon{grid-row:span 2;width:46px;height:46px;margin:0!important}
+ .bh-account-form-head .bh-eyebrow{align-self:end;margin:0!important}
+ .bh-account-form-head h2{grid-column:2;margin:2px 0 0!important;font-size:25px!important}
+ .bh-account-form-head>p:last-child{grid-column:1/-1;margin-top:10px!important;font-size:12px;line-height:1.7}
+ .bh-account-switch{display:grid;grid-template-columns:1fr 1fr;position:sticky;top:8px;z-index:2;margin:0 0 16px;padding:4px}
+ .bh-account-switch button{min-height:43px;font-size:12px}
+ .bh-account-form{gap:13px!important}
+ .bh-account-form label{display:block;font-size:12px}
+ .bh-field{min-height:49px!important;margin-top:6px}
+ .bh-field input{min-height:47px!important;font-size:14px}
+ .bh-account-submit{min-height:52px!important;margin-top:3px}
+ .bh-account-security{margin-top:15px!important;font-size:10px;line-height:1.7}
+}
+@media(max-height:740px) and (max-width:850px){
+ .bh-account-panel{padding-top:13px!important;padding-bottom:15px!important}
+ .bh-account-form-head{margin-bottom:10px}
+ .bh-account-form-head>p:last-child{display:none}
+ .bh-account-switch{margin-bottom:10px}
+ .bh-account-form{gap:9px!important}
+ .bh-account-security{margin-top:9px!important}
+}

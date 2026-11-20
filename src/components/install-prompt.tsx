@@ -1,94 +1,190 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { X, Smartphone, Share, Plus, MoreHorizontal, Download, CheckCircle2, ExternalLink } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Apple, Check, Copy, Download, Plus, Share, Smartphone, X } from 'lucide-react';
 
-declare global { interface Window { deferredPwaPrompt?: any } }
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }>;
+};
+declare global {
+  interface Navigator { standalone?: boolean; }
+}
 
-export default function InstallPrompt() {
-  const [show, setShow] = useState(false);
-  const [ios, setIos] = useState(false);
-  const [safari, setSafari] = useState(false);
+const DISMISS_KEY = 'bh-pwa-dismissed-at-v1';
+const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000;
+
+export default function SmartPwaInstallBanner() {
+  const promptRef = useRef<InstallPromptEvent | null>(null);
+  const [visible, setVisible] = useState(false);
   const [installed, setInstalled] = useState(false);
-  const [nativePromptReady, setNativePromptReady] = useState(false);
+  const [device, setDevice] = useState<'ios-safari' | 'ios-other' | 'android' | 'other'>('other');
+  const [nativeReady, setNativeReady] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const isStandalone = useCallback(() => (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    navigator.standalone === true
+  ), []);
 
   useEffect(() => {
     const ua = navigator.userAgent;
-    const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios|opios|tiktok|instagram|fbav|fban/i.test(ua);
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
-    setIos(isIos);
-    setSafari(isSafari);
-    setInstalled(standalone);
-    if (standalone || localStorage.getItem('bh-install-dismissed-v3') === '1') return;
+    const ios = /iPhone|iPad|iPod/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const safari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|CriOS|DuckDuckGo|YaBrowser|Instagram|FBAN|FBAV|WhatsApp|ChatGPT|OpenAI|Telegram|Snapchat|TikTok|Twitter|MicroMessenger|GSA/i.test(ua);
+    const nextDevice = ios ? (safari ? 'ios-safari' : 'ios-other') : (/Android/i.test(ua) ? 'android' : 'other');
+    setDevice(nextDevice);
 
-    const onPrompt = (event: Event) => {
+    if (isStandalone()) {
+      setInstalled(true);
+      return;
+    }
+
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    if (dismissedAt && Date.now() - dismissedAt < DISMISS_TTL) {
+      // Explicitly opening the install flow from the menu is still allowed.
+    } else if (dismissedAt) {
+      localStorage.removeItem(DISMISS_KEY);
+    }
+
+    const showIfAllowed = () => {
+      if (isStandalone()) return;
+      const dismissed = Number(localStorage.getItem(DISMISS_KEY) || 0);
+      if (dismissed && Date.now() - dismissed < DISMISS_TTL) return;
+      setVisible(true);
+    };
+
+    const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      window.deferredPwaPrompt = event;
-      setNativePromptReady(true);
-      setShow(true);
+      promptRef.current = event as InstallPromptEvent;
+      setNativeReady(true);
+      showIfAllowed();
     };
     const onInstalled = () => {
-      window.deferredPwaPrompt = undefined;
+      promptRef.current = null;
+      setNativeReady(false);
       setInstalled(true);
-      setShow(false);
+      setVisible(false);
+      setSheetOpen(false);
     };
-    window.addEventListener('beforeinstallprompt', onPrompt);
+    const onManualOpen = () => {
+      if (isStandalone()) return;
+      setVisible(true);
+      setSheetOpen(false);
+    };
+    const onFirstInteraction = () => showIfAllowed();
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
     window.addEventListener('appinstalled', onInstalled);
-    const timer = window.setTimeout(() => setShow(true), 1200);
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    window.addEventListener('bh:open-install', onManualOpen);
+    window.addEventListener('pointerdown', onFirstInteraction, { once: true, passive: true });
+    const timer = window.setTimeout(showIfAllowed, 3800);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    }
+
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onInstalled);
+      window.removeEventListener('bh:open-install', onManualOpen);
+      window.removeEventListener('pointerdown', onFirstInteraction);
     };
-  }, []);
+  }, [isStandalone]);
 
-  const close = () => {
-    setShow(false);
-    localStorage.setItem('bh-install-dismissed-v3', '1');
+  const dismiss = () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    setVisible(false);
+    setSheetOpen(false);
   };
 
   const install = async () => {
-    const promptEvent = window.deferredPwaPrompt;
-    if (!promptEvent) {
-      setNativePromptReady(false);
+    const prompt = promptRef.current;
+    if (!prompt) {
+      setSheetOpen(true);
       return;
     }
-    window.deferredPwaPrompt = undefined;
-    setNativePromptReady(false);
-    promptEvent.prompt();
-    const choice = await promptEvent.userChoice;
-    if (choice?.outcome === 'accepted') setShow(false);
+    promptRef.current = null;
+    setNativeReady(false);
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    if (choice.outcome === 'accepted') setVisible(false);
   };
 
-  if (!show || installed) return null;
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = window.location.href;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const success = document.execCommand('copy');
+      input.remove();
+      setCopied(success);
+      window.setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
+  if (!visible || installed) return null;
+
+  const isIosSafari = device === 'ios-safari';
+  const isIosOther = device === 'ios-other';
 
   return (
-    <div className="bh-install-backdrop" dir="rtl">
-      <section className="bh-install-card" role="dialog" aria-modal="true" aria-labelledby="bh-install-title">
-        <button className="bh-install-close" onClick={close} aria-label="إغلاق"><X size={18}/></button>
-        <div className="bh-install-brand"><img src="/brand-mark.svg" alt=""/><div><span>BURGER HOUSE</span><small>YOUR BURGER HOUSE, ONE TAP AWAY</small></div></div>
-        <div className="bh-install-heading"><span className="bh-install-icon"><Smartphone size={23}/></span><div><p className="bh-eyebrow">APP EXPERIENCE</p><h2 id="bh-install-title">خلّ برجر هاوس أقرب لك</h2><p>أضف الموقع إلى الشاشة الرئيسية وافتحه كتطبيق مستقل.</p></div></div>
-        {ios ? <div className="bh-install-steps">
-          {!safari && <div className="bh-install-tip"><ExternalLink size={16}/> افتح صفحة المتجر في Safari أولاً؛ المتصفح الحالي لا يدعم التثبيت المباشر.</div>}
-          <div className="bh-install-step"><span>١</span><div><b>افتح الموقع في Safari</b><p>{safari ? 'أنت تستخدم Safari بالفعل.' : 'من قائمة المشاركة في المتصفح اختر فتح في Safari أو انسخ الرابط وافتحه هناك.'}</p></div><ExternalLink size={20}/></div>
-          <div className="bh-install-step"><span>٢</span><div><b>اضغط زر مشاركة</b><p>المربع مع السهم للأعلى في شريط Safari.</p></div><Share size={20}/></div>
-          <div className="bh-install-step"><span>٣</span><div><b>اختر «إضافة إلى الشاشة الرئيسية»</b><p>من خيارات المشاركة، ثم اضغط «إضافة» أعلى الشاشة.</p></div><Plus size={20}/></div>
-          <div className="bh-install-tip"><CheckCircle2 size={16}/> على iPhone لا يظهر مربع تثبيت تلقائي؛ هذه هي طريقة Apple الرسمية.</div>
-        </div> : <div className="bh-install-steps">
-          {nativePromptReady ? <>
-            <p className="bh-install-android-copy">يمكن تثبيت BURGER HOUSE مباشرة على جهازك.</p>
-            <button className="bh-install-action" onClick={install}><Download size={17}/> تثبيت التطبيق الآن</button>
-          </> : <>
-            <p className="bh-install-android-copy">إذا لم يظهر زر التثبيت المباشر، افتح قائمة المتصفح ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p>
-            <div className="bh-install-step"><span>١</span><div><b>افتح قائمة المتصفح ⋮</b><p>في Chrome أعلى الشاشة.</p></div><MoreHorizontal size={20}/></div>
-            <div className="bh-install-step"><span>٢</span><div><b>اختر «تثبيت التطبيق»</b><p>أو «إضافة إلى الشاشة الرئيسية» ثم أكّد التثبيت.</p></div><Download size={20}/></div>
-          </>}
-          <div className="bh-install-tip"><CheckCircle2 size={16}/> سيظهر التطبيق على الشاشة الرئيسية بعد موافقتك.</div>
-        </div>}
-        <button className="bh-install-later" onClick={close}>ليس الآن</button>
-      </section>
-    </div>
+    <>
+      <aside className="bh-pwa-banner" dir="rtl" role="region" aria-label="تثبيت تطبيق برجر هاوس">
+        <div className="bh-pwa-app-icon"><img src="/icons/icon-192.svg" alt="" /></div>
+        <div className="bh-pwa-banner-copy">
+          <strong>ثبّت تطبيق BURGER HOUSE</strong>
+          <span>{isIosOther ? 'افتح الرابط في Safari للتثبيت على iPhone' : 'وصول أسرع وتجربة مستقلة من الشاشة الرئيسية'}</span>
+        </div>
+        {isIosOther ? (
+          <button type="button" className="bh-pwa-primary bh-pwa-copy" onClick={copyLink}>
+            {copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? 'تم النسخ' : 'نسخ الرابط'}
+          </button>
+        ) : isIosSafari ? (
+          <button type="button" className="bh-pwa-primary" onClick={() => setSheetOpen(true)}>طريقة التثبيت</button>
+        ) : (
+          <button type="button" className="bh-pwa-primary" onClick={install}>
+            <Download size={16}/> {nativeReady ? 'تثبيت' : 'طريقة التثبيت'}
+          </button>
+        )}
+        <button type="button" className="bh-pwa-close" onClick={dismiss} aria-label="إغلاق إشعار التثبيت"><X size={17}/></button>
+      </aside>
+
+      {sheetOpen && (
+        <div className="bh-pwa-sheet-backdrop" dir="rtl" onClick={() => setSheetOpen(false)}>
+          <section className="bh-pwa-sheet" role="dialog" aria-modal="true" aria-labelledby="bh-pwa-sheet-title" onClick={(event) => event.stopPropagation()}>
+            <div className="bh-pwa-sheet-handle"/>
+            <button type="button" className="bh-pwa-sheet-close" onClick={() => setSheetOpen(false)} aria-label="إغلاق"><X size={18}/></button>
+            <div className="bh-pwa-sheet-app">
+              <img src="/icons/icon-192.svg" alt="" />
+              <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">أضف التطبيق إلى شاشتك</h2></div>
+            </div>
+            {isIosSafari ? (
+              <ol className="bh-pwa-steps">
+                <li><span>1</span><div><b>اضغط مشاركة</b><p>أيقونة المربع والسهم للأعلى في شريط Safari.</p></div><Share size={21}/></li>
+                <li><span>2</span><div><b>اختر «إضافة إلى الشاشة الرئيسية»</b><p>قد تحتاج إلى التمرير لأسفل في قائمة المشاركة.</p></div><Plus size={21}/></li>
+                <li><span>3</span><div><b>اضغط «إضافة»</b><p>سيظهر BURGER HOUSE على الشاشة الرئيسية.</p></div><Check size={21}/></li>
+              </ol>
+            ) : (
+              <div className="bh-pwa-steps">
+                <div className="bh-pwa-tip"><Smartphone size={20}/><p>افتح قائمة المتصفح ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p></div>
+                <div className="bh-pwa-tip"><Apple size={20}/><p>إذا كنت تستخدم iPhone، افتح هذا الرابط في Safari ثم اتبع الخطوات.</p></div>
+              </div>
+            )}
+            <button type="button" className="bh-pwa-sheet-done" onClick={() => setSheetOpen(false)}>حسنًا</button>
+          </section>
+        </div>
+      )}
+    </>
   );
 }

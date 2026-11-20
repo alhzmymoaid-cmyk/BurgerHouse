@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './burger-house-refresh.css';
-import InstallPrompt from '@/components/install-prompt';
+import SmartPwaInstallBanner from '@/components/install-prompt';
 
-export const viewport: Viewport = { themeColor: '#0b0c0b', colorScheme: 'dark' };
+export const viewport: Viewport = { themeColor: '#09090B', colorScheme: 'dark', viewportFit: 'cover' };
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   applicationName: 'BURGER HOUSE',
   appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black-translucent' },
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/brand-mark.svg', apple: '/brand-mark.svg' },
+  icons: { icon: [{ url: '/icons/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' }, { url: '/icons/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' }], apple: '/icons/icon-192.svg' },
 };
 
 export default function RootLayout({
@@ -22,14 +22,15 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.svg" />
         <link
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#0b0c0b] text-[#f5f0df] antialiased selection:bg-[#f4c928] selection:text-black">
+      <body className="min-h-screen bg-[#09090B] text-[#FAFAFA] antialiased selection:bg-[#F5B800] selection:text-black">
         {children}
-        <InstallPrompt />
+        <SmartPwaInstallBanner />
       </body>
     </html>
   );

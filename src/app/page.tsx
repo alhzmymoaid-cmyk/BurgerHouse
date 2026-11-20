@@ -80,6 +80,9 @@ export default function StorefrontPage() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPreview, setCouponPreview] = useState<any>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
 
   const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -201,8 +204,9 @@ export default function StorefrontPage() {
     return (base + sizeDelta + addonTotal) * line.quantity;
   };
   const subtotal = cart.reduce((sum, line) => sum + linePrice(line), 0);
-  const vat = Number(((subtotal * Number(catalog?.settings?.vat_percentage ?? 15)) / 100).toFixed(2));
-  const total = subtotal + vat;
+  const discountAmount = couponPreview?.code === couponCode.trim().toUpperCase() ? Number(couponPreview.discount_amount || 0) : 0;
+  const vat = Number((((subtotal - discountAmount) * Number(catalog?.settings?.vat_percentage ?? 15)) / 100).toFixed(2));
+  const total = subtotal - discountAmount + vat;
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const openProduct = (product: Product) => {
@@ -280,6 +284,21 @@ export default function StorefrontPage() {
     }
   };
 
+
+  const validateCoupon = async () => {
+    setOrderError('');
+    if (!couponCode.trim()) { setCouponPreview(null); return; }
+    setCouponBusy(true);
+    try {
+      const response = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', cache: 'no-store', body: JSON.stringify({ code: couponCode, branch_id: branchId, subtotal }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message_ar || 'تعذر تطبيق رمز الخصم.');
+      setCouponCode(result.code);
+      setCouponPreview(result);
+    } catch (error: any) { setCouponPreview(null); setOrderError(error.message || 'رمز الخصم غير صالح.'); }
+    finally { setCouponBusy(false); }
+  };
+
   const submitOrder = async () => {
     setOrderError('');
     if (!customerLoggedIn) { setOrderError('سجّل الدخول بحسابك أولاً حتى نحفظ الطلب في سجل طلباتك.'); return; }
@@ -299,6 +318,7 @@ export default function StorefrontPage() {
           customer_phone: normalizePhone(customerPhone),
           customer_notes: customerNotes.trim(),
           payment_method_id: paymentId,
+          coupon_code: couponPreview?.code || null,
           items: cart.map((line) => ({
             product_id: line.product.id,
             size_id: line.size?.id || null,
@@ -342,6 +362,7 @@ export default function StorefrontPage() {
           branch_id: branchId, customer_name: customerName.trim(),
           customer_phone: normalizePhone(customerPhone), customer_notes: customerNotes.trim(),
           payment_method_id: paymentId,
+          coupon_code: couponPreview?.code || null,
           items: cart.map((line) => ({ product_id: line.product.id, size_id: line.size?.id || null, addon_ids: line.addonIds, quantity: line.quantity, item_notes: line.note })),
           client_claimed_total: Number(total.toFixed(2)),
           require_captcha_verification: true,
@@ -668,6 +689,11 @@ export default function StorefrontPage() {
       {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>
         <div className="mt-5 space-y-4">
+          <section className="rounded-xl border border-white/10 bg-[#202019] p-4">
+            <label className="mb-2 block text-xs font-bold text-[#e9e2d2]" htmlFor="bh-coupon">رمز الخصم</label>
+            <div className="flex gap-2"><input id="bh-coupon" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponPreview(null);}} placeholder="أدخل رمز الخصم" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white outline-none" dir="ltr"/><button type="button" disabled={couponBusy||!couponCode.trim()} onClick={()=>void validateCoupon()} className="rounded-lg bg-[#E76F32] px-4 text-xs font-black text-white disabled:opacity-50">{couponBusy?'جارٍ التحقق':'تطبيق'}</button></div>
+            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code} — خصم {money(discountAmount)} ر.س</p>}
+          </section>
           {!customerDataLoaded ? (
             <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>
           ) : customerLoggedIn ? (

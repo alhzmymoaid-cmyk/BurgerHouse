@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if (origin && new URL(origin).origin !== request.nextUrl.origin) return NextResponse.json({ error: 'INVALID_ORIGIN' }, { status: 403 });
   const auth = createSupabaseCustomerServerClient();
   const { data: { user }, error: authError } = await auth.auth.getUser();
-  if (authError || !user || user.app_metadata?.customer_account !== true) return NextResponse.json({ error: 'CUSTOMER_AUTH_REQUIRED' }, { status: 401 });
+  if (authError || !user || !(user.app_metadata?.customer_account === true || Boolean(user.phone) || String(user.email || '').endsWith('@login.burgerhouse.invalid'))) return NextResponse.json({ error: 'CUSTOMER_AUTH_REQUIRED' }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
   const branchId = typeof body.branch_id === 'string' ? body.branch_id : '';

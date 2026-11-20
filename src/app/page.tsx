@@ -389,6 +389,9 @@ export default function StorefrontPage() {
                     <Phone size={15} className="text-[#ffc82c]" /> تواصل مع المطعم
                   </a>
                 )}
+                <button type="button" onClick={() => { window.dispatchEvent(new Event('bh:open-install')); setMobileMenuOpen(false); }} className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F5B800]/35 bg-[#F5B800]/10 text-xs font-bold text-[#FFD036]">
+                  <Download size={15}/> تثبيت التطبيق على جهازك
+                </button>
                 <p className="mt-4 text-center text-[10px] leading-6 text-[#777b69]">BURGER HOUSE · Crafted over fire</p>
               </div>
             </aside>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
 import SafeFoodImage from '@/components/safe-food-image';
+import StorefrontAdminEditor from '@/components/storefront-admin-editor';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
@@ -29,7 +30,7 @@ type CartLine = {
   quantity: number; note: string;
 };
 
-const ORDER_STATUS_LABELS: Record<string, string> = { new: 'بانتظار موافقة الفرع', pending_confirmation: 'بانتظار تأكيد الفرع', accepted: 'تم قبول طلبك', preparing: 'طلبك قيد التجهيز', ready_for_pickup: 'طلبك جاهز للاستلام', completed: 'تم استلام طلبك', rejected: 'تم رفض الطلب', cancelled: 'تم إلغاء الطلب' };
+const ORDER_STATUS_LABELS: Record<string, string> = { new: 'بانتظار موافقة الفرع', pending_confirmation: 'بانتظار تأكيد الفرع', accepted: 'تم قبول الطلب — قيد التجهيز', preparing: 'طلبك قيد التجهيز', ready_for_pickup: 'طلبك جاهز للاستلام', completed: 'تم استلام طلبك', rejected: 'تم رفض الطلب', cancelled: 'تم إلغاء الطلب' };
 const money = (value: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(value);
 const normalizePhone = (value: string) => {
   const digits = value.replace(/\D/g, '');
@@ -68,6 +69,7 @@ export default function StorefrontPage() {
   const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
   const [customerAuthMode, setCustomerAuthMode] = useState<'signup' | 'login'>('signup');
   const [customerPassword, setCustomerPassword] = useState('');
+  const [customerConfirmPassword, setCustomerConfirmPassword] = useState('');
   const [customerAuthBusy, setCustomerAuthBusy] = useState(false);
   const [customerAuthError, setCustomerAuthError] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
@@ -207,6 +209,10 @@ export default function StorefrontPage() {
       setCustomerAuthError('اكتب اسمك الكامل.');
       return;
     }
+    if (customerAuthMode === 'signup' && customerPassword !== customerConfirmPassword) {
+      setCustomerAuthError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
     if (customerPassword.length < 8) {
       setCustomerAuthError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
       return;
@@ -218,7 +224,7 @@ export default function StorefrontPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ mode: customerAuthMode, phone: normalized, password: customerPassword, fullName: customerName.trim() })
+        body: JSON.stringify({ mode: customerAuthMode, phone: customerAuthMode === 'signup' ? customerPhone : normalized, password: customerPassword, fullName: customerName.trim() })
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message_ar || 'تعذر إكمال تسجيل الحساب. حاول مرة أخرى.');
@@ -232,6 +238,7 @@ export default function StorefrontPage() {
       setCustomerPhone(profile?.phone || normalized);
       setCustomerLoggedIn(true);
       setCustomerPassword('');
+      setCustomerConfirmPassword('');
       setCustomerAuthError('');
     } catch (error: any) {
       setCustomerAuthError(error?.message || 'تعذر إكمال العملية. حاول مرة أخرى.');
@@ -625,7 +632,8 @@ export default function StorefrontPage() {
                 {customerAuthMode==='signup' && <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input value={customerName} onChange={e=>setCustomerName(e.target.value)} autoComplete="name" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="اكتب اسمك"/></label>}
                 <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} autoComplete="tel" inputMode="tel" dir="ltr" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="05xxxxxxxx"/></label>
                 <label className="block text-xs font-bold text-[#e9e2d2]">{customerAuthMode==='signup'?'أنشئ كلمة مرور':'كلمة المرور'}<input type="password" minLength={8} autoComplete={customerAuthMode==='signup'?'new-password':'current-password'} value={customerPassword} onChange={e=>setCustomerPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="8 أحرف على الأقل"/></label>
-                {customerAuthMode==='login' && <a href="/account#forgot" className="inline-block text-[11px] font-bold text-[#f5d66b] underline">نسيت كلمة المرور؟</a>}
+                {customerAuthMode==='signup' && <label className="block text-xs font-bold text-[#e9e2d2]">تأكيد كلمة المرور<input type="password" minLength={8} autoComplete="new-password" value={customerConfirmPassword} onChange={e=>setCustomerConfirmPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="أعد كتابة كلمة المرور"/></label>}
+                {customerAuthMode==='login' && <a href="/forgot-password" className="inline-block text-[11px] font-bold text-[#f5d66b] underline">نسيت كلمة المرور؟</a>}
                 {customerAuthError && <p role="alert" className="rounded-lg bg-red-950/50 p-2.5 text-xs text-red-200">{customerAuthError}</p>}
                 <button type="button" disabled={customerAuthBusy} onClick={authenticateCustomer} className="w-full rounded-lg bg-[#f5c542] py-3 text-sm font-black text-[#17140b] disabled:opacity-50">{customerAuthBusy?'جارٍ تجهيز حسابك...':customerAuthMode==='signup'?'إنشاء الحساب والمتابعة':'تسجيل الدخول والمتابعة'}</button>
               </div>

@@ -10,9 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/configure-supabase-auth.mjs --dry-run && node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs",
-    "auth:configure": "node scripts/configure-supabase-auth.mjs",
-    "auth:dry-run": "node scripts/configure-supabase-auth.mjs --dry-run"
+    "test": "node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",

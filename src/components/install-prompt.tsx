@@ -33,7 +33,7 @@ export default function SmartPwaInstallBanner() {
     const ua = navigator.userAgent;
     const ios = /iPhone|iPad|iPod/i.test(ua) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const safari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|CriOS|DuckDuckGo|YaBrowser|Instagram|FBAN|FBAV|WhatsApp|GSA/i.test(ua);
+    const safari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|CriOS|DuckDuckGo|YaBrowser|Instagram|FBAN|FBAV|WhatsApp|ChatGPT|OpenAI|Telegram|Snapchat|TikTok|Twitter|MicroMessenger|GSA/i.test(ua);
     const nextDevice = ios ? (safari ? 'ios-safari' : 'ios-other') : (/Android/i.test(ua) ? 'android' : 'other');
     setDevice(nextDevice);
 

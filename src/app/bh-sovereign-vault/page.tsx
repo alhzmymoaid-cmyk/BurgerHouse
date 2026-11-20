@@ -1,5 +1,7 @@
 'use client';
 
+import PromoManager from '@/components/promo-manager';
+
 import React, { useState, useEffect, useCallback } from 'react';
 
 export default function SovereignSuperAdminVaultPage() {
@@ -64,6 +66,8 @@ export default function SovereignSuperAdminVaultPage() {
           إدارة تشغيل المطعم، حالة الموقع، وضع الصيانة، وحماية الطلبات
         </p>
       </header>
+      <PromoManager />
+
 
       {vaultData && (
         <div className="grid gap-6 lg:grid-cols-2">

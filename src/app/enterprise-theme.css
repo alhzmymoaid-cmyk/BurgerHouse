@@ -14,7 +14,7 @@
 }
 body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-family:"IBM Plex Sans Arabic","Cairo",sans-serif; }
 .bh-storefront { background:var(--bh-bg)!important; color:var(--bh-text)!important; }
-.bh-storefront>header { top:0; padding-top:env(safe-area-inset-top); background:#0A0A0C!important; border-color:var(--bh-line)!important; box-shadow:none!important; }
+.bh-storefront>header { top:0; padding-top:env(safe-area-inset-top); background:#0A0A0C!important; border-color:var(--bh-line)!important; box-shadow:none!important; backdrop-filter:none!important; }
 .bh-storefront>header>div { min-height:68px; }
 .bh-storefront section { scroll-margin-top:calc(88px + env(safe-area-inset-top)); }
 .bh-storefront .bh-v2-hero { min-height:clamp(390px,55svh,660px); padding:clamp(24px,4vw,56px); background:#0A0A0C!important; color:var(--bh-text)!important; }

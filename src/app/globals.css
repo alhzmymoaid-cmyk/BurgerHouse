@@ -389,3 +389,31 @@ a { text-decoration:none; }
  .bh-storefront .bh-menu-product-grid .bh-menu-house-badge{right:4px;top:4px;padding:3px 5px;font-size:8px}
  .bh-storefront #menu-section{padding-bottom:100px}
 }
+
+
+/* Unified Obsidian / charcoal storefront surfaces */
+.bh-storefront>header{background:rgba(9,9,11,.94)!important;border-color:rgba(255,255,255,.07)!important;color:#FAFAFA!important}
+.bh-storefront .bh-branch-picker{background:#131317!important;border-color:rgba(255,255,255,.07)!important;color:#FAFAFA!important}
+.bh-storefront .bh-branch-picker select{background:#09090B!important;border-color:rgba(255,255,255,.12)!important;color:#FAFAFA!important}
+.bh-storefront .bh-home-benefits{color:#FAFAFA}
+.bh-storefront .bh-home-benefits>div>div{color:#FAFAFA!important}
+.bh-storefront .bh-home-benefits p{color:#A1A1AA!important}
+.bh-storefront #menu-section{color:#FAFAFA}
+.bh-storefront #menu-section input{background:#131317!important;border-color:rgba(255,255,255,.12)!important;color:#FAFAFA!important}
+.bh-storefront .bh-menu-product-grid>article{background:#131317!important;border-color:rgba(255,255,255,.07)!important}
+.bh-storefront .bh-menu-card-main h4{color:#FAFAFA!important}
+.bh-storefront .bh-menu-card-main p{color:#A1A1AA!important}
+.bh-storefront .bh-menu-card-meta{color:#A1A1AA}
+.bh-storefront .bh-menu-card-purchase strong{color:#F5B800!important}
+.bh-storefront .bh-menu-card-purchase button{color:#09090B}
+.bh-storefront .bh-category-rail button{border-radius:20px}
+.bh-storefront .bh-signature-card{border-radius:22px}
+@media(max-width:767px){
+ .bh-storefront .bh-category-rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:8px}
+ .bh-storefront .bh-category-rail::-webkit-scrollbar{display:none}
+ .bh-storefront .bh-category-rail>button{flex:0 0 76vw;min-height:0;aspect-ratio:4/3;scroll-snap-align:center;border-radius:20px}
+ .bh-storefront .bh-signature-grid.bh-signature-rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(76vw,1fr);grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:8px}
+ .bh-storefront .bh-signature-grid.bh-signature-rail::-webkit-scrollbar{display:none}
+ .bh-storefront .bh-signature-card{min-height:220px;scroll-snap-align:center}
+ .bh-storefront .bh-branch-picker{padding-block:2px}
+}

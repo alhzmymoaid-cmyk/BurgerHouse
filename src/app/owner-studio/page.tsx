@@ -34,6 +34,10 @@ export default function OwnerStudioDashboard() {
   const [branchFilter, setBranchFilter] = useState('all');
   const [busyAction, setBusyAction] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedStaffId, setSelectedStaffId] = useState('');
+  const [staffRole, setStaffRole] = useState<'branch_manager' | 'cashier' | 'kitchen_staff'>('cashier');
+  const [staffBranch, setStaffBranch] = useState('');
+  const [staffActive, setStaffActive] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -70,8 +74,10 @@ export default function OwnerStudioDashboard() {
       if (!res.ok) throw new Error(json.message_ar || json.error || 'تعذر تنفيذ الإجراء');
       setStatusToast('تم حفظ التغيير بنجاح.');
       await loadDashboard();
+      return true;
     } catch (err: any) {
       setErrorMsg(err?.message || 'تعذر تنفيذ الإجراء');
+      return false;
     } finally {
       setBusyAction(false);
     }
@@ -107,6 +113,28 @@ export default function OwnerStudioDashboard() {
   const pendingOrders = orders.filter((order: any) => ['new', 'pending_confirmation'].includes(order.status)).length;
   const preparingOrders = orders.filter((order: any) => order.status === 'preparing').length;
   const branchName = (id: string) => data?.branches?.find((branch: any) => branch.id === id)?.name_ar || '—';
+  const selectedStaff = data?.staff?.find((staff: any) => staff.id === selectedStaffId);
+  const beginStaffEdit = (staff: any) => {
+    setSelectedStaffId(staff.id);
+    setStaffRole(staff.role);
+    setStaffBranch(staff.assigned_branch_id || '');
+    setStaffActive(Boolean(staff.is_active));
+    setErrorMsg(null);
+    setStatusToast(null);
+  };
+  const saveStaffEdit = async () => {
+    if (!selectedStaff) return;
+    const saved = await executeOwnerAction({
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: {
+        id: selectedStaff.id,
+        role: staffRole,
+        assigned_branch_id: staffBranch || null,
+        is_active: staffActive
+      }
+    });
+    if (saved) setSelectedStaffId('');
+  };
   const dateLabel = (value: string) => value ? new Date(value).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
   const panel = 'rounded-xl border border-[#E8E3DA] bg-white p-4 sm:p-5';
@@ -260,8 +288,19 @@ export default function OwnerStudioDashboard() {
       {data && activeSection === 'team' && (
         <section className={panel}>
           <div className={heading}><div><h2 className="text-lg font-black">فريق العمل والصلاحيات</h2><p className="mt-1 text-xs text-[#77716A]">الحسابات الحالية كما هي محفوظة في النظام، دون تعديل أي صلاحية من هذه الشاشة</p></div><Users size={19} className="text-[#B92727]" /></div>
-          <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[650px] text-right text-xs"><thead className="bg-[#F7F5F0] text-[#6D655D]"><tr><th className="p-3">الموظف</th><th className="p-3">البريد الوظيفي</th><th className="p-3">الدور</th><th className="p-3">الفرع المعيّن</th><th className="p-3">الحالة</th></tr></thead><tbody className="divide-y divide-[#F0ECE6]">{(data.staff || []).map((staff: any) => <tr key={staff.id}><td className="p-3 font-bold">{staff.full_name || '—'}</td><td className="p-3" dir="ltr">{staff.email || '—'}</td><td className="p-3">{roleLabels[staff.role] || staff.role}</td><td className="p-3">{branchName(staff.assigned_branch_id)}</td><td className="p-3"><span className={`rounded-full px-2.5 py-1 ${staff.is_active ? 'bg-[#E7F4EB] text-[#236A45]' : 'bg-[#FCEBE9] text-[#A62F28]'}`}>{staff.is_active ? 'نشط' : 'موقوف'}</span></td></tr>)}</tbody></table></div>
-          <p className="mt-4 rounded-lg bg-[#F8F6F2] p-3 text-[11px] leading-6 text-[#77716A]">تغيير كلمات المرور أو إنشاء حسابات جديدة أو تعديل صلاحيات الموظفين يحتاج مسار إدارة حسابات مستقلًا؛ لم أضف تعديلًا مباشرًا على الحسابات حتى لا تتغير صلاحيات حقيقية دون مسار تحقق وتدقيق مناسب.</p>
+          <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-right text-xs"><thead className="bg-[#F7F5F0] text-[#6D655D]"><tr><th className="p-3">الموظف</th><th className="p-3">البريد الوظيفي</th><th className="p-3">الدور</th><th className="p-3">الفرع المعيّن</th><th className="p-3">الحالة</th><th className="p-3">إجراء</th></tr></thead><tbody className="divide-y divide-[#F0ECE6]">{(data.staff || []).map((staff: any) => <tr key={staff.id}><td className="p-3 font-bold">{staff.full_name || '—'}</td><td className="p-3" dir="ltr">{staff.email || '—'}</td><td className="p-3">{roleLabels[staff.role] || staff.role}</td><td className="p-3">{branchName(staff.assigned_branch_id)}</td><td className="p-3"><span className={`rounded-full px-2.5 py-1 ${staff.is_active ? 'bg-[#E7F4EB] text-[#236A45]' : 'bg-[#FCEBE9] text-[#A62F28]'}`}>{staff.is_active ? 'نشط' : 'موقوف'}</span></td><td className="p-3">{['branch_manager','cashier','kitchen_staff'].includes(staff.role) ? <button type="button" onClick={() => beginStaffEdit(staff)} className="rounded-lg border border-[#E2DCD3] px-3 py-2 font-bold text-[#514A43] hover:bg-[#F7F5F0]">تعديل</button> : <span className="text-[10px] text-[#8B837B]">حساب محمي</span>}</td></tr>)}</tbody></table></div>
+          {selectedStaff && (
+            <div className="mt-5 rounded-xl border border-[#E8E3DA] bg-[#FAF9F6] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-black">تعديل بيانات الموظف</h3><p className="mt-1 text-xs text-[#77716A]">{selectedStaff.full_name} · {selectedStaff.email}</p></div><button type="button" onClick={() => setSelectedStaffId('')} className="text-xs font-bold text-[#77716A]">إغلاق</button></div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-xs font-bold text-[#514A43]">الدور الوظيفي<select value={staffRole} onChange={e => setStaffRole(e.target.value as any)} className="h-11 rounded-lg border border-[#DDD7CE] bg-white px-3"><option value="branch_manager">مدير فرع</option><option value="cashier">كاشير</option><option value="kitchen_staff">موظف مطبخ</option></select></label>
+                <label className="grid gap-1 text-xs font-bold text-[#514A43]">الفرع المعيّن<select value={staffBranch} onChange={e => setStaffBranch(e.target.value)} className="h-11 rounded-lg border border-[#DDD7CE] bg-white px-3"><option value="">بدون فرع معيّن</option>{(data.branches || []).map((branch: any) => <option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
+              </div>
+              <label className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#514A43]"><input type="checkbox" checked={staffActive} onChange={e => setStaffActive(e.target.checked)} className="h-4 w-4 accent-[#B92727]" /> الحساب نشط ويسمح له بتسجيل الدخول</label>
+              <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={busyAction} onClick={saveStaffEdit} className="rounded-lg bg-[#B92727] px-5 py-3 text-xs font-black text-white disabled:opacity-50">{busyAction ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</button><button type="button" onClick={() => setSelectedStaffId('')} className="rounded-lg border border-[#DDD7CE] bg-white px-4 py-3 text-xs font-bold text-[#514A43]">إلغاء</button></div>
+              <p className="mt-3 text-[10px] leading-5 text-[#77716A]">هذا الإجراء يحدّث الدور والفرع وحالة الحساب فقط، ويسجل التغيير في سجل التدقيق. لا يغيّر البريد أو كلمة المرور ولا ينشئ حساب دخول جديدًا.</p>
+            </div>
+          )}
         </section>
       )}
 

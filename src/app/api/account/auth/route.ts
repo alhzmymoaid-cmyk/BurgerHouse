@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
               : weakPassword
                 ? 'كلمة المرور ضعيفة. اختر كلمة مرور أقوى من 8 أحرف.'
                 : 'تعذر إنشاء الحساب الآن بسبب مشكلة في خدمة الحسابات. حاول لاحقًا أو تواصل مع الدعم.',
-        }, duplicate ? 409 : rateLimited ? 429 : weakPassword ? 400 : 503);
+        }, phoneConflict || duplicate ? 409 : rateLimited ? 429 : weakPassword ? 400 : 503);
       }
 
       // The auth.users trigger creates the profile. Update by user ID only so a

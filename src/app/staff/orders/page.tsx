@@ -20,7 +20,10 @@ export default function StaffLiveOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);\n  const [pushBusy, setPushBusy] = useState(false);\n  const [pushMessage, setPushMessage] = useState('');\n  const [pushEnabled, setPushEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState('');
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [pendingSensitive, setPendingSensitive] = useState<{ code: string; status: string } | null>(null);
   const [sensitiveReason, setSensitiveReason] = useState<string>('');

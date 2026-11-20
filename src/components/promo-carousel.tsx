@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SafeFoodImage from '@/components/safe-food-image';
 
 export type PromoBanner = {
   id: string; branch_id: string | null; title_ar: string; subtitle_ar?: string | null;
@@ -12,6 +13,21 @@ type Product = { id: string; category_id: string; name_ar: string; description_a
 type Props = { banners?: PromoBanner[]; branchId: string; products?: Product[];
   onOpenProduct?: (product: Product) => void; onSelectCategory?: (id: string) => void };
 
+const DEMO_BANNERS: PromoBanner[] = [
+  {
+    id: 'bh-demo-new-burger', branch_id: null, title_ar: 'برجر جديد على النار',
+    subtitle_ar: 'واغيو طري وخبز بريوش محمّص… جرّبه الآن',
+    image_url: '/images/hero-wagyu-smash.jpg', badge_text: 'جديد',
+    cta_label: 'اطلب الآن', target_category_id: 'cat-wagyu', sort_order: 1,
+  },
+  {
+    id: 'bh-demo-new-meal', branch_id: null, title_ar: 'عرض الوجبة الجديدة',
+    subtitle_ar: 'وجبة متكاملة بسعر خاص لفترة محدودة',
+    image_url: 'https://images.pexels.com/photos/5639696/pexels-photo-5639696.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    badge_text: 'خصم خاص', cta_label: 'تصفح العرض', target_category_id: 'cat-meals', sort_order: 2,
+  },
+];
+
 export default function PromoCarousel({ banners = [], branchId, products = [], onOpenProduct, onSelectCategory }: Props) {
   const rail = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
@@ -21,19 +37,20 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
     (!b.starts_at || new Date(b.starts_at).getTime() <= Date.now()) &&
     (!b.ends_at || new Date(b.ends_at).getTime() > Date.now())
   ).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)), [banners, branchId]);
+  const displayBanners = visible.length ? visible : DEMO_BANNERS;
 
   useEffect(() => {
-    if (visible.length < 2) return;
+    if (displayBanners.length < 2) return;
     const timer = window.setInterval(() => {
       if (paused.current) return;
       setActive((current) => {
-        const next = (current + 1) % visible.length;
+        const next = (current + 1) % displayBanners.length;
         rail.current?.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         return next;
       });
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [visible.length]);
+  }, [displayBanners.length]);
 
   useEffect(() => {
     const node = rail.current;
@@ -52,19 +69,18 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
     };
     node.addEventListener('scroll', onScroll, { passive: true });
     return () => node.removeEventListener('scroll', onScroll);
-  }, [visible.length]);
+  }, [displayBanners.length]);
 
-  if (!visible.length) return null;
   return (
-    <section className="bh-promo-section mx-auto max-w-7xl px-4 py-8 lg:px-8" aria-label="عروض برجر هاوس">
-      <div className="mb-4 flex items-end justify-between gap-3">
+    <section className="bh-promo-section mx-auto max-w-7xl px-4 py-6 lg:px-8" aria-label="عروض برجر هاوس">
+      <div className="mb-3 flex items-end justify-between gap-3">
         <div><span className="text-[10px] font-black tracking-[.2em] text-[#F5B800]">BURGER HOUSE OFFERS</span>
           <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">عروض برجر هاوس</h2>
           <p className="mt-1 text-xs text-[#A1A1AA]">اختيارات وعروض مميزة من فروعنا</p></div>
-        <span className="text-[10px] text-[#A1A1AA]">{visible.length} عروض</span>
+        <span className="text-[10px] text-[#A1A1AA]">{visible.length ? `${visible.length} عروض` : 'عروض مختارة'}</span>
       </div>
-      <div ref={rail} dir="rtl" className="bh-promo-rail flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3" onPointerDown={() => { paused.current = true; }} onWheel={() => { paused.current = true; }} onFocus={() => { paused.current = true; }}>
-        {visible.map((banner) => {
+      <div ref={rail} dir="rtl" className="bh-promo-rail flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2" onPointerDown={() => { paused.current = true; }} onWheel={() => { paused.current = true; }} onFocus={() => { paused.current = true; }}>
+        {displayBanners.map((banner) => {
           const product = banner.target_product_id ? products.find((p) => p.id === banner.target_product_id) : undefined;
           const action = () => {
             if (product && onOpenProduct) onOpenProduct(product);
@@ -72,18 +88,21 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
             else if (banner.target_url) window.location.assign(banner.target_url);
             else document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
           };
-          return <article key={banner.id} className="bh-promo-card relative isolate shrink-0 snap-center overflow-hidden rounded-3xl" style={{ backgroundImage: `linear-gradient(0deg,rgba(9,9,11,.96),rgba(9,9,11,.06) 72%),url("${banner.image_url}")` }}>
-            <span className="absolute right-4 top-4 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[10px] font-black text-[#FFD036] backdrop-blur">{banner.badge_text || 'عرض اليوم'}</span>
-            <div className="absolute inset-x-0 bottom-0 p-5">
-              <h3 className="text-lg font-black text-white">{banner.title_ar}</h3>
-              {banner.subtitle_ar && <p className="mt-1 line-clamp-2 text-xs leading-6 text-white/75">{banner.subtitle_ar}</p>}
-              <button type="button" onClick={action} className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#F5B800] px-5 text-xs font-black text-[#09090B]">{banner.cta_label || 'اطلب الآن'}</button>
+          const categoryId = banner.target_category_id || (banner.id === 'bh-demo-new-meal' ? 'cat-meals' : 'cat-wagyu');
+          return <article key={banner.id} className="bh-promo-card relative isolate shrink-0 snap-center overflow-hidden rounded-2xl">
+            <SafeFoodImage src={banner.image_url} categoryId={categoryId} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#09090B]/95 via-[#09090B]/25 to-transparent" />
+            <span className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-[10px] font-black text-[#FFD036] backdrop-blur">{banner.badge_text || 'عرض اليوم'}</span>
+            <div className="absolute inset-x-0 bottom-0 p-4">
+              <h3 className="text-base font-black text-white sm:text-lg">{banner.title_ar}</h3>
+              {banner.subtitle_ar && <p className="mt-1 line-clamp-1 text-[11px] leading-5 text-white/80">{banner.subtitle_ar}</p>}
+              <button type="button" onClick={action} className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-[#F5B800] px-4 text-[11px] font-black text-[#09090B]">{banner.cta_label || 'اطلب الآن'}</button>
             </div>
           </article>;
         })}
       </div>
-      {visible.length > 1 && <div className="mt-3 flex justify-center gap-2" aria-label="مؤشر العروض">
-        {visible.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; setActive(index); rail.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }} className={index===active?'h-2 w-6 rounded-full bg-[#F5B800]':'h-2 w-2 rounded-full bg-white/25'} />)}
+      {displayBanners.length > 1 && <div className="mt-2 flex justify-center gap-2" aria-label="مؤشر العروض">
+        {displayBanners.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; setActive(index); rail.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }} className={index===active?'h-1.5 w-5 rounded-full bg-[#F5B800]':'h-1.5 w-1.5 rounded-full bg-white/25'} />)}
       </div>}
     </section>
   );

@@ -23,6 +23,13 @@ function normalizeSaudiPhone(value: unknown): string {
   return '';
 }
 
+function isStrictLocalSaudiPhone(value: unknown): boolean {
+  const localized = String(value ?? '')
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+  return /^05\\d{8}$/.test(localized.replace(/\\D/g, ''));
+}
+
 function hmac(secret: string, value: string) {
   return createHmac('sha256', secret).update(value).digest('hex');
 }
@@ -45,6 +52,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const mode = body?.mode === 'signup' ? 'signup' : body?.mode === 'login' ? 'login' : '';
     const phone = normalizeSaudiPhone(body?.phone);
+    if (mode === 'signup' && !isStrictLocalSaudiPhone(body?.phone)) {
+      return reply({ error: 'INVALID_PHONE', message_ar: 'عند إنشاء الحساب، أدخل رقم جوال يبدأ بـ 05 ويتكون من 10 أرقام.' }, 400);
+    }
     const password = typeof body?.password === 'string' ? body.password : '';
     const fullName = typeof body?.fullName === 'string' ? body.fullName.trim().replace(/\s+/g, ' ') : '';
 

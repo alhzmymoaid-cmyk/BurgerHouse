@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
@@ -35,6 +36,14 @@ const normalizePhone = (value: string) => {
   if (digits.startsWith('5')) return '+966' + digits;
   return value;
 };
+const normalizeSearchText = (value: string) => value
+  .toLocaleLowerCase('ar')
+  .normalize('NFKC')
+  .replace(/[أإآ]/g, 'ا')
+  .replace(/ة/g, 'ه')
+  .replace(/[\u064B-\u065F\u0670]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 export default function StorefrontPage() {
   const [catalog, setCatalog] = useState<any>(null);
@@ -54,37 +63,37 @@ export default function StorefrontPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
+  const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
   const [customerNotes, setCustomerNotes] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<any>(null);
   const [orderError, setOrderError] = useState('');
-  const [trackCode, setTrackCode] = useState('');
-  const [trackToken, setTrackToken] = useState('');
-  const [tracking, setTracking] = useState<any>(null);
-  const [trackingError, setTrackingError] = useState('');
-  const [activeView, setActiveView] = useState<'menu' | 'branches' | 'track'>('menu');
+
+  const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [captcha, setCaptcha] = useState<any>(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bh_customer_details');
-      if (saved) {
-        const details = JSON.parse(saved);
-        if (typeof details.name === 'string') setCustomerName(details.name);
-        if (typeof details.phone === 'string') setCustomerPhone(details.phone);
-      }
-    } catch { /* Ignore invalid local customer cache */ }
-    setCustomerDataLoaded(true);
+    let active = true;
+    const loadCustomer = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active) return;
+        if (user) {
+          setCustomerLoggedIn(true);
+          const { data: profile } = await supabase.from('customer_profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
+          setCustomerName(profile?.full_name || user.user_metadata?.full_name || '');
+          setCustomerPhone(profile?.phone || user.phone || '');
+        } else setCustomerLoggedIn(false);
+      } catch { if (active) setCustomerLoggedIn(false); }
+      finally { if (active) setCustomerDataLoaded(true); }
+    };
+    loadCustomer();
+    return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    if (!customerDataLoaded) return;
-    try { localStorage.setItem('bh_customer_details', JSON.stringify({ name: customerName, phone: customerPhone })); }
-    catch { /* Storage may be unavailable */ }
-  }, [customerDataLoaded, customerName, customerPhone]);
 
   useEffect(() => {
     let mounted = true;
@@ -115,15 +124,18 @@ export default function StorefrontPage() {
   const availableProducts = useMemo(() => products.filter((product) => {
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const matchesCategory = activeCategory === 'all' || product.category_id === activeCategory;
-    const matchesSearch = !search || product.name_ar.toLowerCase().includes(search.toLowerCase()) || product.description_ar?.toLowerCase().includes(search.toLowerCase());
+    const normalizedSearch = normalizeSearchText(search);
+    const searchableFields = [product.name_ar, product.name_en, product.description_ar, (product as any).description_en]
+      .filter(Boolean)
+      .map((value) => normalizeSearchText(String(value)));
+    const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
     return matchesCategory && matchesSearch && override?.is_available !== false;
   }), [products, activeCategory, search, catalog, branchId]);
 
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0), [categories, availableProducts]);
-  const featuredProducts = useMemo(() => ['prd-wagyu-smash', 'prd-truffle-swiss', 'prd-smoked-brisket'].map((id) => products.find((product) => product.id === id)).filter(Boolean) as Product[], [products]);
-  const comboProducts = useMemo(() => products.filter((product) => product.category_id === 'cat-meals'), [products]);
+
 
 
   const addonFor = (id: string) => addons.find((addon) => addon.id === id);
@@ -167,6 +179,7 @@ export default function StorefrontPage() {
 
   const submitOrder = async () => {
     setOrderError('');
+    if (!customerLoggedIn) { setOrderError('سجّل الدخول بحسابك أولاً حتى نحفظ الطلب في سجل طلباتك.'); return; }
     if (!customerName.trim() || normalizePhone(customerPhone).length !== 13 || !branchId || !paymentId) {
       setOrderError('أكمل الاسم ورقم الجوال واختر فرع الاستلام وطريقة الدفع.');
       return;
@@ -204,8 +217,7 @@ export default function StorefrontPage() {
       setCart([]);
       setCheckoutOpen(false);
       setCartOpen(false);
-      setTrackCode(result.order_code || '');
-      setTrackToken(result.tracking_token || '');
+
     } catch (error: any) {
       setOrderError(error.message || 'حدث خطأ أثناء إرسال الطلب');
     } finally {
@@ -237,42 +249,13 @@ export default function StorefrontPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message_ar || result.message || result.error || 'تعذر إرسال الطلب');
       setOrderResult(result); setCart([]); setCaptcha(null); setCaptchaAnswer(''); setCheckoutOpen(false); setCartOpen(false);
-      setTrackCode(result.order_code || ''); setTrackToken(result.tracking_token || '');
+
     } catch (error: any) {
       setOrderError(error.message || 'تعذر إكمال التحقق');
     } finally { setSubmitting(false); }
   };
 
-  const trackOrder = async () => {
-    setTrackingError(''); setTracking(null);
-    try {
-      const response = await fetch('/api/orders/track', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_code: trackCode.trim(), tracking_token: trackToken.trim() })
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message_ar || 'لم نتمكن من العثور على الطلب');
-      setTracking(result);
-    } catch (error: any) { setTrackingError(error.message || 'تعذر تتبع الطلب'); }
-  };
 
-  useEffect(() => {
-    if (activeView !== 'track' || !trackCode || !trackToken) return;
-    let active = true;
-    const refreshTracking = async () => {
-      try {
-        const response = await fetch('/api/orders/track', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_code: trackCode.trim(), tracking_token: trackToken.trim() }),
-          cache: 'no-store'
-        });
-        const result = await response.json();
-        if (active && response.ok) setTracking(result);
-      } catch { /* Keep the last confirmed order state visible */ }
-    };
-    const timer = window.setInterval(refreshTracking, 8000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [activeView, trackCode, trackToken]);
 
   const detectNearestBranch = () => {
     if (!navigator.geolocation) return;
@@ -288,7 +271,7 @@ export default function StorefrontPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] text-[#201e1a]" dir="rtl">
+    <main className="bh-storefront min-h-screen bg-[#f4f1eb] text-[#201e1a]" dir="rtl">
       <div className="bg-[#1c1c18] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
         تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
       </div>
@@ -296,7 +279,7 @@ export default function StorefrontPage() {
       <header className="sticky top-0 z-40 border-b border-[#e2dbcf] bg-[#fbf9f4]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
           <a href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center bg-[#20201c] text-[13px] font-black tracking-[.12em] text-[#f2eee5]">BH</div>
+            <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="h-12 w-12 object-contain"/>
             <div>
               <div className="font-[Cairo] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
               <div className="mt-0.5 text-[10px] font-bold tracking-[.18em] text-[#82796d]">CRAFTED OVER FIRE</div>
@@ -306,25 +289,118 @@ export default function StorefrontPage() {
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
             <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>المنيو</button>
             <button onClick={() => setActiveView('branches')} className={activeView === 'branches' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>فروعنا</button>
-            <button onClick={() => setActiveView('track')} className={activeView === 'track' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>تتبع طلبك</button>
+            <a href="/account/orders" className="hover:text-[#a84f32]">طلباتي</a>
           </nav>
 
           <div className="flex items-center gap-2">
-            <a href="/auth/login" className="hidden rounded-full border border-[#cfc7ba] px-4 py-2 text-xs font-bold text-[#514b42] transition hover:border-[#a65e36] hover:text-[#a65e36] sm:inline-flex">دخول الموظفين</a>
+            <a href="/account" className="hidden rounded-full border border-[#cfc7ba] px-4 py-2 text-xs font-bold text-[#514b42] transition hover:border-[#a65e36] hover:text-[#a65e36] sm:inline-flex">حسابي</a>
             <button onClick={() => setCartOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#a84f32] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#913f28]">
               <ShoppingBag size={15} /> السلة <span className="rounded-full bg-white/15 px-2 py-0.5">{cartCount}</span>
             </button>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2 md:hidden" aria-label="فتح القائمة"><Menu size={18}/></button>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-full border border-[#d8d1c6] p-2" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen}><Menu size={18}/></button>
           </div>
         </div>
-        {mobileMenuOpen && <div className="border-t border-[#ded8cd] bg-[#f8f6f1] px-5 py-3 md:hidden">
-          <div className="flex justify-around text-sm font-bold">
-            <button onClick={() => {setActiveView('menu');setMobileMenuOpen(false);}}>المنيو</button>
-            <button onClick={() => {setActiveView('branches');setMobileMenuOpen(false);}}>فروعنا</button>
-            <button onClick={() => {setActiveView('track');setMobileMenuOpen(false);}}>تتبع طلبك</button>
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex justify-end bg-black/75 backdrop-blur-sm"
+            role="presentation"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <aside
+              dir="rtl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="قائمة BURGER HOUSE"
+              onClick={(event) => event.stopPropagation()}
+              className="flex h-full w-full max-w-[420px] flex-col overflow-y-auto border-s border-[#34372d] bg-[#10110f] p-5 text-[#f5f0df] shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-[#292c24] pb-5">
+                <div className="flex items-center gap-3">
+                  <img src="/brand-mark.svg" alt="" className="h-11 w-11 object-contain" />
+                  <div>
+                    <p className="text-sm font-black tracking-[.14em]">BURGER HOUSE</p>
+                    <p className="mt-1 text-[10px] font-semibold tracking-[.16em] text-[#a1a1aa]">YOUR HOUSE. YOUR ORDERS.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="إغلاق القائمة" className="rounded-full border border-[#3b4033] bg-[#1b1e19] p-2.5 text-[#f5f0df]">
+                  <X size={19} />
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#5b4a18] bg-gradient-to-br from-[#282311] to-[#171812] p-4">
+                {customerLoggedIn ? (
+                  <>
+                    <p className="text-xs font-bold text-[#f5b800]">أهلًا بعودتك</p>
+                    <p className="mt-2 text-lg font-black text-[#fff8e6]">{customerName || 'عميلنا العزيز'}</p>
+                    <p className="mt-1 text-xs text-[#aaa48f]" dir="ltr">{customerPhone}</p>
+                    <a href="/account" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#ffc82c] px-4 text-xs font-black text-[#11120e]">إدارة حسابي <ArrowLeft size={15} className="ms-2" /></a>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-black text-[#fff8e6]">خلّ تجربتك أسهل في كل زيارة</p>
+                    <p className="mt-2 text-xs leading-6 text-[#b9b39f]">أنشئ حسابًا لتتابع طلباتك وتحفظ وجباتك المفضلة وتعيد طلبك بسرعة.</p>
+                    <div className="mt-4 flex gap-2">
+                      <a href="/account" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#ffc82c] px-3 text-xs font-black text-[#11120e]">تسجيل الدخول</a>
+                      <a href="/account#signup" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#5b4a18] px-3 text-xs font-bold text-[#f5d66b]">إنشاء حساب</a>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#2d3028] bg-[#171a15] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[.12em] text-[#a1a1aa]">فرع الاستلام</p>
+                    <p className="mt-2 text-sm font-black">{activeBranch?.name_ar || 'اختر فرعك'}</p>
+                    <p className="mt-1 text-[11px] text-[#a1a1aa]">{activeBranch?.is_accepting_orders ? 'يستقبل الطلبات الآن' : 'تحقق من حالة الفرع قبل الطلب'}</p>
+                  </div>
+                  <span className={activeBranch?.is_accepting_orders ? 'mt-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]' : 'mt-1 h-2.5 w-2.5 rounded-full bg-amber-400'} />
+                </div>
+                <button type="button" onClick={() => { setActiveView('branches'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#3b4033] text-xs font-bold text-[#f5d66b]">
+                  تغيير الفرع <MapPin size={14} className="ms-2" />
+                </button>
+              </div>
+
+              <nav className="mt-5 space-y-1" aria-label="روابط المتجر">
+                <button type="button" onClick={() => { setActiveView('menu'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><Utensils size={17} className="text-[#ffc82c]" /> المنيو الكامل</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </button>
+                <button type="button" onClick={() => { setActiveView('branches'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><MapPin size={17} className="text-[#ffc82c]" /> فروعنا ومواقع الاستلام</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </button>
+                <a href="/account/orders" className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><PackageCheck size={17} className="text-[#ffc82c]" /> طلباتي وتتبع الطلب</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </a>
+                <a href="/account" className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><ShieldCheck size={17} className="text-[#ffc82c]" /> حسابي وبياناتي</span><ArrowLeft size={15} className="text-[#777b69]" />
+                </a>
+                <button type="button" onClick={() => { setMobileMenuOpen(false); setCartOpen(true); }} className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-sm font-bold hover:bg-[#20231d]">
+                  <span className="flex items-center gap-3"><ShoppingBag size={17} className="text-[#ffc82c]" /> سلة المشتريات</span><span className="rounded-full bg-[#ffc82c] px-2.5 py-1 text-[10px] font-black text-[#11120e]">{cartCount}</span>
+                </button>
+              </nav>
+
+              <div className="mt-auto border-t border-[#292c24] pt-5">
+                {catalog?.settings?.support_phone && (
+                  <a href={`tel:${catalog.settings.support_phone}`} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#3b4033] text-xs font-bold text-[#e8e2d0]">
+                    <Phone size={15} className="text-[#ffc82c]" /> تواصل مع المطعم
+                  </a>
+                )}
+                <p className="mt-4 text-center text-[10px] leading-6 text-[#777b69]">BURGER HOUSE · Crafted over fire</p>
+              </div>
+            </aside>
           </div>
-        </div>}
+        )}
       </header>
+
+      <div className="bh-mobile-orderbar" dir="rtl">
+        <div className="bh-mobile-orderbar-meta">
+          <span className="bh-mobile-orderbar-count">{cartCount}</span>
+          <div><b>{cartCount > 0 ? 'طلبك جاهز للتأكيد' : 'برجر هاوس على مزاجك'}</b><small>{cartCount > 0 ? 'راجع اختياراتك في السلة' : 'اختر وجبتك وابدأ الطلب'}</small></div>
+        </div>
+        <button onClick={() => cartCount > 0 ? setCartOpen(true) : document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>
+          {cartCount > 0 ? <>عرض السلة · {money(total)} ر.س <ArrowLeft size={16}/></> : <>تصفح المنيو <ArrowLeft size={16}/></>}
+        </button>
+      </div>
 
       {activeView === 'menu' && <>
         <section className="relative overflow-hidden bg-[#191916] text-[#f7f3eb]">
@@ -391,28 +467,23 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        {featuredProducts.length > 0 && <section className="mx-auto max-w-7xl px-4 pb-12 pt-2 lg:px-8 lg:pb-16">
-          <div className="mb-6 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#a84f32]">HOUSE SIGNATURES</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">توقيعات برجر هاوس</h2><p className="mt-2 text-xs text-[#80776b]">ثلاث نكهات تستحق أن تبدأ بها.</p></div><button onClick={()=>{setActiveCategory('cat-wagyu');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="text-xs font-extrabold text-[#a84f32] underline underline-offset-4">اكتشف البرجر</button></div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {featuredProducts.map((product)=> <article key={product.id} className="group overflow-hidden border border-[#e3dcd1] bg-[#fffdfa]">
-              <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden"><img src={product.image_url} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f6f0e5] px-3 py-1.5 text-[10px] font-black text-[#87442c]">توقيع البيت</span></button>
-              <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-1 line-clamp-1 text-[11px] text-[#80776b]">{product.description_ar}</p></div><div className="shrink-0 text-sm font-black text-[#a84f32]">{money(Number(product.base_price))} ر.س</div></div>
-              <button onClick={()=>openProduct(product)} className="mx-4 mb-4 flex w-[calc(100%-2rem)] items-center justify-center gap-2 bg-[#211f1b] py-3 text-xs font-bold text-white transition hover:bg-[#a84f32]">أضف إلى طلبك <Plus size={14}/></button>
-            </article>)}
+        <section className="bh-signature-section mx-auto max-w-7xl px-4 pb-8 pt-5 lg:px-8">
+          <div className="bh-signature-heading">
+            <div><span>THE HOUSE SELECTION</span><h2>تجارب تستحق التجربة</h2><p>اختيارات البيت التي نبدأ بها معك.</p></div>
+            <button onClick={() => {setActiveCategory('all');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}}>استكشف القائمة <ArrowLeft size={15}/></button>
           </div>
-        </section>}
-
-        {comboProducts.length > 0 && <section className="bg-[#211f1b] py-12 text-[#f7f3eb] sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 lg:px-8">
-            <div className="mb-7 flex items-end justify-between gap-4"><div><div className="text-[10px] font-black tracking-[.22em] text-[#d59b6c]">COMBO MEALS</div><h2 className="mt-2 text-2xl font-black sm:text-3xl">وجبات كاملة… بدون حيرة</h2><p className="mt-2 text-xs leading-6 text-[#c9c0b3]">برجرك المفضل مع البطاطس والمشروب في اختيار واحد.</p></div><button onClick={()=>{setActiveCategory('cat-meals');document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'});}} className="hidden border-b border-[#d59b6c] pb-1 text-xs font-bold text-[#e6c7aa] sm:block">تصفّح الوجبات</button></div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {comboProducts.slice(0,3).map((product)=> <article key={product.id} className="overflow-hidden bg-[#302d27]">
-                <button onClick={()=>openProduct(product)} className="relative block aspect-[16/10] w-full overflow-hidden text-right"><img src={product.image_url} alt={product.name_ar} className="h-full w-full object-cover transition duration-700 hover:scale-105"/><span className="absolute bottom-3 right-3 bg-[#f5f0e7] px-3 py-1.5 text-[10px] font-black text-[#29251f]">وجبة متكاملة</span></button>
-                <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-base font-black">{product.name_ar}</h3><p className="mt-2 line-clamp-2 text-xs leading-6 text-[#c5bbae]">{product.description_ar}</p></div><span className="shrink-0 text-sm font-black text-[#e3b58c]">{money(Number(product.base_price))} ر.س</span></div><button onClick={()=>openProduct(product)} className="mt-4 flex w-full items-center justify-center gap-2 border border-white/20 py-3 text-xs font-bold transition hover:border-[#d59b6c] hover:bg-white/5">اختر الوجبة <Plus size={14}/></button></div>
-              </article>)}
-            </div>
+          <div className="bh-signature-grid">
+            {products.filter(product => product.is_featured).slice(0,4).map((product,index) => {
+              const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
+              return <button type="button" key={product.id} onClick={()=>openProduct(product)} className={index===0?'bh-signature-card bh-signature-main':'bh-signature-card'}>
+                <img src={product.image_url || '/images/hero-wagyu-smash.jpg'} alt={product.name_ar} loading="lazy"/>
+                <span className="bh-signature-shade"/>
+                <span className="bh-signature-copy"><small>{index===0?'HOUSE SIGNATURE':'MADE FOR THE CRAVING'}</small><b>{product.name_ar}</b><em>من {money(Number(override?.custom_base_price ?? product.base_price))} ر.س</em></span>
+                <span className="bh-signature-plus"><Plus size={18}/></span>
+              </button>;
+            })}
           </div>
-        </section>}
+        </section>
 
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -450,40 +521,7 @@ export default function StorefrontPage() {
         </section>
       
 
-        <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
-          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a65e36]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة مختارة بعناية</h2><p className="mt-2 text-sm text-[#777064]">مكونات واضحة، نكهات متوازنة، وتحضير يبدأ بعد طلبك.</p></div>
-            <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث في المنيو" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a65e36]"/></div>
-          </div>
-          <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
-            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap bg-[#20201c] px-5 py-2.5 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] px-5 py-2.5 text-xs font-bold text-[#655e53] hover:border-[#a65e36]'}>كل الأصناف</button>
-            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap bg-[#20201c] px-5 py-2.5 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] px-5 py-2.5 text-xs font-bold text-[#655e53] hover:border-[#a65e36]'}>{category.name_ar}</button>)}
-          </div>
 
-          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
-          : catalogError ? <div className="border border-[#d8d0c4] bg-white/60 p-8 text-center"><p className="font-bold">المنيو غير متاح حالياً</p><p className="mt-2 text-sm text-[#777064]">{catalogError}</p><button onClick={()=>location.reload()} className="mt-4 text-sm font-bold text-[#a65e36]">إعادة المحاولة</button></div>
-          : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
-          : <div className="grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
-            {availableProducts.map((product,index)=>{
-              const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
-              return <article key={product.id} className="group">
-                <button onClick={()=>openProduct(product)} className="relative block aspect-[4/3] w-full overflow-hidden bg-[#e5dfd5] text-right">
-                  <img src={product.image_url || '/images/hero-wagyu-smash.jpg'} alt={product.name_ar} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"/>
-                  {product.is_featured && <span className="absolute right-4 top-4 bg-[#f4f1eb] px-3 py-1.5 text-[10px] font-black tracking-wide text-[#8d4d2e]">اختيار الشيف</span>}
-                  <span className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#f4f1eb] text-[#26241f] transition group-hover:bg-[#a65e36] group-hover:text-white"><Plus size={19}/></span>
-                </button>
-                <div className="flex items-start justify-between gap-3 pt-4">
-                  <div className="min-w-0"><h3 className="text-[17px] font-black leading-7">{product.name_ar}</h3><p className="mt-1 line-clamp-2 text-xs leading-6 text-[#777064]">{product.description_ar}</p></div>
-                  <div className="shrink-0 pt-1 text-sm font-black text-[#a65e36]">{money(Number(override?.custom_base_price ?? product.base_price))} <span className="text-[10px]">ر.س</span></div>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[#ddd6ca] pt-3">
-                  <span className="flex items-center gap-1.5 text-[11px] text-[#82796d]"><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span>
-                  <button onClick={()=>openProduct(product)} className="text-xs font-extrabold text-[#25231f] underline decoration-[#b7a18b] underline-offset-4 hover:text-[#a65e36]">تخصيص وإضافة</button>
-                </div>
-              </article>
-            })}
-          </div>}
-        </section>
       </>}
 
       {activeView === 'branches' && <section className="mx-auto min-h-[65vh] max-w-7xl px-4 py-14 lg:px-8">
@@ -495,62 +533,58 @@ export default function StorefrontPage() {
         </article>)}</div>
       </section>}
 
-      {activeView === 'track' && <section className="mx-auto min-h-[65vh] max-w-3xl px-4 py-16">
-        <div className="text-center"><PackageCheck className="mx-auto text-[#a65e36]" size={34}/><div className="mt-4 text-[10px] font-black tracking-[.24em] text-[#a65e36]">ORDER TRACKING</div><h1 className="mt-2 text-3xl font-black">تابع طلبك</h1><p className="mt-3 text-sm text-[#777064]">أدخل رقم الطلب ورمز التتبع الموجودين في تأكيد طلبك.</p></div>
-        <div className="mt-8 space-y-4 border border-[#ded8cd] bg-[#fbfaf7] p-6">
-          <label className="block text-xs font-bold">رقم الطلب<input value={trackCode} onChange={(e)=>setTrackCode(e.target.value)} placeholder="BH-XXXX-XXXX" className="mt-2 w-full border border-[#d8d0c4] bg-white px-4 py-3 text-sm outline-none focus:border-[#a65e36]" dir="ltr"/></label>
-          <label className="block text-xs font-bold">رمز التتبع<input value={trackToken} onChange={(e)=>setTrackToken(e.target.value)} placeholder="trk_..." className="mt-2 w-full border border-[#d8d0c4] bg-white px-4 py-3 text-sm outline-none focus:border-[#a65e36]" dir="ltr"/></label>
-          {trackingError&&<p className="text-xs font-bold text-red-700">{trackingError}</p>}
-          <button onClick={trackOrder} className="w-full bg-[#a65e36] py-3.5 text-sm font-bold text-white">عرض حالة الطلب</button>
-          {tracking&&<div className="border-t border-[#e4ded4] pt-5"><div className="text-[10px] font-black tracking-[.16em] text-[#a65e36]">LIVE ORDER STATUS</div><div className="mt-2 text-xl font-black">{ORDER_STATUS_LABELS[tracking.status] || tracking.status_ar || tracking.status || 'قيد المعالجة'}</div><p className="mt-2 text-xs leading-6 text-[#777064]">تتحدث حالة طلبك تلقائياً أثناء متابعة هذه الصفحة.</p><div className="mt-5 grid grid-cols-4 gap-2 text-center text-[10px]"><div className={['new','pending_confirmation','accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>استلام الطلب</div><div className={['accepted','preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>القبول</div><div className={['preparing','ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>التجهيز</div><div className={['ready_for_pickup','completed'].includes(tracking.status)?'border-t-2 border-[#a65e36] pt-2 font-bold text-[#a65e36]':'border-t-2 border-[#ded8cd] pt-2 text-[#999084]'}>جاهز للاستلام</div></div>{tracking.rejected_reason&&<p className="mt-4 border border-red-200 bg-red-50 p-3 text-xs text-red-700">سبب الرفض: {tracking.rejected_reason}</p>}</div>}
-        </div>
-      </section>}
+
 
       <footer className="bg-[#20201c] text-[#d6d0c5]">
         <div className="mx-auto grid max-w-7xl gap-9 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-          <div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
-          <div><div className="text-xs font-black text-white">تصفح</div><div className="mt-4 space-y-3 text-xs text-[#aaa397]"><button onClick={()=>setActiveView('menu')} className="block">المنيو</button><button onClick={()=>setActiveView('branches')} className="block">فروعنا</button><button onClick={()=>setActiveView('track')} className="block">تتبع الطلب</button></div></div>
+          <div><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/><div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><div className="text-[9px] tracking-[.2em] text-[#c5a27e]">CRAFTED OVER FIRE</div></div></div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
+          <div><div className="text-xs font-black text-white">تصفح</div><div className="mt-4 space-y-3 text-xs text-[#aaa397]"><button onClick={()=>setActiveView('menu')} className="block">المنيو</button><button onClick={()=>setActiveView('branches')} className="block">فروعنا</button><a href="/account/orders" className="block">طلباتي</a></div></div>
           <div><div className="text-xs font-black text-white">الاستلام</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">جميع الطلبات عبر الموقع مخصصة للاستلام من الفرع فقط. لا نوفر التوصيل المنزلي حالياً.</p></div>
-          <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/auth/login" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">دخول الموظفين والإدارة <ArrowLeft className="mr-1 inline" size={13}/></a></div>
+          <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/account" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">حساب العميل <ArrowLeft className="mr-1 inline" size={13}/></a></div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-[10px] text-[#827d73]">© {new Date().getFullYear()} BURGER HOUSE. جميع الحقوق محفوظة.</div>
       </footer>
 
-      {selectedProduct && <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-5" onClick={()=>setSelectedProduct(null)}>
-        <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto bg-[#f8f6f1] text-[#201e1a] sm:max-h-[88vh]" onClick={(e)=>e.stopPropagation()}>
-          <div className="relative aspect-[16/8] bg-[#e5dfd5]"><img src={selectedProduct.image_url} alt={selectedProduct.name_ar} className="h-full w-full object-cover"/><button onClick={()=>setSelectedProduct(null)} className="absolute left-4 top-4 rounded-full bg-[#f8f6f1] p-2"><X size={18}/></button></div>
-          <div className="p-5 sm:p-7"><div className="flex items-start justify-between gap-4"><div><h2 className="text-2xl font-black">{selectedProduct.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#777064]">{selectedProduct.description_ar}</p></div><span className="shrink-0 text-lg font-black text-[#a84f32]">{money(Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0))} ر.س</span></div>
-            {!!selectedProduct.sizes?.length&&<div className="mt-6"><div className="mb-3 text-sm font-black">{selectedProduct.category_id === 'cat-drinks' ? 'اختر حجم المشروب' : selectedProduct.category_id === 'cat-sides' ? 'اختر حجم الحصة' : 'اختر سنقل أو دبل'}</div><div className="grid gap-2 sm:grid-cols-2">{selectedProduct.sizes.map((size)=><label key={size.id} className={selectedSize===size.id?'flex cursor-pointer items-center justify-between border border-[#a65e36] bg-[#f0e8df] p-3 text-xs font-bold':'flex cursor-pointer items-center justify-between border border-[#ddd6ca] bg-white p-3 text-xs font-bold'}><span>{size.name_ar}</span><span>{Number(size.price_delta)>0?'+':''}{money(Number(size.price_delta))} ر.س</span><input type="radio" className="sr-only" checked={selectedSize===size.id} onChange={()=>setSelectedSize(size.id)}/></label>)}</div></div>}
-            {!!selectedProduct.allowed_addon_ids?.length&&<div className="mt-6"><div className="mb-3 text-sm font-black">إضافات حسب رغبتك</div><div className="space-y-2">{selectedProduct.allowed_addon_ids.map((id)=>addonFor(id)).filter(Boolean).map((addon)=> <label key={addon!.id} className="flex items-center justify-between border border-[#ddd6ca] bg-white px-3 py-3 text-xs"><span className="flex items-center gap-3"><input type="checkbox" checked={selectedAddons.includes(addon!.id)} onChange={(e)=>setSelectedAddons((current)=>e.target.checked?[...current,addon!.id]:current.filter((item)=>item!==addon!.id))} className="h-4 w-4 accent-[#a65e36]"/>{addon!.name_ar}</span><b>+{money(Number(addon!.price))} ر.س</b></label>)}</div></div>}
-            <label className="mt-5 block text-xs font-bold">ملاحظات خاصة<input value={itemNote} onChange={(e)=>setItemNote(e.target.value)} placeholder="مثلاً: بدون مخلل" className="mt-2 w-full border border-[#ddd6ca] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]"/></label>
-            <div className="mt-6 flex items-center justify-between gap-4"><div className="flex items-center gap-4 border border-[#ddd6ca] bg-white px-3 py-2"><button onClick={()=>setQuantity(Math.max(1,quantity-1))}><Minus size={15}/></button><b>{quantity}</b><button onClick={()=>setQuantity(Math.min(20,quantity+1))}><Plus size={15}/></button></div><button onClick={addToCart} className="flex-1 bg-[#a65e36] py-3.5 text-sm font-bold text-white">أضف إلى السلة</button></div>
+      {selectedProduct && <div className="bh-product-overlay fixed inset-0 z-[70] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-5" onClick={()=>setSelectedProduct(null)}>
+        <div className="bh-product-dialog relative max-h-[94vh] w-full max-w-4xl overflow-y-auto bg-[#171713] text-[#f7f3e9] sm:max-h-[90vh] sm:rounded-2xl" onClick={(e)=>e.stopPropagation()}>
+          <button onClick={()=>setSelectedProduct(null)} aria-label="إغلاق تفاصيل المنتج" className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur"><X size={19}/></button>
+          <div className="bh-product-layout grid md:grid-cols-[.95fr_1.05fr]">
+            <div className="bh-product-visual relative min-h-[230px] overflow-hidden bg-[#242117] sm:min-h-[360px]"><img src={selectedProduct.image_url || '/images/hero-wagyu-smash.jpg'} alt={selectedProduct.name_ar} className="absolute inset-0 h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/10"/><div className="absolute bottom-5 right-5"><span className="text-[10px] font-black tracking-[.2em] text-[#f5c542]">BURGER HOUSE · FRESHLY MADE</span><p className="mt-2 text-xl font-black text-white">اختيارك… على ذوقك</p></div></div>
+            <div className="bh-product-content flex flex-col p-5 sm:p-7">
+              <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-5"><div className="min-w-0"><span className="text-[10px] font-black tracking-[.16em] text-[#f5c542]">تفاصيل الصنف</span><h2 className="mt-2 text-2xl font-black leading-tight text-white">{selectedProduct.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#aaa493]">{selectedProduct.description_ar}</p></div><div className="shrink-0 rounded-xl border border-[#665522] bg-[#292312] px-3 py-2 text-center"><span className="block text-[10px] text-[#c8b879]">السعر</span><b className="mt-1 block text-lg text-[#ffd65b]">{money(Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0))}</b><span className="text-[10px] text-[#c8b879]">ر.س</span></div></div>
+              {!!selectedProduct.sizes?.length&&<section className="bh-choice-section mt-5"><div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black text-white">{selectedProduct.category_id === 'cat-drinks' ? 'اختر حجم المشروب' : selectedProduct.category_id === 'cat-sides' ? 'اختر حجم الحصة' : 'اختر حجم البرجر'}</h3><span className="text-[10px] text-[#aaa493]">اختيار واحد</span></div><div className="grid grid-cols-2 gap-2">{selectedProduct.sizes.map((size)=><label key={size.id} className={selectedSize===size.id?'bh-option-card is-selected flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#d6ad36] bg-[#302914] p-3 text-xs font-bold':'bh-option-card flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#202019] p-3 text-xs font-bold'}><span>{size.name_ar}</span><span className="shrink-0 text-[#ffd65b]">{Number(size.price_delta)>0?'+':''}{money(Number(size.price_delta))} ر.س</span><input type="radio" className="sr-only" checked={selectedSize===size.id} onChange={()=>setSelectedSize(size.id)}/></label>)}</div></section>}
+              {!!selectedProduct.allowed_addon_ids?.length&&<section className="bh-choice-section mt-5"><div className="mb-3 flex items-end justify-between"><div><h3 className="text-sm font-black text-white">خلّها على ذوقك</h3><p className="mt-1 text-[11px] text-[#aaa493]">إضافات اختيارية لوجبتك</p></div><span className="text-[10px] text-[#aaa493]">يمكنك اختيار أكثر من إضافة</span></div><div className="grid gap-2 sm:grid-cols-2">{selectedProduct.allowed_addon_ids.map((id)=>addonFor(id)).filter(Boolean).map((addon)=> <label key={addon!.id} className={selectedAddons.includes(addon!.id)?'bh-addon-option is-selected flex min-h-[62px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#d6ad36] bg-[#302914] px-3 py-3':'bh-addon-option flex min-h-[62px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#202019] px-3 py-3'}><span className="flex min-w-0 items-center gap-3"><input type="checkbox" checked={selectedAddons.includes(addon!.id)} onChange={(e)=>setSelectedAddons((current)=>e.target.checked?[...current,addon!.id]:current.filter((item)=>item!==addon!.id))} className="h-4 w-4 shrink-0 accent-[#f5c542]"/><span className="text-xs font-bold leading-5 text-[#f5f0df]">{addon!.name_ar}</span></span><b className="shrink-0 rounded-lg bg-black/25 px-2 py-1 text-[11px] text-[#ffd65b]">+{money(Number(addon!.price))}</b></label>)}</div></section>}
+              <label className="mt-5 block text-xs font-bold text-[#e9e2d2]">ملاحظات خاصة <span className="font-normal text-[#888373]">(اختياري)</span><input value={itemNote} onChange={(e)=>setItemNote(e.target.value)} placeholder="مثلاً: بدون مخلل أو صوص على الجانب" className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none placeholder:text-[#777363] focus:border-[#b89a42]"/></label>
+              <div className="bh-product-actions mt-6 flex items-center gap-3 border-t border-white/10 pt-5"><div className="flex h-12 shrink-0 items-center gap-4 rounded-xl border border-white/10 bg-[#202019] px-3"><button aria-label="تقليل الكمية" onClick={()=>setQuantity(Math.max(1,quantity-1))}><Minus size={15}/></button><b className="min-w-4 text-center text-sm">{quantity}</b><button aria-label="زيادة الكمية" onClick={()=>setQuantity(Math.min(20,quantity+1))}><Plus size={15}/></button></div><button onClick={addToCart} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f5c542] px-4 text-sm font-black text-[#17140b] transition hover:bg-[#ffd65b]">أضف للسلة <span>·</span> {money((Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0) + selectedAddons.reduce((sum,id)=>sum+Number(addonFor(id)?.price||0),0))*quantity)} ر.س</button></div>
+            </div>
           </div>
         </div>
       </div>}
 
-      {cartOpen && <div className="fixed inset-0 z-[80] bg-black/55" onClick={()=>setCartOpen(false)}><aside className="absolute left-0 top-0 flex h-full w-full max-w-md flex-col bg-[#f8f6f1] text-[#201e1a]" onClick={(e)=>e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-[#ded8cd] p-5"><div><div className="text-lg font-black">سلة طلبك</div><div className="mt-1 text-xs text-[#777064]">{cartCount} أصناف</div></div><button onClick={()=>setCartOpen(false)} className="p-2"><X/></button></div>
-        <div className="flex-1 space-y-4 overflow-y-auto p-5">{cart.length===0?<div className="py-16 text-center text-sm text-[#777064]">السلة فارغة حالياً.</div>:cart.map((line)=><div key={line.key} className="flex gap-3 border-b border-[#e5ded3] pb-4"><img src={line.product.image_url} alt="" className="h-20 w-24 object-cover"/><div className="min-w-0 flex-1"><div className="text-sm font-black">{line.product.name_ar}</div><div className="mt-1 text-[11px] text-[#777064]">{line.size?.name_ar}</div>{line.note&&<div className="mt-1 line-clamp-2 text-[10px] leading-5 text-[#8a8175]">{line.note}</div>}{line.addonIds.map((id)=><div key={id} className="text-[10px] text-[#777064]">{addonFor(id)?.name_ar}</div>)}<div className="mt-2 flex items-center justify-between"><b className="text-xs">{money(linePrice(line))} ر.س</b><div className="flex items-center gap-3"><button onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="text-xs font-bold">{line.quantity}</span><button onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></div>)}</div>
-        {cart.length>0&&<div className="border-t border-[#ded8cd] p-5"><div className="flex justify-between text-xs text-[#777064]"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="mt-2 flex justify-between text-xs text-[#777064]"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div><div className="mt-3 flex justify-between border-t border-[#ded8cd] pt-3 text-base font-black"><span>الإجمالي</span><span>{money(total)} ر.س</span></div><button onClick={()=>{setCartOpen(false);setCheckoutOpen(true);}} className="mt-5 w-full bg-[#a65e36] py-4 text-sm font-bold text-white">متابعة وإتمام الطلب</button><p className="mt-3 text-center text-[10px] text-[#82796d]">الاستلام من الفرع فقط — الدفع عند الاستلام</p></div>}
+      {cartOpen && <div className="bh-cart-overlay fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm" onClick={()=>setCartOpen(false)}><aside className="bh-cart-drawer absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col bg-[#171713] text-[#f7f3e9] shadow-2xl" onClick={(e)=>e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 sm:px-6"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">YOUR ORDER</span><div className="mt-1 text-xl font-black text-white">سلة طلبك <span className="mr-1 text-sm font-semibold text-[#aaa493]">({cartCount})</span></div></div><button onClick={()=>setCartOpen(false)} aria-label="إغلاق السلة" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5"><X/></button></div>
+        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">{cart.length===0?<div className="flex h-full flex-col items-center justify-center py-16 text-center"><div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#55471f] bg-[#282313] text-[#f5c542]"><ShoppingBag size={30}/></div><h3 className="mt-5 text-lg font-black text-white">سلتك تنتظر اختيارك</h3><p className="mt-2 text-sm text-[#aaa493]">أضف وجبتك المفضلة ونجهزها لك طازجة.</p><button onClick={()=>setCartOpen(false)} className="mt-6 rounded-xl bg-[#f5c542] px-6 py-3 text-sm font-black text-[#17140b]">استكشف المنيو</button></div>:cart.map((line)=><article key={line.key} className="bh-cart-item flex gap-3 rounded-xl border border-white/10 bg-[#202019] p-3"><img src={line.product.image_url || '/images/hero-wagyu-smash.jpg'} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover"/><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="text-sm font-black leading-6 text-white">{line.product.name_ar}</div><b className="shrink-0 text-sm text-[#ffd65b]">{money(linePrice(line))} ر.س</b></div>{line.size?.name_ar&&<div className="mt-1 text-[11px] text-[#c8b879]">{line.size.name_ar}</div>}{line.addonIds.length>0&&<div className="mt-2 flex flex-wrap gap-1">{line.addonIds.map((id)=><span key={id} className="rounded-md bg-[#302914] px-2 py-1 text-[10px] text-[#e6d28e]">{addonFor(id)?.name_ar}</span>)}</div>}{line.note&&<div className="mt-2 line-clamp-2 text-[10px] leading-5 text-[#aaa493]">ملاحظة: {line.note}</div>}<div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-[#aaa493]">الكمية</span><div className="flex h-8 items-center gap-3 rounded-lg border border-white/10 bg-[#11110e] px-2"><button aria-label="تقليل الكمية" onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="min-w-3 text-center text-xs font-bold">{line.quantity}</span><button aria-label="زيادة الكمية" onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></article>)}</div>
+        {cart.length>0&&<div className="bh-cart-summary border-t border-white/10 bg-[#11110e] p-5 sm:p-6"><div className="space-y-2 text-xs text-[#aaa493]"><div className="flex justify-between"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="flex justify-between"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div></div><div className="mt-4 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm font-bold text-white">الإجمالي شامل الضريبة</span><strong className="text-2xl font-black text-[#ffd65b]">{money(total)} <small className="text-xs">ر.س</small></strong></div><button onClick={()=>{setCartOpen(false);setCheckoutOpen(true);}} className="mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-[#f5c542] py-4 text-sm font-black text-[#17140b] transition hover:bg-[#ffd65b]">متابعة وإتمام الطلب <ArrowLeft size={17}/></button><p className="mt-3 text-center text-[10px] text-[#8d8878]">استلام من الفرع · الدفع عند الاستلام</p></div>}
       </aside></div>}
 
-      {checkoutOpen && <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="max-h-[92vh] w-full max-w-lg overflow-y-auto bg-[#f8f6f1] p-6 text-[#201e1a] sm:p-8" onClick={(e)=>e.stopPropagation()}>
-        <div className="flex items-center justify-between"><div><div className="text-xl font-black">إتمام الطلب</div><div className="mt-1 text-xs text-[#777064]">أدخل بياناتك وحدد طريقة الاستلام.</div></div><button onClick={()=>setCheckoutOpen(false)}><X/></button></div>
-        <div className="mt-6 space-y-4">
-          <label className="block text-xs font-bold">الاسم الكامل<input value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="اسمك"/></label>
-          <label className="block text-xs font-bold">رقم الجوال<input value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
-          <label className="block text-xs font-bold">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
-          <label className="block text-xs font-bold">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
-          <label className="block text-xs font-bold">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full border border-[#d8d0c4] bg-white px-3 py-3 text-sm outline-none focus:border-[#a65e36]" placeholder="ملاحظات إضافية (اختياري)"/></label>
-          {captcha&&<div className="border border-[#d8d0c4] bg-white p-4"><div className="text-xs font-bold">تحقق أمني: {captcha.question_ar || captcha.question || 'أجب عن سؤال التحقق'}</div><input value={captchaAnswer} onChange={(e)=>setCaptchaAnswer(e.target.value)} className="mt-2 w-full border border-[#d8d0c4] px-3 py-2 text-sm" placeholder="الإجابة"/></div>}
-          {orderError&&<div className="border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{orderError}</div>}
-          <div className="flex justify-between border-t border-[#ded8cd] pt-4 text-base font-black"><span>الإجمالي شامل الضريبة</span><span>{money(total)} ر.س</span></div>
-          <button disabled={submitting} onClick={captcha?verifyAndSubmit:submitOrder} className="w-full bg-[#a65e36] py-4 text-sm font-bold text-white disabled:opacity-50">{submitting?'جارٍ إرسال الطلب...':'تأكيد الطلب'}</button>
-          <p className="text-center text-[10px] leading-5 text-[#82796d]">سيتم التحقق من الأسعار والتوفر على الخادم قبل اعتماد الطلب.</p>
+      {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>
+        <div className="mt-5 space-y-4">
+          <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input disabled={!customerLoggedIn} value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="اسمك"/></label>
+          <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input disabled={!customerLoggedIn} value={customerPhone} onChange={(e)=>setCustomerPhone(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="05xxxxxxxx" inputMode="tel" dir="ltr"/></label>
+          {!customerLoggedIn && <div className="rounded-xl border border-[#68572b] bg-[#282313] p-4 text-xs leading-6 text-[#e7d69e]">لإتمام الطلب وحفظه في سجلّك، يلزم تسجيل الدخول أولاً. <a href="/account" className="font-black underline">تسجيل الدخول أو إنشاء حساب</a></div>}
+          <label className="block text-xs font-bold text-[#e9e2d2]">فرع الاستلام<select value={branchId} onChange={(e)=>setBranchId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{branches.filter((branch)=>branch.is_active).map((branch)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select></label>
+          <label className="block text-xs font-bold text-[#e9e2d2]">طريقة الدفع عند الاستلام<select value={paymentId} onChange={(e)=>setPaymentId(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]">{payments.map((payment)=><option key={payment.id} value={payment.id}>{payment.name_ar}</option>)}</select></label>
+          <label className="block text-xs font-bold text-[#e9e2d2]">ملاحظات للفرع<textarea value={customerNotes} onChange={(e)=>setCustomerNotes(e.target.value)} rows={2} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none focus:border-[#b89a42]" placeholder="ملاحظات إضافية (اختياري)"/></label>
+          {captcha&&<div className="rounded-xl border border-white/10 bg-[#202019] p-4"><div className="text-xs font-bold">تحقق أمني: {captcha.question_ar || captcha.question || 'أجب عن سؤال التحقق'}</div><input value={captchaAnswer} onChange={(e)=>setCaptchaAnswer(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm" placeholder="الإجابة"/></div>}
+          {orderError&&<div className="rounded-xl border border-red-900 bg-red-950/50 p-3 text-xs font-bold text-red-200">{orderError}</div>}
+          <div className="space-y-2 rounded-xl border border-white/10 bg-[#202019] p-4 text-xs"><div className="flex justify-between text-[#aaa493]"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="flex justify-between text-[#aaa493]"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div><div className="flex justify-between border-t border-white/10 pt-3 text-base font-black text-white"><span>الإجمالي شامل الضريبة</span><span className="text-[#ffd65b]">{money(total)} ر.س</span></div></div>
+          <button disabled={submitting || !customerLoggedIn} onClick={captcha?verifyAndSubmit:submitOrder} className="w-full rounded-xl bg-[#f5c542] py-4 text-sm font-black text-[#17140b] disabled:opacity-50">{submitting?'جارٍ إرسال الطلب...':'تأكيد الطلب'}</button>
+          <p className="text-center text-[10px] leading-5 text-[#8d8878]">سيتم التحقق من الأسعار والتوفر على الخادم قبل اعتماد الطلب.</p>
         </div>
       </div></div>}
 
-      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-xl font-black" dir="ltr">{orderResult.order_code}</div><div className="mt-4 text-xs text-[#777064]">رمز التتبع</div><div className="mt-1 break-all text-xs font-bold" dir="ltr">{orderResult.tracking_token}</div></div><button onClick={()=>{setOrderResult(null);setActiveView('track');}} className="mt-5 w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">تتبع الطلب</button><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
+      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-3xl font-black tabular-nums">{orderResult.order_number ?? "—"}</div></div><a href="/account/orders" className="mt-5 block w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">عرض طلباتي</a><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
     </main>
   );
 }

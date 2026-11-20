@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = createSupabaseServerClient();
     const [settingsRes, branchesRes, categoriesRes, productsRes, sizesRes, addonsRes, overridesRes, paymentsRes, promosRes] =
       await Promise.all([
-        supabase.from('system_settings').select('*').eq('id', 1).single(),
+        supabase.from('system_settings').select('site_online, maintenance_mode, maintenance_message_ar, maintenance_message_en, brand_name_ar, brand_name_en, support_phone, support_whatsapp, vat_percentage, published_theme').eq('id', 1).single(),
         supabase.from('branches').select('*').eq('is_active', true).order('created_at', { ascending: true }),
         supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
         supabase.from('products').select('*').eq('is_active', true).order('sort_order', { ascending: true }),

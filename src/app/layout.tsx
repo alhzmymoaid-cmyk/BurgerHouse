@@ -1,9 +1,17 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './burger-house-refresh.css';
+import InstallPrompt from '@/components/install-prompt';
+
+export const viewport: Viewport = { themeColor: '#0b0c0b', colorScheme: 'dark' };
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',
-  description: 'اكتشف قائمة برجر هاوس واطلب مسبقاً للاستلام من الفرع الأقرب إليك.',
+  description: 'BURGER HOUSE — برجر محضّر بعناية. اطلب واستلم من الفرع.',
+  applicationName: 'BURGER HOUSE',
+  appleWebApp: { capable: true, title: 'BURGER HOUSE', statusBarStyle: 'black-translucent' },
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/brand-mark.svg', apple: '/brand-mark.svg' },
 };
 
 export default function RootLayout({
@@ -19,8 +27,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#f4f1eb] text-[#201e1a] antialiased selection:bg-[#a65e36] selection:text-white">
+      <body className="min-h-screen bg-[#0b0c0b] text-[#f5f0df] antialiased selection:bg-[#f4c928] selection:text-black">
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );

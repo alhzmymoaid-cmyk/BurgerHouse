@@ -122,10 +122,10 @@ export default function StaffLiveOrdersPage() {
     : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
+    <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f4f1eb] p-4 text-[#201e1a] sm:p-6">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#ded8cd] pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#a65e36]">شاشة تشغيل الطلبات المباشرة (Realtime KDS / POS)</h1>
+          <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#a65e36]">مركز تشغيل الطلبات</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#8a8175]">BURGER HOUSE · BRANCH OPERATIONS</p></div></div>
           <p className="text-xs text-[#777064]">
             {actorProfile
               ? `الموظف المصادق عليه خادمياً: ${actorProfile.full_name} (${actorProfile.role}) • الفرع المعزول: ${actorProfile.assigned_branch_id || 'جميع الفروع'}`
@@ -149,6 +149,12 @@ export default function StaffLiveOrdersPage() {
         </div>
       </header>
 
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">كل الطلبات</div><div className="mt-2 text-2xl font-black">{orders.length}</div></div>
+        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">طلبات جديدة</div><div className="mt-2 text-2xl font-black text-[#a65e36]">{orders.filter(o=>['new','pending_confirmation'].includes(o.status)).length}</div></div>
+        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">قيد التجهيز</div><div className="mt-2 text-2xl font-black text-[#9b6a25]">{orders.filter(o=>o.status==='preparing').length}</div></div>
+        <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">جاهزة للاستلام</div><div className="mt-2 text-2xl font-black text-[#426348]">{orders.filter(o=>o.status==='ready_for_pickup').length}</div></div>
+      </div>
       {errorBanner && (
         <div className="mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
           {errorBanner}
@@ -159,7 +165,7 @@ export default function StaffLiveOrdersPage() {
         {orders
           .filter((o) =>
             searchQuery
-              ? o.order_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              ? String(o.order_number ?? '').includes(searchQuery) || o.order_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 o.customer_phone?.includes(searchQuery)
               : true
           )
@@ -168,9 +174,9 @@ export default function StaffLiveOrdersPage() {
               allowedRoleTargets.includes(st)
             );
             return (
-              <div key={order.order_code} className="rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-5 shadow-sm space-y-4">
+              <div key={order.order_code} className="rounded-2xl border border-[#ded8cd] bg-[#fbfaf7] p-5 shadow-[0_12px_30px_rgba(35,29,22,.06)] space-y-4">
                 <div className="flex items-center justify-between border-b border-[#e4ded4] pb-3">
-                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">{order.order_code}</span>
+                  <span className="font-mono text-lg font-extrabold text-[#a65e36]">#{order.order_number ?? '—'}</span>
                   <span className="rounded-sm bg-[#eee8df] px-2.5 py-1 text-xs font-bold text-[#655e53]">
                     {(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}
                   </span>

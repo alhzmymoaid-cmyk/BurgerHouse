@@ -61,16 +61,22 @@ export default function OwnerStudioDashboard() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6] space-y-6">
+    <div dir="rtl" className="bh-owner-shell min-h-screen bg-[#0B0A09] p-6 text-[#F5EFE6] space-y-6">
       <header className="border-b border-white/10 pb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#D49A3A]">لوحة إدارة مالك المطعم — BURGER HOUSE</h1>
+          <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#D49A3A]">مركز إدارة برجر هاوس</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#9E9488]">BURGER HOUSE · OWNER CONTROL</p></div></div>
           <p className="mt-1 text-xs text-[#9E9488]">
             مربوطة بالكامل بقاعدة بيانات Supabase و Storage الفعلي مع تدقيق الصلاحيات على الخادم
           </p>
         </div>
       </header>
 
+      {data && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-white/10 bg-[#171512] p-4"><div className="text-[11px] text-[#9E9488]">الفروع</div><div className="mt-2 text-2xl font-black text-white">{data.branches?.length || 0}</div></div>
+        <div className="rounded-xl border border-white/10 bg-[#171512] p-4"><div className="text-[11px] text-[#9E9488]">الفروع المستقبلة للطلبات</div><div className="mt-2 text-2xl font-black text-emerald-300">{data.branches?.filter((b:any)=>b.is_active&&b.is_accepting_orders).length || 0}</div></div>
+        <div className="rounded-xl border border-white/10 bg-[#171512] p-4"><div className="text-[11px] text-[#9E9488]">المنتجات</div><div className="mt-2 text-2xl font-black text-white">{data.products?.length || 0}</div></div>
+        <div className="rounded-xl border border-white/10 bg-[#171512] p-4"><div className="text-[11px] text-[#9E9488]">وسائل الدفع المفعلة</div><div className="mt-2 text-2xl font-black text-white">{data.payment_methods?.filter((p:any)=>p.is_enabled).length || 0}</div></div>
+      </div>}
       {errorMsg && (
         <div className="rounded-xl border border-red-500/40 bg-red-950/30 p-4 text-xs font-bold text-red-300">
           {errorMsg}

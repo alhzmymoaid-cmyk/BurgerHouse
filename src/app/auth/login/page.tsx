@@ -61,13 +61,11 @@ function StaffAndAdminLoginContent() {
   };
 
   return (
-    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
+    <div dir="rtl" className="bh-staff-login flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-[#201e1a]">
       <div className="w-full max-w-md rounded-sm border border-[#ded8cd] bg-[#fbfaf7] p-8 shadow-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-[#20201c] font-black text-[#f4f1eb]">
-            BH
-          </div>
-          <h1 className="text-2xl font-extrabold text-[#201e1a]">بوابة الدخول الموثقة — BURGER HOUSE</h1>
+          <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="mx-auto h-16 w-16"/>
+          <h1 className="text-2xl font-extrabold text-[#201e1a]">دخول الموظفين والإدارة — BURGER HOUSE</h1>
           <p className="text-xs text-[#777064]">
             مصادقة خادمية عبر Supabase Auth • يتم التحقق من الدور والفرع تلقائياً على الخادم
           </p>

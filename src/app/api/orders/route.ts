@@ -10,6 +10,28 @@ export async function POST(request: NextRequest) {
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
     const sessionFingerprint = request.headers.get('x-bh-session') || request.cookies.get('bh_session_id')?.value || 'anon-session';
     const payload = await request.json();
+    const authSupabase = createSupabaseServerClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'CUSTOMER_LOGIN_REQUIRED', message_ar: 'سجّل الدخول أولاً لإتمام الطلب وحفظه في حسابك.' }, { status: 401 });
+    }
+    if (!user.email || !user.email_confirmed_at) {
+      return NextResponse.json({ error: 'CUSTOMER_EMAIL_NOT_VERIFIED', message_ar: 'تحقق من بريدك الإلكتروني أولاً قبل إرسال الطلب.' }, { status: 403 });
+    }
+
+    const { data: customerProfile } = await serviceSupabase
+      .from('customer_profiles').select('phone').eq('id', user.id).maybeSingle();
+    const submittedPhone = String(payload?.customer_phone || '').replace(/\D/g, '');
+    const accountPhone = String(customerProfile?.phone || user.user_metadata?.phone || user.phone || '').replace(/\D/g, '');
+    if (!/^9665\d{8}$/.test(accountPhone)) {
+      return NextResponse.json({ error: 'CUSTOMER_PHONE_REQUIRED', message_ar: 'أكمل رقم جوالك السعودي في ملف حسابك قبل إرسال الطلب.' }, { status: 403 });
+    }
+    if (!/^9665\d{8}$/.test(submittedPhone)) {
+      return NextResponse.json({ error: 'INVALID_CUSTOMER_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحاً لاستلام تحديثات الطلب.' }, { status: 400 });
+    }
+    if (submittedPhone !== accountPhone) {
+      return NextResponse.json({ error: 'CUSTOMER_PHONE_MISMATCH', message_ar: 'رقم الجوال لا يطابق رقم حسابك.' }, { status: 403 });
+    }
 
     const result = await handleCreateOrderRequest({
       serviceSupabase,
@@ -20,6 +42,12 @@ export async function POST(request: NextRequest) {
       nowDate: new Date()
     });
 
+    if (result.status >= 200 && result.status < 300 && result.body?.id) {
+      await serviceSupabase.from('orders').update({ customer_id: user.id }).eq('id', result.body.id);
+      const { data: savedOrder } = await serviceSupabase.from('orders').select('order_number').eq('id', result.body.id).maybeSingle();
+      result.body.order_number = savedOrder?.order_number ?? null;
+      delete result.body.tracking_token;
+    }
     return NextResponse.json(result.body, { status: result.status });
   } catch (err: any) {
     return NextResponse.json(
@@ -53,7 +81,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(100);
 
-    // Enforce strict server-side branch scoping for staff roles
     if (['branch_manager', 'cashier', 'kitchen_staff'].includes(profile.role)) {
       query = query.eq('branch_id', profile.assigned_branch_id);
     } else if (requestedBranch && requestedBranch !== 'all') {

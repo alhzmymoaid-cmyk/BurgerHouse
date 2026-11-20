@@ -1,9 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-
-// Load system-installed @babel/parser from /usr/share/nodejs
-const babelParser = require('/usr/share/nodejs/@babel/parser');
+const ts = require('typescript');
 
 const ROOT = process.cwd();
 
@@ -28,15 +26,27 @@ let parsedCount = 0;
 for (const file of allSourceFiles) {
   const code = fs.readFileSync(file, 'utf8');
   const rel = path.relative(ROOT, file);
-  const isTsx = file.endsWith('.tsx');
-  const isTs = file.endsWith('.ts') || isTsx;
+  const scriptKind = file.endsWith('.tsx')
+    ? ts.ScriptKind.TSX
+    : file.endsWith('.ts')
+      ? ts.ScriptKind.TS
+      : ts.ScriptKind.JS;
 
-  // Parse full AST with TypeScript + JSX plugins to catch any syntax or structural type errors
-  const ast = babelParser.parse(code, {
-    sourceType: 'module',
-    plugins: isTs ? ['typescript', ...(isTsx ? ['jsx'] : [])] : []
-  });
-  assert.equal(ast.type, 'File', `AST parse failed for ${rel}`);
+  // Use the project's installed TypeScript parser so the check works in CI and on Vercel.
+  const sourceFile = ts.createSourceFile(
+    rel,
+    code,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind
+  );
+  assert.equal(
+    sourceFile.parseDiagnostics.length,
+    0,
+    `TypeScript/JS syntax errors in ${rel}: ${sourceFile.parseDiagnostics
+      .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\\n'))
+      .join('; ')}`
+  );
   parsedCount++;
 
   // Security lint assertions

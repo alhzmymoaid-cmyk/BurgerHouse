@@ -20,7 +20,7 @@ export default function InstallPrompt() {
     setIos(isIos);
     setSafari(isSafari);
     setInstalled(standalone);
-    if (standalone || localStorage.getItem('bh-install-dismissed') === '1') return;
+    if (standalone || localStorage.getItem('bh-install-dismissed-v2') === '1') return;
 
     const onPrompt = (event: Event) => {
       event.preventDefault();
@@ -46,7 +46,7 @@ export default function InstallPrompt() {
 
   const close = () => {
     setShow(false);
-    localStorage.setItem('bh-install-dismissed', '1');
+    localStorage.setItem('bh-install-dismissed-v2', '1');
   };
 
   const install = async () => {

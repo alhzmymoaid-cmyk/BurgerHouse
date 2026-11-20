@@ -6,20 +6,29 @@ import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRo
 
 export default function CustomerAccountPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [forgotName, setForgotName] = useState('');
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [supportWhatsApp, setSupportWhatsApp] = useState('');
 
   useEffect(() => {
     if (window.location.hash === '#signup') setMode('signup');
+    if (window.location.hash === '#forgot') setMode('forgot');
+    fetch('/api/catalog', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
+      const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\\D/g, '');
+      if (number) setSupportWhatsApp(number);
+    }).catch(() => undefined);
   }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (mode === 'forgot') return;
     setBusy(true);
     setError('');
     try {
@@ -72,37 +81,41 @@ export default function CustomerAccountPage() {
             <div className="bh-account-icon"><UtensilsCrossed size={23}/></div>
             <div>
               <p className="bh-eyebrow">MEMBER ACCESS</p>
-              <h1>{mode === 'login' ? 'أهلاً بعودتك' : 'أنشئ حسابك'}</h1>
+              <h1>{mode === 'login' ? 'أهلاً بعودتك' : mode === 'signup' ? 'أنشئ حسابك' : 'استعادة كلمة المرور'}</h1>
             </div>
-            <p>{mode === 'login' ? 'أدخل رقم جوالك وكلمة المرور للدخول إلى حسابك ومتابعة طلباتك.' : 'أدخل بياناتك مرة واحدة، وبعدها تقدر تتابع طلباتك من حسابك.'}</p>
+            <p>{mode === 'login' ? 'أدخل رقم جوالك وكلمة المرور للدخول إلى حسابك ومتابعة طلباتك.' : mode === 'signup' ? 'أدخل بياناتك مرة واحدة، وبعدها تقدر تتابع طلباتك من حسابك.' : 'أدخل الاسم ورقم الجوال المسجلين في حسابك، وسنفتح محادثة الدعم لمساعدتك.'}</p>
           </div>
 
-          <div className="bh-account-switch" role="tablist" aria-label="نوع الحساب">
-            <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setError(''); }}>تسجيل الدخول</button>
-            <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setError(''); }}>إنشاء حساب جديد</button>
-          </div>
+          {mode !== 'forgot' ? (
+            <div className="bh-account-switch" role="tablist" aria-label="نوع الحساب">
+              <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setError(''); }}>تسجيل الدخول</button>
+              <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setError(''); }}>إنشاء حساب جديد</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => { setMode('login'); setError(''); }} className="mb-4 text-xs font-bold text-[#a65e36] underline">العودة إلى تسجيل الدخول</button>
+          )}
 
           <form onSubmit={submit} className="bh-account-form">
-            {mode === 'signup' && (
+            {(mode === 'signup' || mode === 'forgot') && (
               <label className="bh-account-label">
-                <span>الاسم الكامل</span>
+                <span>{mode === 'forgot' ? 'الاسم المسجل في الحساب' : 'الاسم الكامل'}</span>
                 <div className="bh-field">
                   <UserRound aria-hidden="true"/>
-                  <input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="مثال: محمد أحمد" maxLength={100}/>
+                  <input required autoComplete="name" value={mode === 'forgot' ? forgotName : name} onChange={e => mode === 'forgot' ? setForgotName(e.target.value) : setName(e.target.value)} placeholder="اكتب اسمك" maxLength={100}/>
                 </div>
               </label>
             )}
 
             <label className="bh-account-label">
-              <span>رقم الجوال</span>
+              <span>{mode === 'forgot' ? 'رقم الجوال المسجل' : 'رقم الجوال'}</span>
               <div className="bh-field">
                 <Phone aria-hidden="true"/>
-                <input required type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9+٠-٩۰-۹]/g, '').slice(0, 18))} placeholder="05XXXXXXXX" maxLength={18}/>
+                <input required type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={mode === 'forgot' ? forgotPhone : phone} onChange={e => mode === 'forgot' ? setForgotPhone(e.target.value.replace(/[^0-9+٠-٩۰-۹]/g, '').slice(0, 18)) : setPhone(e.target.value.replace(/[^0-9+٠-٩۰-۹]/g, '').slice(0, 18))} placeholder="05XXXXXXXX" maxLength={18}/>
               </div>
               <small>رقم سعودي يبدأ بـ 05 — مثال: 0501234567</small>
             </label>
 
-            <label className="bh-account-label">
+            {mode !== 'forgot' && <label className="bh-account-label">
               <span>كلمة المرور</span>
               <div className="bh-field">
                 <LockKeyhole aria-hidden="true"/>
@@ -110,19 +123,29 @@ export default function CustomerAccountPage() {
                 <button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button>
               </div>
               {mode === 'signup' && <small>استخدم كلمة مرور يصعب تخمينها ولا تشاركها مع أحد.</small>}
-            </label>
+              {mode === 'login' && <button type="button" onClick={() => { setMode('forgot'); setError(''); setForgotName(name); setForgotPhone(phone); }} className="mt-2 text-xs font-bold text-[#a65e36] underline">نسيت كلمة المرور؟</button>}
+            </label>}
 
             {error && <div className="bh-account-alert" role="alert">{error}</div>}
-            <button type="submit" disabled={busy} className="bh-account-submit">
-              {busy ? 'جارٍ تنفيذ الطلب...' : mode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب'}
-              <span aria-hidden="true">←</span>
-            </button>
+            {mode === 'forgot' ? (
+              <button type="button" disabled={!forgotName.trim() || !forgotPhone.trim() || !supportWhatsApp} onClick={() => {
+                const digits = forgotPhone.replace(/\\D/g, '').replace(/^0/, '966');
+                if (!/^9665\\d{8}$/.test(digits)) { setError('أدخل رقم جوال سعودي صحيحًا.'); return; }
+                const message = 'السلام عليكم، أنا ' + forgotName.trim() + '، ورقم الجوال المسجل في حسابي هو ' + forgotPhone.trim() + '. نسيت كلمة المرور وأريد استعادتها لحسابي في BURGER HOUSE. أرجو مساعدتي بعد التحقق من ملكية الرقم.';
+                window.open('https://wa.me/' + supportWhatsApp + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+              }} className="bh-account-submit">إرسال إلى الدعم عبر واتساب <span aria-hidden="true">←</span></button>
+            ) : (
+              <button type="submit" disabled={busy} className="bh-account-submit">
+                {busy ? 'جارٍ تنفيذ الطلب...' : mode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب'}
+                <span aria-hidden="true">←</span>
+              </button>
+            )}
           </form>
 
-          <div className="bh-account-security">
+          {mode !== 'forgot' && <div className="bh-account-security">
             <ShieldCheck size={18}/>
             <span>الدخول برقم الجوال وكلمة المرور فقط، بدون رمز SMS أو بريد إلكتروني.</span>
-          </div>
+          </div>}
           <p className="bh-account-switch-note">بالمتابعة، أنت مسؤول عن استخدام رقم جوالك الصحيح والحفاظ على سرية كلمة المرور.</p>
         </section>
       </div>

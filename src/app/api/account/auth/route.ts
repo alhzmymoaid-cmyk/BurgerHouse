@@ -1,0 +1,153 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createHmac } from 'node:crypto';
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
+
+function reply(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { 'Cache-Control': 'no-store, max-age=0' },
+  });
+}
+
+function normalizeSaudiPhone(value: unknown): string {
+  const arabicDigits = String(value ?? '')
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+  const digits = arabicDigits.replace(/\D/g, '');
+  if (/^05\d{8}$/.test(digits)) return '+966' + digits.slice(1);
+  if (/^5\d{8}$/.test(digits)) return '+966' + digits;
+  if (/^9665\d{8}$/.test(digits)) return '+' + digits;
+  if (/^009665\d{8}$/.test(digits)) return '+' + digits.slice(2);
+  return '';
+}
+
+function hmac(secret: string, value: string) {
+  return createHmac('sha256', secret).update(value).digest('hex');
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const origin = request.headers.get('origin');
+    if (origin) {
+      const parsedOrigin = new URL(origin);
+      if (parsedOrigin.origin !== request.nextUrl.origin) {
+        return reply({ error: 'INVALID_ORIGIN', message_ar: 'تعذر التحقق من مصدر الطلب.' }, 403);
+      }
+    }
+
+    const contentLength = Number(request.headers.get('content-length') || 0);
+    if (contentLength > 4096) {
+      return reply({ error: 'REQUEST_TOO_LARGE', message_ar: 'الطلب أكبر من المسموح.' }, 413);
+    }
+
+    const body = await request.json();
+    const mode = body?.mode === 'signup' ? 'signup' : body?.mode === 'login' ? 'login' : '';
+    const phone = normalizeSaudiPhone(body?.phone);
+    const password = typeof body?.password === 'string' ? body.password : '';
+    const fullName = typeof body?.fullName === 'string' ? body.fullName.trim().replace(/\s+/g, ' ') : '';
+
+    if (!mode) return reply({ error: 'INVALID_MODE', message_ar: 'اختر تسجيل الدخول أو إنشاء حساب.' }, 400);
+    if (!phone) return reply({ error: 'INVALID_PHONE', message_ar: 'أدخل رقم جوال سعودي صحيحًا مثل 05XXXXXXXX.' }, 400);
+    if (password.length < 8 || password.length > 72) {
+      return reply({ error: 'INVALID_PASSWORD', message_ar: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' }, 400);
+    }
+    if (mode === 'signup' && (fullName.length < 2 || fullName.length > 100)) {
+      return reply({ error: 'INVALID_NAME', message_ar: 'اكتب اسمك بشكل صحيح.' }, 400);
+    }
+
+    const secret = process.env.ORDER_HMAC_SECRET;
+    if (!secret || secret.length < 32) {
+      console.error('Customer auth is missing a valid ORDER_HMAC_SECRET.');
+      return reply({ error: 'AUTH_CONFIGURATION_ERROR', message_ar: 'خدمة الحسابات غير جاهزة حاليًا. حاول لاحقًا.' }, 503);
+    }
+
+    const phoneDigits = phone.replace(/\D/g, '');
+    const alias = 'bh_' + hmac(secret, 'customer-login:' + phoneDigits) + '@login.burgerhouse.invalid';
+    const ip = request.headers.get('x-real-ip')
+      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || 'unknown';
+    const service = createSupabaseServiceRoleClient();
+
+    const ipKey = hmac(secret, 'customer-auth:ip:' + ip + ':' + mode);
+    const phoneKey = hmac(secret, 'customer-auth:phone:' + phoneDigits + ':' + mode);
+    const maxIpAttempts = mode === 'signup' ? 8 : 20;
+    const maxPhoneAttempts = mode === 'signup' ? 3 : 8;
+    const windowSeconds = mode === 'signup' ? 3600 : 900;
+
+    const [ipLimit, phoneLimit] = await Promise.all([
+      service.rpc('consume_customer_auth_rate_limit', {
+        p_key: ipKey,
+        p_max_attempts: maxIpAttempts,
+        p_window_seconds: windowSeconds,
+      }),
+      service.rpc('consume_customer_auth_rate_limit', {
+        p_key: phoneKey,
+        p_max_attempts: maxPhoneAttempts,
+        p_window_seconds: windowSeconds,
+      }),
+    ]);
+
+    if (ipLimit.error || phoneLimit.error) {
+      console.error('Customer auth rate-limit check failed:', ipLimit.error || phoneLimit.error);
+      return reply({ error: 'AUTH_TEMPORARILY_UNAVAILABLE', message_ar: 'تعذر التحقق من المحاولة الآن. حاول بعد قليل.' }, 503);
+    }
+    if (ipLimit.data !== true || phoneLimit.data !== true) {
+      return reply({ error: 'TOO_MANY_ATTEMPTS', message_ar: 'محاولات كثيرة خلال وقت قصير. انتظر قليلًا ثم حاول مجددًا.' }, 429);
+    }
+
+    if (mode === 'signup') {
+      const { data: created, error: createError } = await service.auth.admin.createUser({
+        email: alias,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName, phone, customer_account: true },
+        app_metadata: { customer_account: true, customer_phone: phone },
+      });
+
+      if (createError || !created.user) {
+        const message = createError?.message || '';
+        const duplicate = /already|exists|registered|duplicate/i.test(message);
+        return reply({
+          error: duplicate ? 'ACCOUNT_ALREADY_EXISTS' : 'ACCOUNT_CREATE_FAILED',
+          message_ar: duplicate
+            ? 'يوجد حساب مرتبط بهذا الرقم. جرّب تسجيل الدخول بدل إنشاء حساب جديد.'
+            : 'تعذر إنشاء الحساب الآن. تحقق من البيانات وحاول مرة أخرى.',
+        }, duplicate ? 409 : 400);
+      }
+
+      const { error: profileError } = await service
+        .from('customer_profiles')
+        .upsert({ id: created.user.id, full_name: fullName, phone }, { onConflict: 'id' });
+
+      if (profileError) {
+        console.error('Customer profile creation failed:', profileError);
+        await service.auth.admin.deleteUser(created.user.id);
+        return reply({ error: 'PROFILE_CREATE_FAILED', message_ar: 'تعذر حفظ بيانات الحساب. حاول مرة أخرى.' }, 500);
+      }
+    }
+
+    // The server-side SSR client writes the authenticated session into secure Supabase cookies.
+    const auth = createSupabaseServerClient();
+    const { error: loginError } = await auth.auth.signInWithPassword({
+      email: alias,
+      password,
+    });
+
+    if (loginError) {
+      const invalid = /invalid login credentials/i.test(loginError.message || '');
+      return reply({
+        error: invalid ? 'INVALID_CREDENTIALS' : 'SIGN_IN_FAILED',
+        message_ar: invalid
+          ? 'رقم الجوال أو كلمة المرور غير صحيحة.'
+          : 'تعذر تسجيل الدخول الآن. حاول مرة أخرى.',
+      }, invalid ? 401 : 503);
+    }
+
+    return reply({ ok: true });
+  } catch (error: any) {
+    console.error('Customer account auth failed:', error?.message || error);
+    return reply({ error: 'CUSTOMER_AUTH_ERROR', message_ar: 'حدث خطأ غير متوقع. حاول مرة أخرى.' }, 500);
+  }
+}

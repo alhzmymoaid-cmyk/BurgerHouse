@@ -28,10 +28,6 @@ export default function CustomerAccountPage({ initialMode = 'login' }: { initial
     }).catch(() => undefined);
     if (window.location.hash === '#signup') setMode('signup');
     if (window.location.hash === '#forgot') setMode('forgot');
-    fetch('/api/catalog', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\D/g, '');
-      if (number) setSupportWhatsApp(number);
-    }).catch(() => undefined);
     return () => { active = false; };
   }, [router]);
 

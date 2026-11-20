@@ -539,10 +539,35 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'UPSERT_PRODUCT') {
-    const productData = body.product;
+    const productData = body?.product || {};
+    const productId = String(productData.id || '');
+    const nextPrice = Number(productData.base_price);
+
+    if (!productId || !Number.isFinite(nextPrice) || nextPrice < 0 ||
+        typeof productData.is_active !== 'boolean' || typeof productData.is_featured !== 'boolean') {
+      return { status: 400, body: { error: 'INVALID_PRODUCT_UPDATE', message_ar: 'تحقق من السعر وحالة ظهور المنتج.' } };
+    }
+
+    const { data: existingProduct, error: lookupError } = await serviceSupabase
+      .from('products')
+      .select('id, base_price, is_active, is_featured')
+      .eq('id', productId)
+      .maybeSingle();
+
+    if (lookupError) return { status: 400, body: { error: lookupError.message } };
+    if (!existingProduct) return { status: 404, body: { error: 'PRODUCT_NOT_FOUND' } };
+
+    const updates = {
+      base_price: nextPrice,
+      is_active: productData.is_active,
+      is_featured: productData.is_featured,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await serviceSupabase
       .from('products')
-      .upsert(productData, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', productId)
       .select('*')
       .single();
 
@@ -552,10 +577,15 @@ export async function handleOwnerAdminRequest({
       actor_id: actor.id,
       actor_name: actor.full_name,
       actor_role: actor.role,
-      action: 'UPSERT_PRODUCT',
+      action: 'UPDATE_PRODUCT',
       target_type: 'product',
       target_id: data.id,
-      metadata: { base_price: data.base_price }
+      metadata: {
+        previous_base_price: existingProduct.base_price,
+        base_price: data.base_price,
+        is_active: data.is_active,
+        is_featured: data.is_featured
+      }
     });
 
     return { status: 200, body: { ok: true, product: data } };

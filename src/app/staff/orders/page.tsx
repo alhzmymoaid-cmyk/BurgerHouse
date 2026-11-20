@@ -8,12 +8,19 @@ import {
 } from '@/lib/domain/core-engine.mjs';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
+const decodeVapidKey = (value: string) => {
+  const padding = '='.repeat((4 - value.length % 4) % 4);
+  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+};
+
 export default function StaffLiveOrdersPage() {
   const [actorProfile, setActorProfile] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);\n  const [pushBusy, setPushBusy] = useState(false);\n  const [pushMessage, setPushMessage] = useState('');\n  const [pushEnabled, setPushEnabled] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [pendingSensitive, setPendingSensitive] = useState<{ code: string; status: string } | null>(null);
   const [sensitiveReason, setSensitiveReason] = useState<string>('');
@@ -39,6 +46,59 @@ export default function StaffLiveOrdersPage() {
       // Ignore audio errors before user gesture
     }
   }, [soundEnabled]);
+
+  const enablePushNotifications = async () => {
+    setPushBusy(true);
+    setPushMessage('');
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        throw new Error('هذا المتصفح لا يدعم إشعارات الويب. افتح لوحة الموظف في Chrome أو ثبّت الموقع على شاشة iPhone الرئيسية أولاً.');
+      }
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIos && !isStandalone) {
+        throw new Error('على iPhone: أضف الموقع إلى الشاشة الرئيسية وافتح تطبيق BURGER HOUSE منها، ثم فعّل الإشعارات.');
+      }
+      const publicKey = process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY;
+      if (!publicKey) throw new Error('مفتاح الإشعارات غير مضاف إلى إعدادات النشر.');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('لم تسمح بإرسال الإشعارات. فعّلها من إعدادات المتصفح.');
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: decodeVapidKey(publicKey)
+      });
+      const response = await fetch('/api/staff/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subscription.toJSON(), branch_id: actorProfile?.assigned_branch_id || undefined })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || result.error || 'تعذر حفظ اشتراك الإشعارات.');
+      setPushEnabled(true);
+      setPushMessage('تم تفعيل إشعارات الطلبات لهذا الفرع على هذا الجهاز.');
+    } catch (error: any) {
+      setPushMessage(error?.message || 'تعذر تفعيل الإشعارات.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const sendTestPush = async () => {
+    setPushBusy(true);
+    setPushMessage('');
+    try {
+      const response = await fetch('/api/staff/push/test', { method: 'POST' });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error === 'NO_PUSH_SUBSCRIPTION' ? 'فعّل الإشعارات على هذا الجهاز أولاً.' : result.message || result.error || 'فشل اختبار الإشعار.');
+      setPushMessage('أرسلنا إشعار اختبار إلى هذا الجهاز.');
+    } catch (error: any) {
+      setPushMessage(error?.message || 'تعذر اختبار الإشعار.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const fetchLiveOrders = useCallback(async () => {
     try {
@@ -132,7 +192,7 @@ export default function StaffLiveOrdersPage() {
               : 'جاري التحقق من الجلسة الخادمية...'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="search"
             value={searchQuery}
@@ -141,13 +201,19 @@ export default function StaffLiveOrdersPage() {
             className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs text-[#201e1a]"
           />
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="rounded-sm border border-[#d8d0c4] bg-white px-4 py-2 text-xs font-bold text-[#514b42]"
+            onClick={() => setSoundEnabled((enabled) => !enabled)}
+            className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs font-bold text-[#514b42]"
           >
-            {soundEnabled ? '🔔 التنبيه الصوتي مفعل' : '🔕 التنبيه الصوتي صامت'}
+            {soundEnabled ? '🔔 الصوت مفعل' : '🔕 الصوت صامت'}
           </button>
+          <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-sm bg-[#f5c542] px-3 py-2 text-xs font-black text-[#17140b] disabled:opacity-50">
+            {pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل إشعار الطلبات'}
+          </button>
+          <button disabled={pushBusy} onClick={sendTestPush} className="rounded-sm border border-[#d8d0c4] bg-white px-3 py-2 text-xs font-bold text-[#514b42] disabled:opacity-50">اختبار الإشعار</button>
         </div>
       </header>
+
+      {pushMessage && <div className="mb-4 rounded-lg border border-[#68572b] bg-[#282313] p-3 text-xs font-bold text-[#f2df9d]" role="status">{pushMessage}</div>}
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-xl border border-[#ded8cd] bg-[#fbfaf7] p-4"><div className="text-[11px] text-[#81786d]">كل الطلبات</div><div className="mt-2 text-2xl font-black">{orders.length}</div></div>

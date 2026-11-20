@@ -23,6 +23,7 @@ const steps = [
   { status:'completed', label:'تم التسليم' },
 ];
 const money=(n:number)=>new Intl.NumberFormat('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+const decodeVapidKey=(key:string)=>{const padding='='.repeat((4-key.length%4)%4);const base64=(key+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=window.atob(base64);return Uint8Array.from([...raw].map(char=>char.charCodeAt(0)));};
 
 export default function CustomerOrderTrackingPage() {
   const params=useParams<{id:string}>();
@@ -31,6 +32,9 @@ export default function CustomerOrderTrackingPage() {
   const [order,setOrder]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
+  const [pushBusy,setPushBusy]=useState(false);
+  const [pushEnabled,setPushEnabled]=useState(false);
+  const [pushMessage,setPushMessage]=useState('');
   const previousStatus=useRef<string|null>(null);
 
   useEffect(()=>{
@@ -63,6 +67,29 @@ export default function CustomerOrderTrackingPage() {
     return()=>{active=false;window.clearInterval(fallback);void supabase.removeChannel(channel);};
   },[orderId,router]);
 
+  const enablePush=async()=>{
+    setPushBusy(true);setPushMessage('');
+    try{
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('هذا المتصفح لا يدعم إشعارات الويب.');
+      const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone=window.matchMedia('(display-mode: standalone)').matches||(navigator as any).standalone===true;
+      if(isIOS&&!isStandalone)throw new Error('على iPhone، أضف التطبيق إلى الشاشة الرئيسية أولاً ثم فعّل الإشعارات.');
+      const publicKey=process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY;
+      if(!publicKey)throw new Error('خدمة الإشعارات غير مهيأة حاليًا.');
+      const permission=await Notification.requestPermission();
+      if(permission!=='granted')throw new Error('لم تسمح بإرسال الإشعارات لهذا الجهاز.');
+      const registration=await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const existing=await registration.pushManager.getSubscription();
+      const subscription=existing||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapidKey(publicKey)});
+      const response=await fetch('/api/customer/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({subscription})});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.message_ar||'تعذر حفظ اشتراك الإشعارات.');
+      setPushEnabled(true);setPushMessage('تم تفعيل إشعارات جاهزية الطلب على هذا الجهاز.');
+    }catch(e:any){setPushMessage(e.message||'تعذر تفعيل الإشعارات.');}
+    finally{setPushBusy(false);}
+  };
+
   const activeStep=order?.status==='pending_confirmation'?0:steps.findIndex(step=>step.status===order?.status);
   const rejected=['rejected','cancelled'].includes(order?.status);
 
@@ -81,6 +108,7 @@ export default function CustomerOrderTrackingPage() {
       </div>
       {loading?<div className="h-64 animate-pulse rounded-2xl bg-[#141417]"/>:error?<div className="rounded-xl border border-red-500/30 bg-[#1B1B1F] p-5 text-sm text-red-300" role="alert">{error}<a href="/account/orders" className="mt-4 block font-bold text-[#F2B705]">العودة إلى طلباتي</a></div>:order&&<>
         {order.status==='ready_for_pickup'&&<div className="mb-5 flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-4 text-emerald-300" role="status" aria-live="polite"><CheckCircle2 size={22}/><div><b className="block text-sm">طلبك جاهز للاستلام</b><span className="mt-1 block text-xs">توجه إلى الفرع لاستلام طلبك.</span></div></div>}
+        {!pushEnabled&&!['completed','rejected','cancelled'].includes(order.status)&&<div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#141417] p-4"><div><b className="block text-sm">تنبيه جاهزية الطلب</b><p className="mt-1 text-xs text-[#9E9BA3]">فعّل الإشعارات لتصلك رسالة فور جاهزية طلبك.</p>{pushMessage&&<p role="status" className="mt-2 text-[11px] text-[#F2B705]">{pushMessage}</p>}</div><button type="button" disabled={pushBusy} onClick={enablePush} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C] disabled:opacity-50">{pushBusy?'جارٍ التفعيل…':'تفعيل الإشعارات'}</button></div>}
         {rejected&&<div className="mb-5 rounded-xl border border-red-500/30 bg-red-950/20 p-4 text-sm text-red-300" role="status">حالة الطلب: {labels[order.status]}</div>}
         <section className="rounded-2xl border border-white/10 bg-[#141417] p-5 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">

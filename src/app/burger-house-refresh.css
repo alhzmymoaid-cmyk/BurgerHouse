@@ -136,3 +136,79 @@ html,body{background:var(--bh-bg)!important}
 .bh-storefront .bh-mobile-menu-overlay{position:fixed!important;inset:0!important;height:100dvh!important;min-height:100vh!important;z-index:9999!important;overscroll-behavior:contain}
 .bh-storefront #bh-mobile-menu{height:100dvh!important;max-height:100dvh!important;padding-bottom:calc(20px + env(safe-area-inset-bottom))!important}
 .bh-storefront>header button[aria-controls="bh-mobile-menu"]{touch-action:manipulation;min-width:42px;min-height:42px;display:grid;place-items:center}
+
+
+/* Customer account form — high contrast, large tap targets, and readable mobile fields */
+.bh-account{color-scheme:dark!important;background:#0b0d0a!important}
+.bh-account-topline{min-height:58px;padding:10px clamp(16px,4vw,54px);display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;color:#c9c4b3!important}
+.bh-account-brand{display:inline-flex;align-items:center;gap:10px;color:#fff6df!important;font-size:13px;font-weight:1000;letter-spacing:.1em}
+.bh-account-brand img{width:34px;height:34px;object-fit:contain}
+.bh-account-layout{width:min(1240px,100%);min-height:calc(100svh - 58px);margin:0 auto;padding:clamp(18px,4vw,48px);display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,560px);align-items:center;gap:clamp(28px,5vw,76px)}
+.bh-account-visual{position:relative;display:flex;min-height:660px;flex-direction:column;justify-content:space-between;overflow:hidden;padding:30px;border:1px solid #303629;border-radius:24px;background:radial-gradient(ellipse at 15% 20%,#4b411b70,transparent 42%),linear-gradient(145deg,#171b13,#0e100c)!important}
+.bh-account-back{display:inline-flex;align-items:center;gap:8px;color:#e8e0ca!important;font-size:13px;font-weight:800}
+.bh-account-visual-copy{position:relative;z-index:1;max-width:540px;margin:45px 0}
+.bh-account-logo{width:70px;height:70px;object-fit:contain;margin-bottom:22px}
+.bh-account-visual h1{margin-top:15px;color:#fff8e7!important;font-size:clamp(38px,4.5vw,62px);font-weight:1000;line-height:1.35}
+.bh-account-visual h1 em{font-style:normal;color:#f5c542!important}
+.bh-account-lead{max-width:450px;margin-top:17px;color:#d0c9b7!important;font-size:16px;line-height:2}
+.bh-account-perks{display:grid;gap:15px;margin-top:28px;color:#e4ddca!important;font-size:14px}
+.bh-account-perks>div{display:flex;align-items:center;gap:11px}
+.bh-account-perks svg{width:19px;height:19px;color:#f5c542}
+.bh-account-photo{position:relative;height:180px;overflow:hidden;border:1px solid #42402f;border-radius:16px}
+.bh-account-photo img{width:100%;height:100%;object-fit:cover;object-position:center 54%;opacity:.8}
+.bh-account-photo span{position:absolute;right:18px;bottom:16px;color:#fff5d9;font-size:10px;font-weight:1000;letter-spacing:.2em;text-shadow:0 2px 8px #000}
+.bh-account-panel{width:100%;max-width:560px;margin-inline:auto;padding:clamp(26px,4vw,44px);border:1px solid #3b4031;border-radius:24px;background:linear-gradient(155deg,#1a1e16,#12150f)!important;box-shadow:0 28px 90px #0007;color:#f7f2e3!important}
+.bh-account-form-head{display:grid;grid-template-columns:58px 1fr;column-gap:15px;align-items:center;margin-bottom:25px}
+.bh-account-icon{grid-row:span 2;display:grid;place-items:center;width:58px;height:58px;margin:0!important;border:1px solid #655629;border-radius:17px;background:#332d18!important;color:#f5c542!important}
+.bh-account-form-head .bh-eyebrow{margin:0 0 4px;color:#f5c542!important;font-size:10px;font-weight:1000;letter-spacing:.18em}
+.bh-account-form-head h1{margin:0;color:#fff7df!important;font-size:clamp(25px,3vw,32px);font-weight:1000;line-height:1.5}
+.bh-account-form-head>p:last-child{grid-column:1/-1;margin-top:13px;color:#c2beae!important;font-size:14px;line-height:1.9}
+.bh-account-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0 0 23px;padding:5px;border:1px solid #3c4232;border-radius:14px;background:#0e110c!important}
+.bh-account-switch button{min-height:50px;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:#c0bdaf!important;font-size:14px;font-weight:900;transition:background .2s,color .2s}
+.bh-account-switch button.active{background:#f5c542!important;color:#17160e!important;box-shadow:0 4px 16px #f5c54222}
+.bh-account-form{display:grid;gap:19px}
+.bh-account-label{display:grid;gap:9px;color:#f2ecd9!important;font-size:14px;font-weight:900}
+.bh-account-label>span{display:block}
+.bh-account-label small{color:#bdb9a8!important;font-size:12px;font-weight:500;line-height:1.7}
+.bh-field{display:flex;align-items:center;gap:12px;min-height:62px;padding:0 16px;border:1px solid #596047!important;border-radius:13px;background:#080a07!important;box-shadow:inset 0 1px 3px #0008;transition:border-color .2s,box-shadow .2s}
+.bh-field:focus-within{border-color:#f5c542!important;box-shadow:0 0 0 3px #f5c54226,inset 0 1px 3px #0008}
+.bh-field>svg{width:21px;height:21px;flex:none;color:#f5c542!important}
+.bh-field input{width:100%;min-width:0;min-height:58px;padding:0!important;border:0!important;outline:0!important;background:transparent!important;color:#fff9e9!important;font-size:17px!important;font-weight:700!important;box-shadow:none!important}
+.bh-field input::placeholder{color:#858b78!important;opacity:1}
+.bh-field input:-webkit-autofill,.bh-field input:-webkit-autofill:hover,.bh-field input:-webkit-autofill:focus{-webkit-text-fill-color:#fff9e9!important;box-shadow:0 0 0 1000px #080a07 inset!important;transition:background-color 9999s}
+.bh-password-toggle{display:grid;place-items:center;width:38px;height:38px;flex:none;border:0;border-radius:9px;background:#24291c!important;color:#f5d36d!important}
+.bh-password-toggle svg{width:19px;height:19px}
+.bh-account-submit{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:60px;margin-top:3px;padding:12px 18px;border:0;border-radius:13px;background:#f5c542!important;color:#17160e!important;font-size:16px;font-weight:1000;box-shadow:0 10px 30px #f5c54222;transition:transform .18s,filter .18s}
+.bh-account-submit:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.bh-account-submit:disabled{opacity:.65;cursor:wait;transform:none}
+.bh-account-submit span{font-size:21px}
+.bh-account-security{display:flex;align-items:flex-start;gap:10px;margin-top:21px;padding-top:18px;border-top:1px solid #3a4030;color:#c5c1b2!important;font-size:12px;line-height:1.8}
+.bh-account-security svg{flex:none;color:#f5c542!important}
+.bh-account-switch-note{margin-top:12px;color:#888e7d!important;font-size:10px;line-height:1.7}
+.bh-account-alert{padding:13px 15px;border:1px solid #8a493b;border-radius:11px;background:#351d18!important;color:#ffd0c3!important;font-size:13px;line-height:1.8}
+@media(max-width:850px){
+ .bh-account-topline{min-height:52px;padding:8px 17px;font-size:10px}
+ .bh-account-brand{font-size:11px}
+ .bh-account-brand img{width:30px;height:30px}
+ .bh-account-layout{display:flex!important;flex-direction:column!important;justify-content:center;min-height:calc(100svh - 52px);padding:16px 15px 28px}
+ .bh-account-visual{display:none!important}
+ .bh-account-panel{width:100%;max-width:560px;padding:clamp(22px,6vw,34px) clamp(18px,5vw,28px)!important;border-radius:20px}
+ .bh-account-form-head{margin-bottom:21px}
+ .bh-account-form-head h1{font-size:27px!important}
+ .bh-account-form-head>p:last-child{font-size:13px;line-height:1.85}
+ .bh-account-switch{margin-bottom:20px}
+ .bh-account-switch button{min-height:52px;font-size:13px}
+ .bh-account-form{gap:18px!important}
+ .bh-account-label{font-size:14px}
+ .bh-field{min-height:62px!important;padding-inline:15px}
+ .bh-field input{min-height:58px!important;font-size:17px!important}
+ .bh-account-submit{min-height:60px!important;font-size:16px}
+}
+@media(max-width:390px){
+ .bh-account-topline>span{font-size:9px}
+ .bh-account-panel{padding:20px 16px!important}
+ .bh-account-form-head h1{font-size:24px!important}
+ .bh-field{min-height:58px!important}
+ .bh-field input{min-height:54px!important;font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){.bh-account *{transition:none!important;animation:none!important}}

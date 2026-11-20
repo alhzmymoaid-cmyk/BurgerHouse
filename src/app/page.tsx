@@ -403,29 +403,22 @@ export default function StorefrontPage() {
       </div>
 
       {activeView === 'menu' && <>
-        <section className="relative overflow-hidden bg-[#191916] text-[#f7f3eb]">
-          <div className="mx-auto grid max-w-[1440px] lg:min-h-[570px] lg:grid-cols-[1fr_1.05fr]">
-            <div className="relative z-10 order-2 flex flex-col justify-center px-5 py-12 sm:px-10 lg:order-1 lg:px-16 lg:py-20">
-              <div className="mb-6 flex items-center gap-3 text-[11px] font-extrabold tracking-[.22em] text-[#c58a5e]"><span className="h-px w-10 bg-[#c58a5e]"/> BURGER HOUSE · EST. FOR GREAT TASTE</div>
-              <h1 className="max-w-xl text-[38px] font-black leading-[1.32] tracking-tight sm:text-5xl lg:text-[64px]">البرجر كما<br/><span className="text-[#d59b6c]">يجب أن يكون.</span></h1>
-              <p className="mt-5 max-w-lg text-sm leading-8 text-[#d1c9bb] sm:text-base">لحم يُحمّر على الصاج، خبز بريوش طازج، وصوصات نجهزها لتكمل كل قضمة. اختر من قائمتنا واستلم طلبك من الفرع.</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})} className="inline-flex items-center gap-3 bg-[#a84f32] px-7 py-4 text-sm font-extrabold text-white transition hover:bg-[#913f28]">اطلب الآن <ArrowLeft size={17}/></button>
-                <button onClick={() => setActiveView('branches')} className="inline-flex items-center gap-2 border border-white/25 px-6 py-4 text-sm font-bold text-[#f2ece2] transition hover:bg-white/10"><MapPin size={16}/> اعثر على فرع</button>
-              </div>
-              <div className="mt-10 flex flex-wrap gap-6 border-t border-white/15 pt-6 text-xs text-[#c8c0b4]">
-                <div><div className="text-base font-black text-white">طازج</div><div className="mt-1">يُحضّر بعد الطلب</div></div>
-                <div><div className="text-base font-black text-white">سنقل أو دبل</div><div className="mt-1">اختر حجم برجرك</div></div>
-                <div><div className="text-base font-black text-white">{branches.length} فروع</div><div className="mt-1">استلام من الفرع</div></div>
-              </div>
+        <section className="bh-home-hero relative overflow-hidden text-[#f7f3eb]">
+          <img src="/images/hero-wagyu-smash.jpg" alt="واغيو سماش هاوس من برجر هاوس" className="bh-home-hero-image"/>
+          <div className="bh-home-hero-shade"/>
+          <div className="bh-home-hero-content">
+            <div className="bh-home-kicker"><span/> BURGER HOUSE <i>·</i> CRAFTED OVER FIRE</div>
+            <p className="bh-home-overline">HOUSE SIGNATURE · MADE TO ORDER</p>
+            <h1>البرجر كما<br/><em>يجب أن يكون.</em></h1>
+            <p className="bh-home-description">واغيو طري، خبز بريوش محمّص، وصوصات البيت. اختر وجبتك واستلمها ساخنة من أقرب فرع.</p>
+            <div className="bh-home-actions">
+              <button onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>اكتشف المنيو <ArrowLeft size={18}/></button>
+              <button onClick={() => setActiveView('branches')}><MapPin size={17}/> فروع الاستلام</button>
             </div>
-            <div className="relative order-1 min-h-[300px] overflow-hidden sm:min-h-[430px] lg:order-2 lg:min-h-full">
-              <img src="/images/hero-wagyu-smash.jpg" alt="برجر واغيو من برجر هاوس" className="absolute inset-0 h-full w-full object-cover object-center"/>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#191916]/70 via-transparent to-[#191916]/5 lg:bg-gradient-to-l lg:from-[#191916]/30 lg:via-transparent lg:to-transparent"/>
-              <div className="absolute bottom-6 right-5 border-r-2 border-[#d59b6c] pr-4 text-white sm:bottom-9 sm:right-9"><div className="text-[10px] font-bold tracking-[.2em] text-[#e6c7aa]">HOUSE SIGNATURE</div><div className="mt-1 text-xl font-black sm:text-2xl">واغيو سماش هاوس</div><div className="mt-1 text-xs text-white/75">ابدأ من ٣٨ ر.س</div></div>
-              <div className="absolute left-5 top-5 border border-white/25 bg-black/25 px-4 py-2 text-[10px] font-bold tracking-[.16em] text-white backdrop-blur-sm">MADE TO ORDER</div>
-            </div>
+            <div className="bh-home-proof"><span><b>{branches.length}</b> فروع</span><span><b>طازج</b> عند الطلب</span><span><b>استلام</b> مباشر</span></div>
           </div>
+          <div className="bh-home-price"><span>HOUSE SIGNATURE</span><b>واغيو سماش هاوس</b><small>ابدأ من ٣٨ ر.س</small></div>
+          <div className="bh-home-scroll">SCROLL TO EXPLORE <span>↓</span></div>
         </section>
 
         <section className="border-b border-[#e2dbcf] bg-[#fbf9f4]">

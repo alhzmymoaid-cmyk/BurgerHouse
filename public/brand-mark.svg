@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e2b17b"/><stop offset="1" stop-color="#a84f32"/></linearGradient></defs><rect width="128" height="128" rx="28" fill="#211f1b"/><path d="M27 57c2-18 17-30 37-30s35 12 37 30H27Z" fill="url(#g)"/><path d="M23 65h82c4 0 7 3 7 7s-3 7-7 7H23c-4 0-7-3-7-7s3-7 7-7Z" fill="#f4ead9"/><path d="M25 84h78c-3 12-17 19-39 19S28 96 25 84Z" fill="url(#g)"/><path d="M42 58h44" stroke="#211f1b" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="72" r="3" fill="#a84f32"/><circle cx="78" cy="72" r="3" fill="#a84f32"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+<title id="title">Burger House mark</title>
+<rect width="128" height="128" rx="28" fill="#17191B"/>
+<path d="M22 53 64 19l42 34" fill="none" stroke="#F2EBDD" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M30 59c3-15 17-24 34-24s31 9 34 24H30Z" fill="#E76F32"/>
+<path d="M36 55c8-4 15 4 23 0s15 4 23 0 11 0 13 2" fill="none" stroke="#F4C95D" stroke-width="2.8" stroke-linecap="round"/>
+<path d="M29 66c4 4 8 4 12 0 4 5 9 5 13 0 4 5 9 5 13 0 4 5 9 5 13 0 4 4 9 4 13 0" fill="none" stroke="#73935C" stroke-width="6" stroke-linecap="round"/>
+<path d="M31 72h66l-5 8H36l-5-8Z" fill="#F2EBDD"/>
+<path d="M34 83h60c-4 12-15 18-30 18S38 95 34 83Z" fill="#B94E2D"/>
+<path d="M45 42l2 2m13-5 2 2m13-2 2 2m12 4 2 2" stroke="#F8E7B5" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M17 109h94" stroke="#E76F32" stroke-width="3" stroke-linecap="round"/>
+</svg>

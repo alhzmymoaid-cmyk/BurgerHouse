@@ -503,12 +503,6 @@ export default function StorefrontPage() {
         </section>
 
 
-          <div className="bh-home-benefits mx-auto flex max-w-7xl items-center gap-3 px-4 py-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-x-reverse sm:divide-[#e5ded3] sm:px-8 sm:py-6">
-            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">مكونات مختارة</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">تفاصيل تصنع الفرق</p></div>
-            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">تحضير عند الطلب</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">من المطبخ مباشرة</p></div>
-            <div className="px-2 text-center"><div className="text-xs font-black text-[#29251f] sm:text-sm">استلام من الفرع</div><p className="mt-1 text-[10px] text-[#80776b] sm:text-xs">اختر موقعك المناسب</p></div>
-          </div>
-        </section>
 
         <section className="bh-branch-picker border-b border-[#ded8cd] bg-[#ebe7df]">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">

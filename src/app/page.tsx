@@ -556,7 +556,7 @@ export default function StorefrontPage() {
             <p className="bh-v2-lead">{siteCopy.heroLeadAr || 'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.'}</p>
             <div className="bh-v2-hero-actions">
               <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>{siteCopy.heroCtaAr || 'ابدأ طلبك'} <ArrowLeft size={17}/></button>
-              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> مواقع الفروع</button>
+              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> {siteCopy.heroBranchesCtaAr || 'مواقع الفروع'}</button>
             </div>
             <div className="bh-v2-branch-status">
               <span className={activeBranch?.is_accepting_orders ? 'bh-v2-status-dot is-open' : 'bh-v2-status-dot'}/>

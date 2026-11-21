@@ -836,6 +836,52 @@ test('5. Cross-Branch Isolation: Staff Cannot View or Transition Another Branch 
   assert.equal(crossBranchAttempt.body.error, 'CROSS_BRANCH_ACCESS_DENIED');
 });
 
+test('Owner cannot demote or overwrite an existing privileged profile through staff management', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const ownerClient = cloud.createClientInstance('uid-owner');
+  const serviceClient = cloud.createClientInstance('uid-super-admin');
+
+  const attempt = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: {
+        id: 'uid-super-admin',
+        email: 'creator@burgerhouse.sa',
+        full_name: 'Changed by owner',
+        role: 'cashier',
+        assigned_branch_id: 'br-jed-sultan',
+        is_active: true,
+        permissions: ['*']
+      }
+    }
+  });
+
+  assert.equal(attempt.status, 403);
+  assert.equal(attempt.body.error, 'OWNER_CANNOT_MODIFY_PRIVILEGED_PROFILE');
+  assert.equal(cloud.user_profiles.find((profile) => profile.id === 'uid-super-admin').role, 'super_admin');
+});
+
+test('Sovereign admin can clear a previously saved maintenance message', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'SET_SYSTEM_AVAILABILITY',
+      site_online: true,
+      maintenance_mode: false,
+      maintenance_message_ar: ''
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(cloud.system_settings[0].maintenance_message_ar, '');
+});
+
 test('6. Owner Blocked from Sovereign Super Admin API Even When Spoofing Body Actor', async () => {
   const cloud = new SharedSupabaseCloudState();
   const ownerClient = cloud.createClientInstance('uid-owner'); // Authenticated as 'owner'

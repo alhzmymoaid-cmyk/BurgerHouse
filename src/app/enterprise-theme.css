@@ -178,3 +178,27 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
   color:#76500D!important;
   border-color:#D9C9AD!important;
 }
+
+
+/* Branch status card: replace harsh white surface with warm dark styling */
+.bh-storefront .bh-v2-branch-status {
+  background:#211D17!important;
+  background-image:none!important;
+  border:1px solid #51432F!important;
+  color:#F3EBDD!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)!important;
+}
+.bh-storefront .bh-v2-branch-status > div b {
+  color:#F5EBDD!important;
+}
+.bh-storefront .bh-v2-branch-status > div small {
+  color:#B8AA96!important;
+}
+.bh-storefront .bh-v2-branch-status > button {
+  background:#352A18!important;
+  border:1px solid #80612D!important;
+  color:#F2C45A!important;
+}
+.bh-storefront .bh-v2-branch-status > button:active {
+  background:#46351B!important;
+}

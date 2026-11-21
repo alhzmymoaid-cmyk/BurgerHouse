@@ -1,0 +1,4 @@
+import type { Metadata, Viewport } from 'next';
+export const viewport: Viewport = { themeColor: '#0A0A0C', colorScheme: 'dark', viewportFit: 'cover' };
+export const metadata: Metadata = { title: 'BH Staff Login | BURGER HOUSE', applicationName: 'BH Staff', manifest: '/manifest-staff.webmanifest', appleWebApp: { capable: true, title: 'BH Staff', statusBarStyle: 'black' }, icons: { icon: [{ url: '/icons/staff-192.png?v=4', sizes: '192x192', type: 'image/png' }, { url: '/icons/staff-512.png?v=4', sizes: '512x512', type: 'image/png' }], apple: '/icons/staff-180.png?v=4' } };
+export default function StaffLoginLayout({ children }: { children: React.ReactNode }) { return children; }

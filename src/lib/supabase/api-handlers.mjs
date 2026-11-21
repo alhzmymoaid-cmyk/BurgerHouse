@@ -331,8 +331,8 @@ export async function handleSovereignAdminRequest({
       .update({
         site_online: Boolean(body.site_online),
         maintenance_mode: Boolean(body.maintenance_mode),
-        maintenance_message_ar: body.maintenance_message_ar || undefined,
-        maintenance_message_en: body.maintenance_message_en || undefined,
+        ...(typeof body.maintenance_message_ar === 'string' ? { maintenance_message_ar: body.maintenance_message_ar.trim().slice(0, 500) } : {}),
+        ...(typeof body.maintenance_message_en === 'string' ? { maintenance_message_en: body.maintenance_message_en.trim().slice(0, 500) } : {}),
         updated_by: superAdmin.id,
         updated_at: new Date().toISOString()
       })
@@ -767,22 +767,62 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'MANAGE_STAFF_MEMBER') {
-    const staff = body.staff;
-    // Owner can NEVER create or modify a super_admin or owner profile
-    if (actor.role === 'owner' && !['branch_manager', 'cashier', 'kitchen_staff'].includes(staff.role)) {
-      return {
-        status: 403,
-        body: { error: 'OWNER_CANNOT_ASSIGN_PRIVILEGED_ROLE' }
+    const staff = body.staff && typeof body.staff === 'object' ? body.staff : null;
+    if (!staff || !String(staff.id || '').trim()) {
+      return { status: 400, body: { error: 'STAFF_PROFILE_ID_REQUIRED' } };
+    }
+
+    let staffPayload = staff;
+    if (actor.role === 'owner') {
+      const allowedStaffRoles = ['branch_manager', 'cashier', 'kitchen_staff'];
+      if (!allowedStaffRoles.includes(staff.role)) {
+        return { status: 403, body: { error: 'OWNER_CANNOT_ASSIGN_PRIVILEGED_ROLE' } };
+      }
+
+      // Check the existing role as well as the submitted role. Otherwise an owner
+      // could demote an existing owner/super_admin by submitting a lower role.
+      const { data: existingStaff, error: lookupError } = await serviceSupabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', staff.id)
+        .maybeSingle();
+      if (lookupError) return { status: 400, body: { error: lookupError.message } };
+      if (existingStaff && !allowedStaffRoles.includes(existingStaff.role)) {
+        return { status: 403, body: { error: 'OWNER_CANNOT_MODIFY_PRIVILEGED_PROFILE' } };
+      }
+
+      // Owners may update operational staff fields only; permissions and other
+      // privileged profile attributes remain under Super Admin control.
+      staffPayload = {
+        id: staff.id,
+        email: String(staff.email || '').trim().toLowerCase(),
+        full_name: String(staff.full_name || '').trim(),
+        role: staff.role,
+        assigned_branch_id: staff.assigned_branch_id || null,
+        is_active: staff.is_active !== false,
+        updated_at: new Date().toISOString()
       };
+      if (!staffPayload.email || !staffPayload.full_name) {
+        return { status: 400, body: { error: 'STAFF_PROFILE_FIELDS_REQUIRED' } };
+      }
     }
 
     const { data, error } = await serviceSupabase
       .from('user_profiles')
-      .upsert(staff, { onConflict: 'id' })
+      .upsert(staffPayload, { onConflict: 'id' })
       .select('*')
       .single();
 
     if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id,
+      actor_name: actor.full_name,
+      actor_role: actor.role,
+      action: 'MANAGE_STAFF_MEMBER',
+      target_type: 'user_profile',
+      target_id: data.id,
+      metadata: { role: data.role, assigned_branch_id: data.assigned_branch_id, is_active: data.is_active }
+    });
     return { status: 200, body: { ok: true, staff: data } };
   }
 

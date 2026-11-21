@@ -72,6 +72,21 @@ export default function SovereignSuperAdminVaultPage(){
         <button onClick={()=>void loadSovereignData()} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold"><RefreshCw size={14}/> تحديث البيانات</button>
       </div>
     </header>
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <a href="/menu-studio" className="group rounded-2xl border border-[#F2B705]/35 bg-[#1B1B1F] p-5 transition hover:border-[#F2B705] hover:bg-[#222226]">
+        <div className="flex items-center justify-between gap-3">
+          <div><span className="text-[10px] font-bold tracking-[.14em] text-[#F2B705]">CATALOG CONTROL</span><h2 className="mt-2 text-base font-bold text-[#F6F3EC]">إدارة المنتجات والمنيو</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">المنتجات، الأقسام، الأسعار، الأحجام، الإضافات، الصور وإعلانات المتجر.</p></div>
+          <span aria-hidden="true" className="text-2xl text-[#F2B705]">←</span>
+        </div>
+        <span className="mt-4 inline-flex rounded-lg bg-[#F2B705] px-4 py-2.5 text-xs font-black text-[#0A0A0C]">فتح إدارة المنيو</span>
+      </a>
+      <a href="/owner-studio" className="rounded-2xl border border-white/10 bg-[#141417] p-5 transition hover:border-white/25">
+        <span className="text-[10px] font-bold tracking-[.14em] text-[#A1A1AA]">OWNER CONTROL</span><h2 className="mt-2 text-base font-bold">لوحة المالك</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">الفروع، وسائل الدفع، التحليلات وإعدادات المتجر.</p><span className="mt-4 inline-flex text-xs font-bold text-[#F2B705]">فتح لوحة المالك ←</span>
+      </a>
+      <a href="/staff/orders" className="rounded-2xl border border-white/10 bg-[#141417] p-5 transition hover:border-white/25">
+        <span className="text-[10px] font-bold tracking-[.14em] text-[#A1A1AA]">STAFF OPERATIONS</span><h2 className="mt-2 text-base font-bold">واجهة تشغيل الموظفين</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">مراجعة شاشة الطلبات وسير العمل التشغيلي للفرع.</p><span className="mt-4 inline-flex text-xs font-bold text-[#F2B705]">فتح واجهة الموظفين ←</span>
+      </a>
+    </section>
     <PromoManager />
     {notice&&<p role="status" className="rounded-lg border border-white/10 bg-[#141417] p-3 text-xs text-[#F2B705]">{notice}</p>}
 

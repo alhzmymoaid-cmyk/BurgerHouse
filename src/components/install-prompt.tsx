@@ -57,7 +57,7 @@ export default function SmartPwaInstallBanner() {
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_TTL) {
       // Explicitly opening the install flow from the menu is still allowed.
     } else if (dismissedAt) {
-      localStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(dismissKey);
     }
 
     const showIfAllowed = () => {

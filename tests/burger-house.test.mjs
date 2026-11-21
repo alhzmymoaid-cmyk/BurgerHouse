@@ -863,6 +863,27 @@ test('Owner cannot demote or overwrite an existing privileged profile through st
   assert.equal(cloud.user_profiles.find((profile) => profile.id === 'uid-super-admin').role, 'super_admin');
 });
 
+test('Sovereign admin cannot demote or deactivate its own active account', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'MANAGE_USER_PROFILE_STATUS',
+      target_user_id: 'uid-super-admin',
+      new_role: 'owner'
+    }
+  });
+
+  assert.equal(result.status, 409);
+  assert.equal(result.body.error, 'SUPER_ADMIN_SELF_LOCKOUT_BLOCKED');
+  const profile = cloud.user_profiles.find((row) => row.id === 'uid-super-admin');
+  assert.equal(profile.role, 'super_admin');
+  assert.equal(profile.is_active, true);
+});
+
 test('Sovereign admin can clear a previously saved maintenance message', async () => {
   const cloud = new SharedSupabaseCloudState();
   const adminClient = cloud.createClientInstance('uid-super-admin');

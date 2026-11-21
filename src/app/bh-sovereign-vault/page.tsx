@@ -73,7 +73,7 @@ export default function SovereignSuperAdminVaultPage(){
       </div>
     </header>
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <a href="/?admin=1" className="group rounded-2xl border border-[#F2B705]/35 bg-[#1B1B1F] p-5 transition hover:border-[#F2B705] hover:bg-[#222226]">
+      <a href="/catalog-studio" className="group rounded-2xl border border-[#F2B705]/35 bg-[#1B1B1F] p-5 transition hover:border-[#F2B705] hover:bg-[#222226]">
         <div className="flex items-center justify-between gap-3">
           <div><span className="text-[10px] font-bold tracking-[.14em] text-[#F2B705]">CATALOG CONTROL</span><h2 className="mt-2 text-base font-bold text-[#F6F3EC]">إدارة المنتجات والمنيو</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">المنتجات، الأقسام، الأسعار، الأحجام، الإضافات، الصور وإعلانات المتجر.</p></div>
           <span aria-hidden="true" className="text-2xl text-[#F2B705]">←</span>

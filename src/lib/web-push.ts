@@ -30,6 +30,7 @@ export async function sendBranchOrderPush(
     .eq('branch_id', branchId);
   if (error) throw error;
   let sent = 0;
+  let failed = 0;
   await Promise.all((subscriptions || []).map(async (subscription: any) => {
     try {
       await client.sendNotification(
@@ -39,12 +40,14 @@ export async function sendBranchOrderPush(
       );
       sent += 1;
     } catch (error: any) {
+      failed += 1;
+      console.error('Staff Web Push delivery failed:', { statusCode: error?.statusCode || null });
       if (error?.statusCode === 404 || error?.statusCode === 410) {
         await serviceSupabase.from('staff_push_subscriptions').delete().eq('endpoint', subscription.endpoint);
       }
     }
   }));
-  return { sent, configured: true };
+  return { sent, failed, configured: true };
 }
 
 export async function sendCustomerOrderPush(
@@ -60,6 +63,7 @@ export async function sendCustomerOrderPush(
     .eq('customer_id', customerId);
   if (error) throw error;
   let sent = 0;
+  let failed = 0;
   await Promise.all((subscriptions || []).map(async (subscription: any) => {
     try {
       await client.sendNotification(
@@ -69,11 +73,13 @@ export async function sendCustomerOrderPush(
       );
       sent += 1;
     } catch (error: any) {
+      failed += 1;
+      console.error('Customer Web Push delivery failed:', { statusCode: error?.statusCode || null });
       if (error?.statusCode === 404 || error?.statusCode === 410) {
         await serviceSupabase.from('customer_push_subscriptions').delete()
           .eq('endpoint', subscription.endpoint).eq('customer_id', customerId);
       }
     }
   }));
-  return { sent, configured: true };
+  return { sent, failed, configured: true };
 }

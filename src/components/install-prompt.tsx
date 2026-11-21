@@ -16,6 +16,7 @@ const DISMISS_KEY = 'bh-pwa-dismissed-at-v2';
 const APP_CONFIG = {
   customer: { path: '/', title: 'BURGER HOUSE', description: 'ثبّت متجر برجر هاوس للوصول إليه بسرعة', icon: '/icons/customer-192.png?v=4' },
   admin: { path: '/bh-sovereign-vault', title: 'BH Admin', description: 'ثبّت تطبيق الإدارة العامة لبرجر هاوس', icon: '/icons/admin-192.png?v=4' },
+  catalog: { path: '/catalog-studio', title: 'BH Catalog', description: 'ثبّت تطبيق إدارة المنتجات والمنيو', icon: '/icons/admin-192.png?v=4' },
   owner: { path: '/owner-studio', title: 'BH Owner', description: 'ثبّت تطبيق إدارة المالك لبرجر هاوس', icon: '/icons/admin-192.png?v=4' },
   staff: { path: '/staff/orders', title: 'BH Staff', description: 'ثبّت تطبيق تشغيل الموظفين والطلبات', icon: '/icons/staff-192.png?v=4' },
 } as const;
@@ -23,7 +24,7 @@ const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000;
 
 export default function SmartPwaInstallBanner() {
   const pathname = usePathname();
-  const appType = pathname === '/' ? 'customer' : pathname === '/bh-sovereign-vault' ? 'admin' : pathname === '/owner-studio' ? 'owner' : pathname === '/staff/orders' ? 'staff' : null;
+  const appType = pathname === '/' ? 'customer' : pathname === '/bh-sovereign-vault' ? 'admin' : pathname === '/catalog-studio' ? 'catalog' : pathname === '/owner-studio' ? 'owner' : pathname === '/staff/orders' ? 'staff' : null;
   const appConfig = appType ? APP_CONFIG[appType] : null;
   const dismissKey = appType ? `${DISMISS_KEY}-${appType}` : DISMISS_KEY;
   const promptRef = useRef<InstallPromptEvent | null>(null);

@@ -538,8 +538,14 @@ export async function handleOwnerAdminRequest({
   const actor = authCheck.profile;
   const action = body?.action;
   const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON']);
-  if (actor.role === 'branch_manager' && !(Array.isArray(actor.permissions) && actor.permissions.includes('catalog_manage'))) {
-    return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message_ar: 'حسابك لا يملك صلاحية إدارة المنيو.' } };
+  if (actor.role === 'branch_manager') {
+    return {
+      status: 403,
+      body: {
+        error: 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED',
+        message_ar: 'لا يمكن تعديل بيانات المنيو العامة من حساب مدير الفرع؛ لأنها مشتركة بين الفروع. استخدم أدوات توفر المنيو الخاصة بفرعك حتى تتوفر إدارة مستقلة لمنتجات كل فرع.'
+      }
+    };
   }
   if (actor.role === 'branch_manager' && !catalogActions.has(action)) {
     return { status: 403, body: { error: 'CATALOG_ACTION_FORBIDDEN', message_ar: 'هذه العملية خارج صلاحية إدارة المنيو.' } };
@@ -965,8 +971,14 @@ export async function handleMediaUploadRequest({
       body: { error: authCheck.code, message: authCheck.message }
     };
   }
-  if (authCheck.profile.role === 'branch_manager' && !(Array.isArray(authCheck.profile.permissions) && authCheck.profile.permissions.includes('catalog_manage'))) {
-    return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message: 'حسابك لا يملك صلاحية إدارة صور المنيو.' } };
+  if (authCheck.profile.role === 'branch_manager') {
+    return {
+      status: 403,
+      body: {
+        error: 'BRANCH_MEDIA_SCOPE_NOT_IMPLEMENTED',
+        message: 'رفع صور المنتجات من مدير الفرع متوقف مؤقتًا لأن المنتجات الحالية مشتركة بين الفروع.'
+      }
+    };
   }
 
   const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];

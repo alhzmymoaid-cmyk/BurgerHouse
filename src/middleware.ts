@@ -61,7 +61,7 @@ export async function middleware(request: NextRequest) {
 
     const { data: profile, error: profErr } = await supabase
       .from('user_profiles')
-      .select('role, is_active, assigned_branch_id')
+      .select('role, is_active, assigned_branch_id, permissions')
       .eq('id', user.id)
       .single();
 

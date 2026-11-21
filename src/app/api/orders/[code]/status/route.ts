@@ -19,22 +19,38 @@ export async function PATCH(
       body
     });
 
-    if (result.status === 200 && body?.target_status === 'ready_for_pickup') {
+    const targetStatus = String(body?.target_status || '');
+    const customerNotice: Record<string, { title: string; body: (number: unknown) => string }> = {
+      preparing: {
+        title: 'بدأ تجهيز طلبك',
+        body: (number) => `بدأ الفرع تجهيز طلبك رقم #${number} الآن.`
+      },
+      ready_for_pickup: {
+        title: 'طلبك جاهز للاستلام',
+        body: (number) => `طلبك رقم #${number} جاهز. يمكنك التوجه إلى الفرع لاستلامه.`
+      },
+      completed: {
+        title: 'تم استلام طلبك',
+        body: (number) => `تم تسجيل استلام الطلب رقم #${number}. شكرًا لزيارتك BURGER HOUSE.`
+      }
+    };
+    if (result.status === 200 && customerNotice[targetStatus]) {
       try {
         const { data: order } = await serviceSupabase.from('orders')
           .select('id,customer_id,order_number')
           .eq('order_code', String(params.code).toUpperCase())
           .maybeSingle();
         if (order?.customer_id) {
+          const notice = customerNotice[targetStatus];
           await sendCustomerOrderPush(serviceSupabase, order.customer_id, {
-            title: 'طلبك جاهز للاستلام',
-            body: `طلبك رقم #${order.order_number} جاهز للاستلام من الفرع.`,
+            title: notice.title,
+            body: notice.body(order.order_number),
             url: `/orders/${order.id}`,
-            tag: `bh-order-ready-${order.id}`
+            tag: `bh-order-${targetStatus}-${order.id}`
           });
         }
       } catch (pushError) {
-        console.error('Customer ready notification failed:', pushError);
+        console.error('Customer order status notification failed:', pushError);
       }
     }
 

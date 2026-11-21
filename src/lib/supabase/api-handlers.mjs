@@ -781,12 +781,12 @@ export async function handleOwnerAdminRequest({
 
       // Check the existing role as well as the submitted role. Otherwise an owner
       // could demote an existing owner/super_admin by submitting a lower role.
-      const { data: existingStaff, error: lookupError } = await serviceSupabase
+      const { data: existingStaffRows, error: lookupError } = await serviceSupabase
         .from('user_profiles')
         .select('role')
-        .eq('id', staff.id)
-        .maybeSingle();
+        .eq('id', staff.id);
       if (lookupError) return { status: 400, body: { error: lookupError.message } };
+      const existingStaff = Array.isArray(existingStaffRows) ? existingStaffRows[0] : null;
       if (existingStaff && !allowedStaffRoles.includes(existingStaff.role)) {
         return { status: 403, body: { error: 'OWNER_CANNOT_MODIFY_PRIVILEGED_PROFILE' } };
       }

@@ -27,6 +27,9 @@ export async function GET() {
         serviceSupabase.from('system_settings').select('*').eq('id', 1).single()
       ]);
 
+    const queryError = [branchesRes.error, productsRes.error, categoriesRes.error, addonsRes.error, overridesRes.error, paymentsRes.error, promosRes.error, staffRes.error, ordersRes.error, logsRes.error, settingsRes.error].find(Boolean);
+    if (queryError) return NextResponse.json({ error: 'OWNER_DASHBOARD_LOAD_FAILED', message: queryError.message }, { status: 500 });
+
     return NextResponse.json({
       profile: authCheck.profile,
       settings: settingsRes.data,

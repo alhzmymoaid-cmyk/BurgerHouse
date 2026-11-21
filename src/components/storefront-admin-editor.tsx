@@ -36,7 +36,7 @@ export default function StorefrontAdminEditor(){
   const [copyForm,setCopyForm]=useState<any>({heroKickerAr:'',heroTitleAr:'',heroTitleAccentAr:'',heroLeadAr:'',heroCtaAr:'',heroBranchesCtaAr:'',announcementAr:'',footerDescriptionAr:'',menuTitleAr:'',menuSubtitleAr:''});
 
   const load=useCallback(async()=>{
-    const adminRequested = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1';
+    const adminRequested = typeof window !== 'undefined' && (window.location.pathname === '/catalog-studio' || new URLSearchParams(window.location.search).get('admin') === '1');
     if(adminRequested){setRequestedAdmin(true);setEnabled(true);}
     setLoadError('');
     try{

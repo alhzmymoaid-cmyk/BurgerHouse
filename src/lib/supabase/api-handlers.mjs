@@ -570,6 +570,39 @@ export async function handleOwnerAdminRequest({
     const productData = { ...(body.product || {}) };
     const sizes = Array.isArray(productData.sizes) ? productData.sizes : null;
     delete productData.sizes;
+
+    let sizeRows = null;
+    if (sizes !== null) {
+      sizeRows = sizes.map((size, index) => ({
+        id: String(size.id || '').trim(),
+        product_id: String(productData.id || ''),
+        name_ar: String(size.name_ar || '').trim(),
+        name_en: String(size.name_en || '').trim(),
+        price_delta: Number(size.price_delta ?? 0),
+        is_default: Boolean(size.is_default),
+        sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
+      }));
+      if (sizeRows.some((size) => !size.id || !size.name_ar || !size.name_en || !Number.isFinite(size.price_delta))) {
+        return { status: 400, body: { error: 'INVALID_PRODUCT_SIZE_FIELDS' } };
+      }
+      if (new Set(sizeRows.map((size) => size.id)).size !== sizeRows.length) {
+        return { status: 400, body: { error: 'DUPLICATE_PRODUCT_SIZE_IDS' } };
+      }
+      if (sizeRows.length && !sizeRows.some((size) => size.is_default)) sizeRows[0].is_default = true;
+      if (sizeRows.filter((size) => size.is_default).length > 1) {
+        return { status: 400, body: { error: 'MULTIPLE_DEFAULT_PRODUCT_SIZES' } };
+      }
+      const sizeIds = sizeRows.map((size) => size.id);
+      if (sizeIds.length) {
+        const { data: conflictingSizes, error: conflictLookupError } = await serviceSupabase
+          .from('product_sizes').select('id,product_id').in('id', sizeIds);
+        if (conflictLookupError) return { status: 400, body: { error: conflictLookupError.message } };
+        if ((conflictingSizes || []).some((size) => size.product_id !== productData.id)) {
+          return { status: 409, body: { error: 'PRODUCT_SIZE_ID_BELONGS_TO_ANOTHER_PRODUCT' } };
+        }
+      }
+    }
+
     const { data, error } = await serviceSupabase
       .from('products')
       .upsert({ ...productData, updated_at: new Date().toISOString() }, { onConflict: 'id' })
@@ -578,21 +611,23 @@ export async function handleOwnerAdminRequest({
 
     if (error) return { status: 400, body: { error: error.message } };
 
-    if (sizes !== null) {
-      const { error: clearSizesError } = await serviceSupabase.from('product_sizes').delete().eq('product_id', data.id);
-      if (clearSizesError) return { status: 400, body: { error: clearSizesError.message } };
-      const sizeRows = sizes.map((size, index) => ({
-        id: String(size.id || ''),
-        product_id: data.id,
-        name_ar: String(size.name_ar || '').trim(),
-        name_en: String(size.name_en || '').trim(),
-        price_delta: Number(size.price_delta || 0),
-        is_default: Boolean(size.is_default),
-        sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
-      })).filter((size) => size.id && size.name_ar && size.name_en);
+    if (sizeRows !== null) {
+      // Upsert desired sizes before removing stale ones. A failed write therefore
+      // cannot erase the product's previously working size options.
       if (sizeRows.length) {
-        const { error: sizesError } = await serviceSupabase.from('product_sizes').insert(sizeRows);
+        const { error: sizesError } = await serviceSupabase
+          .from('product_sizes').upsert(sizeRows.map((size) => ({ ...size, product_id: data.id })), { onConflict: 'id' });
         if (sizesError) return { status: 400, body: { error: sizesError.message } };
+      }
+      const { data: currentSizes, error: currentSizesError } = await serviceSupabase
+        .from('product_sizes').select('id').eq('product_id', data.id);
+      if (currentSizesError) return { status: 400, body: { error: currentSizesError.message } };
+      const desiredIds = new Set(sizeRows.map((size) => size.id));
+      const staleIds = (currentSizes || []).map((size) => size.id).filter((id) => !desiredIds.has(id));
+      if (staleIds.length) {
+        const { error: staleDeleteError } = await serviceSupabase
+          .from('product_sizes').delete().eq('product_id', data.id).in('id', staleIds);
+        if (staleDeleteError) return { status: 400, body: { error: staleDeleteError.message } };
       }
     }
 
@@ -603,7 +638,7 @@ export async function handleOwnerAdminRequest({
       action: 'UPSERT_PRODUCT',
       target_type: 'product',
       target_id: data.id,
-      metadata: { base_price: data.base_price, sizes_saved: sizes?.length || 0 }
+      metadata: { base_price: data.base_price, sizes_saved: sizeRows?.length || 0 }
     });
 
     return { status: 200, body: { ok: true, product: data } };

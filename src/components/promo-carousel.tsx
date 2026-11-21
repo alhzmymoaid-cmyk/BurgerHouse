@@ -21,7 +21,17 @@ const DEMO_BANNERS: PromoBanner[] = [
 export default function PromoCarousel({ banners = [], branchId, products = [], onOpenProduct, onSelectCategory }: Props) {
   const rail = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
+  const activeRef = useRef(0);
   const [active, setActive] = useState(0);
+  const scrollToBanner = (index: number) => {
+    const container = rail.current;
+    const target = container?.children[index] as HTMLElement | undefined;
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const delta = targetRect.left + targetRect.width / 2 - (containerRect.left + container.clientWidth / 2);
+    container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
+  };
   const visible = useMemo(() => banners.filter((b) => b.is_active !== false &&
     (!b.branch_id || b.branch_id === branchId) &&
     (!b.starts_at || new Date(b.starts_at).getTime() <= Date.now()) &&
@@ -33,11 +43,10 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
     if (displayBanners.length < 2) return;
     const timer = window.setInterval(() => {
       if (paused.current) return;
-      setActive((current) => {
-        const next = (current + 1) % displayBanners.length;
-        rail.current?.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        return next;
-      });
+      const next = (activeRef.current + 1) % displayBanners.length;
+      activeRef.current = next;
+      setActive(next);
+      scrollToBanner(next);
     }, 4500);
     return () => window.clearInterval(timer);
   }, [displayBanners.length]);
@@ -55,6 +64,7 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
         const d = Math.abs(rect.left + rect.width / 2 - center);
         if (d < distance) { distance = d; closest = index; }
       });
+      activeRef.current = closest;
       setActive(closest);
     };
     node.addEventListener('scroll', onScroll, { passive: true });
@@ -88,7 +98,7 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
         })}
       </div>
       {displayBanners.length > 1 && <div className="mt-2 flex justify-center gap-2" aria-label="مؤشر العروض">
-        {displayBanners.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; setActive(index); rail.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }} className={index===active?'h-1.5 w-5 rounded-full bg-[#F2B705]':'h-1.5 w-1.5 rounded-full bg-white/25'} />)}
+        {displayBanners.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; activeRef.current = index; setActive(index); scrollToBanner(index); }} className={index===active?'h-1.5 w-5 rounded-full bg-[#F2B705]':'h-1.5 w-1.5 rounded-full bg-white/25'} />)}
       </div>}
     </section>
   );

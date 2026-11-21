@@ -356,7 +356,7 @@ export async function handleSovereignAdminRequest({
   }
 
   if (action === 'MANAGE_USER_PROFILE_STATUS') {
-    const { target_user_id, is_active, new_role, assigned_branch_id } = body;
+    const { target_user_id, is_active, new_role, assigned_branch_id, permissions } = body;
     const targetId = String(target_user_id || '').trim();
     const validRoles = ['owner', 'branch_manager', 'cashier', 'kitchen_staff', 'super_admin'];
     if (!targetId) return { status: 400, body: { error: 'TARGET_USER_ID_REQUIRED' } };
@@ -384,6 +384,12 @@ export async function handleSovereignAdminRequest({
     if (['branch_manager', 'cashier', 'kitchen_staff'].includes(nextRole) && !nextBranchId) {
       return { status: 400, body: { error: 'BRANCH_REQUIRED_FOR_STAFF_ROLE', message_ar: 'يجب تعيين فرع لهذا الحساب.' } };
     }
+    if (permissions !== undefined && (!Array.isArray(permissions) || permissions.some((permission) => permission !== 'catalog_manage'))) {
+      return { status: 400, body: { error: 'INVALID_STAFF_PERMISSIONS' } };
+    }
+    if (permissions !== undefined && nextRole !== 'branch_manager' && permissions.length) {
+      return { status: 400, body: { error: 'PERMISSIONS_REQUIRE_BRANCH_MANAGER_ROLE' } };
+    }
     if (nextBranchId) {
       const { data: branchRows, error: branchLookupError } = await serviceSupabase
         .from('branches').select('id').eq('id', nextBranchId);
@@ -396,6 +402,11 @@ export async function handleSovereignAdminRequest({
     if (new_role) updatePayload.role = new_role;
     if (assigned_branch_id !== undefined || (new_role && ['owner', 'super_admin'].includes(new_role))) {
       updatePayload.assigned_branch_id = nextBranchId;
+    }
+    if (permissions !== undefined) {
+      updatePayload.permissions = nextRole === 'branch_manager' && permissions.includes('catalog_manage') ? ['catalog_manage'] : [];
+    } else if (new_role && nextRole !== 'branch_manager') {
+      updatePayload.permissions = [];
     }
 
     const { data, error } = await serviceSupabase
@@ -526,7 +537,7 @@ export async function handleOwnerAdminRequest({
 
   const actor = authCheck.profile;
   const action = body?.action;
-  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON','UPDATE_SITE_COPY']);
+  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON']);
   if (actor.role === 'branch_manager' && !(Array.isArray(actor.permissions) && actor.permissions.includes('catalog_manage'))) {
     return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message_ar: 'حسابك لا يملك صلاحية إدارة المنيو.' } };
   }

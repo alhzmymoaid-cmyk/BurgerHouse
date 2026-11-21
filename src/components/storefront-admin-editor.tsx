@@ -21,7 +21,7 @@ export default function StorefrontAdminEditor(){
   const [data,setData]=useState<any>(null);
   const [enabled,setEnabled]=useState(false);
   const [open,setOpen]=useState(false);
-  const [tab,setTab]=useState<'products'|'categories'|'addons'|'promos'>('products');
+  const [tab,setTab]=useState<'products'|'categories'|'addons'|'promos'|'copy'>('products');
   const [productForm,setProductForm]=useState<ProductForm>(blankProduct());
   const [editing,setEditing]=useState(false);
   const [categoryForm,setCategoryForm]=useState<any>({id:'',name_ar:'',name_en:'',sort_order:'0',is_active:true});
@@ -31,6 +31,7 @@ export default function StorefrontAdminEditor(){
   const [uploading,setUploading]=useState(false);
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
+  const [copyForm,setCopyForm]=useState<any>({heroKickerAr:'',heroTitleAr:'',heroTitleAccentAr:'',heroLeadAr:'',heroCtaAr:'',heroBranchesCtaAr:'',announcementAr:'',footerDescriptionAr:'',menuTitleAr:'',menuSubtitleAr:''});
 
   const load=useCallback(async()=>{
     try{
@@ -44,6 +45,7 @@ export default function StorefrontAdminEditor(){
       if(!canManage)return;
       setProfile(result.profile);
       setData(result);
+      setCopyForm({heroKickerAr:'طازج من المطبخ إلى يدك',heroTitleAr:'اختَر وجبتك.',heroTitleAccentAr:'ونحن نجهّز الباقي.',heroLeadAr:'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.',heroCtaAr:'ابدأ طلبك',heroBranchesCtaAr:'مواقع الفروع',announcementAr:'تحضير طازج عند الطلب • استلام مباشر من فروعنا',footerDescriptionAr:'نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.',menuTitleAr:'قائمة برجر هاوس',menuSubtitleAr:'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.',...(result.settings?.published_theme||{})});
       if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1') { setEnabled(true); setOpen(true); }
     }catch{
       setProfile(null);
@@ -111,6 +113,16 @@ export default function StorefrontAdminEditor(){
     finally{setBusy(false);}
   };
 
+  const saveCopy=async(event:any)=>{
+    event.preventDefault();setBusy(true);setError('');setMessage('');
+    try{
+      await callAction({action:'UPDATE_SITE_COPY',copy:copyForm});
+      setMessage('تم حفظ نصوص الصفحة الرئيسية ونشرها مباشرة.');
+      await load();
+    }catch(e:any){setError(e.message||'تعذر حفظ النصوص.');}
+    finally{setBusy(false);}
+  };
+
   const addSize=()=>{
     if(!sizeForm.name_ar.trim()||!sizeForm.name_en.trim())return;
     setProductForm(current=>({...current,sizes:[...current.sizes,{id:'sz-'+crypto.randomUUID().replace(/-/g,'').slice(0,14),name_ar:sizeForm.name_ar.trim(),name_en:sizeForm.name_en.trim(),price_delta:Number(sizeForm.price_delta||0),is_default:current.sizes.length===0,sort_order:current.sizes.length}]}));
@@ -157,7 +169,7 @@ export default function StorefrontAdminEditor(){
       <section className="mx-auto my-4 max-w-5xl rounded-2xl border border-white/10 bg-[#141417] p-4 text-[#F6F3EC] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.16em] text-[#F2B705]">VISUAL STORE EDITOR</span><h2 className="mt-1 text-xl font-bold">إدارة المتجر والمنيو</h2></div><button onClick={()=>{setOpen(false);setEditing(false);}} className="rounded-lg border border-white/10 px-3 py-2 text-xs">إغلاق</button></div>
         <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10 pb-4">
-          {(['products','categories','addons','promos'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#D4D4D8]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':'العروض'}</button>)}
+          {(['products','categories','addons','promos','copy'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#D4D4D8]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':key==='promos'?'الإعلانات':'نصوص الصفحة'}</button>)}
         </div>
         {(error||message)&&<p role={error?'alert':'status'} className={error?'mt-4 text-xs text-red-300':'mt-4 text-xs text-emerald-300'}>{error||message}</p>}
 
@@ -199,6 +211,14 @@ export default function StorefrontAdminEditor(){
         </div>}
 
         {tab==='promos'&&<div className="mt-4"><PromoManager /></div>}
+        {tab==='copy'&&<form onSubmit={saveCopy} className="mt-4 space-y-4 rounded-xl border border-[#52525B] bg-[#16161A] p-4">
+          <div><h3 className="text-base font-black text-[#FAFAFA]">تحرير نصوص الصفحة الرئيسية</h3><p className="mt-1 text-xs text-[#D4D4D8]">عدّل النصوص التي تظهر للعميل في واجهة المتجر. تحفظ وتنشر مباشرة.</p></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {([['heroKickerAr','الجملة الصغيرة أعلى العنوان'],['heroTitleAr','العنوان الرئيسي'],['heroTitleAccentAr','السطر المميز'],['heroLeadAr','وصف الواجهة'],['heroCtaAr','نص زر الطلب'],['heroBranchesCtaAr','نص زر الفروع'],['announcementAr','شريط الإعلان العلوي'],['menuTitleAr','عنوان قسم المنيو'],['menuSubtitleAr','وصف قسم المنيو'],['footerDescriptionAr','وصف التذييل']] as const).map(([key,label])=><label key={key} className="block text-xs font-bold text-[#E4E4E7]">{label}<textarea rows={key==='heroLeadAr'||key==='footerDescriptionAr'||key==='menuSubtitleAr'?3:2} value={copyForm[key]||''} onChange={e=>setCopyForm((v:any)=>({...v,[key]:e.target.value}))} className={inputClass+" mt-2"}/></label>)}
+          </div>
+          <button disabled={busy} className="w-full rounded-xl bg-[#F5B800] px-4 py-3.5 text-sm font-black text-[#09090B] disabled:opacity-50">{busy?'جارٍ الحفظ…':'حفظ ونشر النصوص'}</button>
+        </form>}
+
 
         {tab==='addons'&&<div className="mt-4 grid gap-4 lg:grid-cols-2">
           <form onSubmit={saveAddon} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><h3 className="text-sm font-bold">إضافة أو تعديل إضافة</h3><input value={addonForm.name_ar} onChange={e=>setAddonForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم الإضافة بالعربية" className={inputClass}/><input dir="ltr" value={addonForm.name_en} onChange={e=>setAddonForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Addon name" className={inputClass}/><input type="number" min="0" step="0.01" value={addonForm.price} onChange={e=>setAddonForm((v:any)=>({...v,price:e.target.value}))} placeholder="السعر" className={inputClass}/><input type="number" min="1" max="10" value={addonForm.max_per_item} onChange={e=>setAddonForm((v:any)=>({...v,max_per_item:e.target.value}))} placeholder="الحد الأقصى" className={inputClass}/><button disabled={busy} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">حفظ الإضافة</button></form>

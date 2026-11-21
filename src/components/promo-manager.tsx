@@ -94,7 +94,7 @@ export default function PromoManager() {
       {role!=='branch_manager'&&<label className="block text-xs font-semibold text-[#E4E4E7]">نطاق الإعلان<select className={field+" mt-2"} value={branchId} onChange={e=>setBranchId(e.target.value)}><option value="">جميع الفروع</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name_ar}</option>)}</select></label>}
       <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-[#F5B800]/60 bg-[#1A1A20] px-4 text-sm font-bold text-[#F5B800]">
         {uploading?'جارٍ رفع الصورة…':'اختيار صورة من الاستوديو'}
-        <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={e=>{const file=e.target.files?.[0];if(file) uploadImage(file);e.currentTarget.value='';}}/>
+        <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={e=>{const file=e.target.files?.[0];if(file) uploadImage(file);e.currentTarget.value='';}}/>
       </label>
       <label className="block text-xs font-semibold text-[#E4E4E7]">عنوان الإعلان<input className={field+" mt-2"} value={titleAr} onChange={e=>setTitleAr(e.target.value)} placeholder="مثلاً: عرض نهاية الأسبوع"/></label>
       <label className="block text-xs font-semibold text-[#E4E4E7]">النص الإضافي<input className={field+" mt-2"} value={subtitleAr} onChange={e=>setSubtitleAr(e.target.value)} placeholder="وصف قصير للعرض (اختياري)"/></label>

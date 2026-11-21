@@ -24,7 +24,9 @@ export async function GET() {
       service.from('products').select('*, product_sizes(*)').order('sort_order', { ascending: true }),
       service.from('categories').select('*').order('sort_order', { ascending: true }),
       service.from('product_addons').select('*').order('name_ar', { ascending: true }),
-      service.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single()
+      check.profile.role === 'branch_manager'
+        ? Promise.resolve({ data: null, error: null } as any)
+        : service.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single()
     ]);
     const error = products.error || categories.error || addons.error || settings.error;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

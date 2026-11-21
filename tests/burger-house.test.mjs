@@ -921,6 +921,29 @@ test('Super Admin can explicitly grant catalog management to a branch manager', 
   assert.deepEqual(result.body.profile.permissions, ['catalog_manage']);
 });
 
+test('Branch manager cannot mutate shared global catalog records', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const manager = cloud.user_profiles.find((profile) => profile.id === 'uid-mgr-sultan');
+  manager.permissions = ['catalog_manage'];
+  const managerClient = cloud.createClientInstance('uid-mgr-sultan');
+  const serviceClient = cloud.createClientInstance('uid-super-admin');
+
+  for (const body of [
+    { action: 'UPSERT_PRODUCT', product: { id: 'prd-wagyu-smash', name_ar: 'تغيير عام' } },
+    { action: 'DELETE_PRODUCT', product_id: 'prd-wagyu-smash' },
+    { action: 'UPSERT_CATEGORY', category: { id: 'cat-burgers', name_ar: 'قسم عام', name_en: 'Global' } },
+    { action: 'UPSERT_ADDON', addon: { id: 'addon-cheese', name_ar: 'جبن', name_en: 'Cheese', price: 1 } }
+  ]) {
+    const result = await handleOwnerAdminRequest({
+      authSupabase: managerClient,
+      serviceSupabase: serviceClient,
+      body
+    });
+    assert.equal(result.status, 403);
+    assert.equal(result.body.error, 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED');
+  }
+});
+
 test('Branch manager catalog permission does not allow global homepage copy changes', async () => {
   const cloud = new SharedSupabaseCloudState();
   const manager = cloud.user_profiles.find((profile) => profile.id === 'uid-mgr-sultan');

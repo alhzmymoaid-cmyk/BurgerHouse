@@ -104,13 +104,20 @@ export async function POST(request: NextRequest) {
       delete result.body.tracking_token;
       // Best-effort branch-scoped push: never block the customer's order if a device is offline.
       try {
-        await sendBranchOrderPush(serviceSupabase, String(payload.branch_id), {
+        const pushResult = await sendBranchOrderPush(serviceSupabase, String(payload.branch_id), {
           title: 'طلب جديد · BURGER HOUSE',
           body: 'وصل طلب جديد رقم ' + String(savedOrder?.order_number ?? result.body.order_code ?? ''),
           url: '/staff/orders',
           tag: 'bh-order-' + String(result.body.id)
         });
-      } catch {
+        if (!pushResult.configured || pushResult.sent === 0) {
+          console.warn('New-order staff push was not delivered:', {
+            configured: pushResult.configured,
+            subscriptionsMatched: pushResult.sent + (pushResult.failed || 0)
+          });
+        }
+      } catch (pushError: any) {
+        console.error('New-order staff push failed:', { message: pushError?.message || 'unknown error' });
         // Order creation remains successful if push delivery is temporarily unavailable.
       }
     }

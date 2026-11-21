@@ -127,3 +127,15 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
   .bh-print-order * { color:#000!important; box-shadow:none!important; text-shadow:none!important; }
   .bh-print-order button,.bh-print-order a,.bh-print-order .no-print { display:none!important; }
 }
+
+
+/* Storefront menu refinements: dark product cards and high-contrast category controls */
+.bh-storefront .bh-v2-product-card { background:#16161A!important; border:1px solid rgba(255,255,255,.08)!important; }
+.bh-storefront .bh-v2-product-info { background:#16161A!important; }
+.bh-storefront .bh-v2-product-info h4 { color:#F5F3EE!important; }
+.bh-storefront .bh-v2-product-info p { color:#A1A1AA!important; }
+.bh-storefront .bh-v2-product-title>span { color:#F5B800!important; }
+.bh-storefront .bh-v2-product-info>div button { background:#242428!important; color:#F5B800!important; border:1px solid rgba(255,255,255,.08)!important; }
+.bh-storefront .bh-category-rail button { border-radius:12px!important; }
+.bh-storefront .bh-category-rail button:not([class*="bg-[#F5B800]"]) { background:#1A1A20!important; color:#E4E4E7!important; border:1px solid rgba(255,255,255,.08)!important; }
+.bh-storefront .bh-category-rail button[class*="bg-[#F5B800]"] { background:#F5B800!important; color:#09090B!important; border:1px solid #F5B800!important; }

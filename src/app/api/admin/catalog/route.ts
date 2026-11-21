@@ -20,18 +20,20 @@ export async function GET() {
     const { check, response } = await authorizeCatalogManager();
     if (response) return response;
     const service = createSupabaseServiceRoleClient();
-    const [products, categories, addons] = await Promise.all([
+    const [products, categories, addons, settings] = await Promise.all([
       service.from('products').select('*, product_sizes(*)').order('sort_order', { ascending: true }),
       service.from('categories').select('*').order('sort_order', { ascending: true }),
-      service.from('product_addons').select('*').order('name_ar', { ascending: true })
+      service.from('product_addons').select('*').order('name_ar', { ascending: true }),
+      service.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single()
     ]);
-    const error = products.error || categories.error || addons.error;
+    const error = products.error || categories.error || addons.error || settings.error;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({
       profile: check.profile,
       products: products.data || [],
       categories: categories.data || [],
-      addons: addons.data || []
+      addons: addons.data || [],
+      settings: settings.data || null
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'CATALOG_ADMIN_LOAD_FAILED' }, { status: 500 });

@@ -127,3 +127,275 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
   .bh-print-order * { color:#000!important; box-shadow:none!important; text-shadow:none!important; }
   .bh-print-order button,.bh-print-order a,.bh-print-order .no-print { display:none!important; }
 }
+
+
+/* Storefront product cards: warm cream surface, natural food photography, readable contrast */
+.bh-storefront .bh-v2-product-card {
+  background:#F3EBDD!important;
+  border:1px solid #E4D7C3!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.16)!important;
+}
+.bh-storefront .bh-v2-product-photo { background:#E9DECC!important; }
+.bh-storefront .bh-v2-product-photo img { filter:none!important; }
+.bh-storefront .bh-v2-product-info { background:#F3EBDD!important; }
+.bh-storefront .bh-v2-product-info h4 { color:#29231C!important; }
+.bh-storefront .bh-v2-product-info p { color:#74695B!important; }
+.bh-storefront .bh-v2-product-title>span { color:#98610E!important; }
+.bh-storefront .bh-v2-product-info>div button {
+  background:#E9DECC!important;color:#76500D!important;border:1px solid #D9C9AD!important;
+}
+.bh-storefront .bh-v2-product-bottom>span { color:#766B5D!important; }
+.bh-storefront .bh-v2-product-bottom button {
+  background:#F2B705!important;color:#17130A!important;border:0!important;
+}
+.bh-storefront .bh-category-rail button { border-radius:12px!important; }
+.bh-storefront .bh-category-rail button:not([class*="bg-[#F5B800]"]) {
+  background:#1A1A20!important;color:#E4E4E7!important;border:1px solid rgba(255,255,255,.08)!important;
+}
+.bh-storefront .bh-category-rail button[class*="bg-[#F5B800]"] {
+  background:#F5B800!important;color:#09090B!important;border:1px solid #F5B800!important;
+}
+
+
+/* Final mobile product-card surface correction: remove the white outer layer */
+.bh-storefront #menu-section .bh-v2-product-grid > .bh-v2-product-card,
+.bh-storefront #menu-section article.bh-v2-product-card {
+  background-color:#F3EBDD!important;
+  background-image:none!important;
+  border-color:#DCCBB1!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-photo {
+  background-color:#E9DECC!important;
+  background-image:none!important;
+  border:0!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-info {
+  background-color:#F3EBDD!important;
+  background-image:none!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-info > div:first-child button {
+  background-color:#E9DECC!important;
+  color:#76500D!important;
+  border-color:#D9C9AD!important;
+}
+
+
+/* Branch status card: replace harsh white surface with warm dark styling */
+.bh-storefront .bh-v2-branch-status {
+  background:#211D17!important;
+  background-image:none!important;
+  border:1px solid #51432F!important;
+  color:#F3EBDD!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)!important;
+}
+.bh-storefront .bh-v2-branch-status > div b {
+  color:#F5EBDD!important;
+}
+.bh-storefront .bh-v2-branch-status > div small {
+  color:#B8AA96!important;
+}
+.bh-storefront .bh-v2-branch-status > button {
+  background:#352A18!important;
+  border:1px solid #80612D!important;
+  color:#F2C45A!important;
+}
+.bh-storefront .bh-v2-branch-status > button:active {
+  background:#46351B!important;
+}
+
+
+/* BURGER HOUSE unified brand palette — final override */
+.bh-storefront {
+  --bh-bg:#0B0B0D;
+  --bh-surface:#171619;
+  --bh-card:#211E19;
+  --bh-line:rgba(226,213,190,.13);
+  --bh-text:#F2EEE6;
+  --bh-muted:#AAA39A;
+  --bh-yellow:#D6A84F;
+  --bh-yellow-hot:#E2B85E;
+  background:var(--bh-bg)!important;
+  color:var(--bh-text)!important;
+}
+.bh-storefront > header,
+.bh-storefront footer { background:#0B0B0D!important; }
+.bh-storefront .bh-v2-promise-strip,
+.bh-storefront .bh-mobile-orderbar,
+.bh-storefront #bh-mobile-menu,
+.bh-storefront .bh-product-dialog,
+.bh-storefront .bh-product-content,
+.bh-storefront .bh-cart-drawer,
+.bh-storefront .bh-cart-summary,
+.bh-storefront .bh-checkout-dialog,
+.bh-storefront .bh-branch-picker,
+.bh-storefront .bh-v2-branch-status,
+.bh-storefront .bh-pwa-banner,
+.bh-storefront .bh-pwa-sheet {
+  background:#171619!important;
+  color:#F2EEE6!important;
+  border-color:var(--bh-line)!important;
+}
+.bh-storefront .bh-v2-product-card,
+.bh-storefront #menu-section .bh-v2-product-card,
+.bh-storefront #menu-section article.bh-v2-product-card {
+  background:#211E19!important;
+  background-image:none!important;
+  border:1px solid rgba(226,213,190,.14)!important;
+  box-shadow:none!important;
+}
+.bh-storefront .bh-v2-product-photo {
+  background:#171619!important;
+  border:0!important;
+}
+.bh-storefront .bh-v2-product-photo img { filter:none!important; }
+.bh-storefront .bh-v2-product-info,
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-info {
+  background:#211E19!important;
+  color:#F2EEE6!important;
+}
+.bh-storefront .bh-v2-product-info h4,
+.bh-storefront .bh-v2-product-title { color:#F2EEE6!important; }
+.bh-storefront .bh-v2-product-info p,
+.bh-storefront .bh-v2-product-bottom>span { color:#AAA39A!important; }
+.bh-storefront .bh-v2-product-title>span { color:#D6A84F!important; }
+.bh-storefront .bh-v2-product-info>div button,
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-info > div:first-child button {
+  background:#30291F!important;
+  color:#E4C27C!important;
+  border:1px solid rgba(214,168,79,.28)!important;
+}
+.bh-storefront .bh-v2-product-bottom button,
+.bh-storefront .bh-mobile-orderbar>button,
+.bh-storefront .bh-v2-hero-actions button:first-child,
+.bh-storefront .bh-product-actions button,
+.bh-storefront .bh-cart-summary button,
+.bh-storefront .bh-checkout-dialog button[type="submit"] {
+  background:#D6A84F!important;
+  color:#17130B!important;
+  border:1px solid #D6A84F!important;
+}
+.bh-storefront .bh-category-rail button:not([class*="bg-[#F5B800]"]) {
+  background:#171619!important;
+  color:#E6E0D5!important;
+  border:1px solid var(--bh-line)!important;
+}
+.bh-storefront .bh-category-rail button[class*="bg-[#F5B800]"] {
+  background:#D6A84F!important;
+  color:#17130B!important;
+  border:1px solid #D6A84F!important;
+}
+.bh-storefront .bh-v2-branch-status {
+  background:#171619!important;
+  border:1px solid var(--bh-line)!important;
+  box-shadow:none!important;
+}
+.bh-storefront .bh-v2-branch-status > div b { color:#F2EEE6!important; }
+.bh-storefront .bh-v2-branch-status > div small { color:#AAA39A!important; }
+.bh-storefront .bh-v2-branch-status > button {
+  background:#30291F!important;
+  color:#E4C27C!important;
+  border:1px solid rgba(214,168,79,.28)!important;
+}
+.bh-storefront .bh-branch-picker select,
+.bh-storefront .bh-branch-picker button,
+.bh-storefront input,
+.bh-storefront select,
+.bh-storefront textarea {
+  background:#211E19!important;
+  color:#F2EEE6!important;
+  border-color:var(--bh-line)!important;
+}
+.bh-storefront .bh-pwa-banner,
+.bh-storefront .bh-pwa-sheet { box-shadow:0 10px 28px rgba(0,0,0,.3)!important; }
+.bh-storefront .bh-pwa-primary,
+.bh-storefront .bh-pwa-sheet-done {
+  background:#D6A84F!important;
+  color:#17130B!important;
+}
+.bh-storefront .bh-pwa-close,
+.bh-storefront .bh-pwa-sheet-close {
+  background:#211E19!important;
+  color:#F2EEE6!important;
+  border-color:var(--bh-line)!important;
+}
+.bh-storefront .bh-v2-hero h1 em,
+.bh-storefront .bh-v2-promise-strip span,
+.bh-storefront .bh-branch-picker .text-xs { color:#D6A84F!important; }
+.bh-storefront .bh-v2-hero-actions button:last-child {
+  background:transparent!important;
+  color:#F2EEE6!important;
+  border-color:var(--bh-line)!important;
+}
+.bh-storefront .bh-v2-product-tag { background:#30291F!important;color:#E4C27C!important; }
+
+
+/* Readability patch: product names and checkout controls must never blend into surfaces */
+.bh-storefront .bh-v2-product-card .bh-v2-product-info h4,
+.bh-storefront .bh-v2-product-card .bh-v2-product-info .bh-v2-product-title,
+.bh-storefront .bh-v2-product-card .bh-v2-product-info .bh-v2-product-title *,
+.bh-storefront #menu-section .bh-v2-product-card h4 {
+  color:#F7F1E7!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+}
+.bh-storefront .bh-checkout-dialog {
+  background:#171619!important;
+  color:#F2EEE6!important;
+  border:1px solid rgba(226,213,190,.2)!important;
+}
+.bh-storefront .bh-checkout-dialog section,
+.bh-storefront .bh-checkout-dialog [class*="rounded-xl"],
+.bh-storefront .bh-checkout-dialog [class*="rounded-2xl"] {
+  background:#211E19!important;
+  border-color:rgba(226,213,190,.18)!important;
+}
+.bh-storefront .bh-checkout-dialog h1,
+.bh-storefront .bh-checkout-dialog h2,
+.bh-storefront .bh-checkout-dialog h3,
+.bh-storefront .bh-checkout-dialog label,
+.bh-storefront .bh-checkout-dialog section div,
+.bh-storefront .bh-checkout-dialog section span,
+.bh-storefront .bh-checkout-dialog section p,
+.bh-storefront .bh-checkout-dialog strong {
+  color:#F2EEE6!important;
+}
+.bh-storefront .bh-checkout-dialog input,
+.bh-storefront .bh-checkout-dialog textarea,
+.bh-storefront .bh-checkout-dialog select {
+  background:#0D0D0F!important;
+  color:#FFFFFF!important;
+  border:1px solid #75664D!important;
+  caret-color:#D6A84F!important;
+}
+.bh-storefront .bh-checkout-dialog input::placeholder,
+.bh-storefront .bh-checkout-dialog textarea::placeholder { color:#B9B0A2!important; opacity:1!important; }
+.bh-storefront .bh-checkout-dialog button {
+  color:#F2EEE6!important;
+}
+.bh-storefront .bh-checkout-dialog button[type="submit"],
+.bh-storefront .bh-checkout-dialog button.bg-\\[\\#f5c542\\],
+.bh-storefront .bh-checkout-dialog button.bg-\\[\\#E76F32\\] {
+  color:#17130B!important;
+}
+.bh-storefront .bh-checkout-dialog button:disabled { opacity:.58; }
+.bh-storefront .bh-checkout-dialog .text-red-200 { color:#FCA5A5!important; }
+.bh-storefront .bh-checkout-dialog .text-emerald-300 { color:#86EFAC!important; }
+.bh-storefront .bh-checkout-dialog .text-\\[\\#ffd65b\\],
+.bh-storefront .bh-checkout-dialog .text-\\[\\#F2B705\\] { color:#F2C66D!important; }
+.bh-storefront .bh-checkout-dialog .text-\\[\\#aaa493\\],
+.bh-storefront .bh-checkout-dialog .text-\\[\\#8d8878\\] { color:#B9B0A2!important; }
+
+/* Large, high-contrast customer order status */
+.bh-orders .bh-order-status-banner {
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:20px;padding:20px;
+  border:2px solid #D6A84F;border-radius:16px;
+  background:#302719!important;color:#FFF4D8!important;
+  box-shadow:0 8px 26px rgba(0,0,0,.24);
+}
+.bh-orders .bh-order-status-banner strong {
+  display:block;color:#FFF4D8!important;
+  font-size:clamp(22px,5vw,30px);font-weight:900;line-height:1.35;
+}
+.bh-orders .bh-order-status-banner p {
+  margin-top:6px;color:#E8D8B8!important;font-size:15px;font-weight:600;
+}

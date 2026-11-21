@@ -68,9 +68,8 @@ export default function OwnerStudioDashboard() {
       <header className="border-b border-white/10 pb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-12 w-12"/><div><h1 className="text-2xl font-extrabold text-[#D49A3A]">مركز إدارة برجر هاوس</h1><p className="mt-1 text-[10px] tracking-[.16em] text-[#9E9488]">BURGER HOUSE · OWNER CONTROL</p></div></div>
-          <p className="mt-1 text-xs text-[#9E9488]">
-            مربوطة بالكامل بقاعدة بيانات Supabase و Storage الفعلي مع تدقيق الصلاحيات على الخادم
-          </p>
+          <p className="mt-1 text-xs text-[#C4C4CC]">مركز التحكم بالمنتجات والأقسام والإضافات والإعلانات وبيانات المتجر.</p>
+          <a href="/?admin=1" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#F5B800] px-5 py-3 text-sm font-black text-[#09090B] shadow-lg shadow-black/20">فتح المنيو الأصلي بوضع الإدارة ←</a>
         </div>
       </header>
       <PromoManager />

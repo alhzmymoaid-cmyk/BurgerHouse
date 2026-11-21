@@ -1,5 +1,5 @@
-const CACHE='burger-house-shell-v6';
-const SHELL=['/','/brand-mark.svg','/manifest.webmanifest','/manifest-admin.webmanifest','/manifest-staff.webmanifest','/icons/customer-180.png','/icons/customer-192.png','/icons/customer-512.png','/icons/admin-180.png','/icons/admin-192.png','/icons/admin-512.png','/icons/staff-180.png','/icons/staff-192.png','/icons/staff-512.png'];
+const CACHE='burger-house-shell-v8';
+const SHELL=['/','/brand-mark.svg','/manifest.webmanifest','/manifest-admin.webmanifest','/manifest-owner.webmanifest','/manifest-catalog.webmanifest','/manifest-staff.webmanifest','/icons/customer-180.png','/icons/customer-192.png','/icons/customer-512.png','/icons/admin-180.png','/icons/admin-192.png','/icons/admin-512.png','/icons/staff-180.png','/icons/staff-192.png','/icons/staff-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('burger-house-shell-')&&key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()]));});
 self.addEventListener('fetch',event=>{const request=event.request;const url=new URL(request.url);if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/'))return;if(request.mode==='navigate'){event.respondWith(fetch(request).catch(()=>caches.match(request).then(cached=>cached||(url.pathname.startsWith('/staff/')||url.pathname.startsWith('/bh-sovereign-vault')?Response.error():caches.match('/')))));return;}if(['image','style','script','font'].includes(request.destination)){event.respondWith(fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;}).catch(()=>caches.match(request)));}});
@@ -14,6 +14,7 @@ self.addEventListener('push',event=>{
     tag:data.tag||'bh-new-order',
     renotify:true,
     requireInteraction:true,
+    silent:false,
     vibrate:[250,120,250,120,450],
     data:{url:data.url||'/staff/orders'}
   };

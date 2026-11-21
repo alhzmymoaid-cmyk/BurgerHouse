@@ -145,6 +145,8 @@ export default function StorefrontPage() {
   const addons: Addon[] = catalog?.addons || [];
   const payments: Payment[] = catalog?.payment_methods || [];
   const activeBranch = branches.find((branch) => branch.id === branchId);
+  const siteCopy = catalog?.settings?.published_theme || {};
+
   const availableProducts = useMemo(() => products.filter((product) => {
     if (showFavoritesOnly && !favoriteIds.includes(product.id)) return false;
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
@@ -414,7 +416,7 @@ export default function StorefrontPage() {
       <StorefrontAdminEditor />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#09090B]/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="bh-storefront-announcement bg-[#09090B] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
-          تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
+          {siteCopy.announcementAr || 'تحضير طازج عند الطلب • استلام مباشر من فروعنا'}
         </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
           <a href="/" className="flex items-center gap-3" aria-label="Burger House">
@@ -549,12 +551,12 @@ export default function StorefrontPage() {
         <section className="bh-v2-hero" aria-labelledby="bh-home-title">
           <div className="bh-v2-hero-copy">
             <div className="bh-v2-eyebrow"><span/> BURGER HOUSE <i>·</i> CRAFTED OVER FIRE</div>
-            <p className="bh-v2-kicker">طازج من المطبخ إلى يدك</p>
-            <h1 id="bh-home-title">اختَر وجبتك.<br/><em>ونحن نجهّز الباقي.</em></h1>
-            <p className="bh-v2-lead">برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.</p>
+            <p className="bh-v2-kicker">{siteCopy.heroKickerAr || 'طازج من المطبخ إلى يدك'}</p>
+            <h1 id="bh-home-title">{siteCopy.heroTitleAr || 'اختَر وجبتك.'}<br/><em>{siteCopy.heroTitleAccentAr || 'ونحن نجهّز الباقي.'}</em></h1>
+            <p className="bh-v2-lead">{siteCopy.heroLeadAr || 'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.'}</p>
             <div className="bh-v2-hero-actions">
-              <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>ابدأ طلبك <ArrowLeft size={17}/></button>
-              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> مواقع الفروع</button>
+              <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>{siteCopy.heroCtaAr || 'ابدأ طلبك'} <ArrowLeft size={17}/></button>
+              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> {siteCopy.heroBranchesCtaAr || 'مواقع الفروع'}</button>
             </div>
             <div className="bh-v2-branch-status">
               <span className={activeBranch?.is_accepting_orders ? 'bh-v2-status-dot is-open' : 'bh-v2-status-dot'}/>
@@ -597,12 +599,12 @@ export default function StorefrontPage() {
 
         <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#777064]">اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.</p></div>
+            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{siteCopy.menuTitleAr || 'قائمة برجر هاوس'}</h2><p className="mt-2 text-sm text-[#777064]">{siteCopy.menuSubtitleAr || 'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.'}</p></div>
             <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a84f32]"/></div>
           </div>
-          <div className="mb-9 flex gap-2 overflow-x-auto pb-2">
-            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>كل الأصناف</button>
-            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>{category.name_ar}</button>)}
+          <div className="bh-category-rail mb-9 flex gap-2 overflow-x-auto pb-2">
+            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>كل الأصناف</button>
+            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>{category.name_ar}</button>)}
           </div>
 
           {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
@@ -620,7 +622,7 @@ export default function StorefrontPage() {
                       {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
                     </button>
                     <div className="bh-v2-product-info">
-                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8cd] bg-white/90 text-[#a84f32] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
+                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-[#242428] text-[#F5B800] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
                       <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
                       <p>{product.description_ar}</p>
                       <div className="bh-v2-product-bottom">
@@ -652,7 +654,7 @@ export default function StorefrontPage() {
 
       <footer className="bg-[#20201c] text-[#d6d0c5]">
         <div className="mx-auto grid max-w-7xl gap-9 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-          <div><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/><div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><div className="text-[9px] tracking-[.2em] text-[#c5a27e]">CRAFTED OVER FIRE</div></div></div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.</p></div>
+          <div><div className="flex items-center gap-3"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/><div><div className="text-lg font-black tracking-[.12em] text-white">BURGER HOUSE</div><div className="text-[9px] tracking-[.2em] text-[#c5a27e]">CRAFTED OVER FIRE</div></div></div><p className="mt-3 max-w-xs text-xs leading-7 text-[#aaa397]">{siteCopy.footerDescriptionAr || 'نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.'}</p></div>
           <div><div className="text-xs font-black text-white">تصفح</div><div className="mt-4 space-y-3 text-xs text-[#aaa397]"><button onClick={()=>setActiveView('menu')} className="block">المنيو</button><button onClick={()=>setActiveView('branches')} className="block">فروعنا</button><a href="/account/orders" className="block">طلباتي</a></div></div>
           <div><div className="text-xs font-black text-white">الاستلام</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">جميع الطلبات عبر الموقع مخصصة للاستلام من الفرع فقط. لا نوفر التوصيل المنزلي حالياً.</p></div>
           <div><div className="text-xs font-black text-white">تواصل معنا</div><p className="mt-4 text-xs leading-7 text-[#aaa397]">{catalog?.settings?.support_phone || 'يسعدنا استقبال استفساراتكم عبر فروعنا.'}</p><a href="/account" className="mt-4 inline-block text-xs font-bold text-[#c28b60]">حساب العميل <ArrowLeft className="mr-1 inline" size={13}/></a></div>

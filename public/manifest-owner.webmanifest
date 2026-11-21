@@ -1,0 +1,19 @@
+{
+  "id": "/owner-studio",
+  "name": "BH Owner",
+  "short_name": "BH Owner",
+  "description": "لوحة إدارة مالك برجر هاوس",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/owner-studio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0C",
+  "theme_color": "#0A0A0C",
+  "icons": [
+    { "src": "/icons/admin-180.png?v=4", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin-192.png?v=4", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/admin-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

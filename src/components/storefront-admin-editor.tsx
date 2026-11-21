@@ -14,14 +14,14 @@ const blankProduct=(categoryId=''):ProductForm=>({
   base_price:'',image_url:'',prep_minutes:'12',calories:'650',sort_order:'0',
   is_featured:false,is_active:true,allowed_addon_ids:[],sizes:[]
 });
-const inputClass='w-full rounded-lg border border-white/10 bg-[#1B1B1F] px-3 py-2.5 text-sm text-[#F6F3EC] outline-none focus:border-[#F2B705]';
+const inputClass='block w-full min-w-0 max-w-full rounded-lg border border-[#52525B] bg-[#09090B] px-3 py-3 text-sm text-[#FAFAFA] placeholder:text-[#A1A1AA] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20';
 
 export default function StorefrontAdminEditor(){
   const [profile,setProfile]=useState<any>(null);
   const [data,setData]=useState<any>(null);
   const [enabled,setEnabled]=useState(false);
   const [open,setOpen]=useState(false);
-  const [tab,setTab]=useState<'products'|'categories'|'addons'|'promos'>('products');
+  const [tab,setTab]=useState<'products'|'categories'|'addons'|'promos'|'copy'>('products');
   const [productForm,setProductForm]=useState<ProductForm>(blankProduct());
   const [editing,setEditing]=useState(false);
   const [categoryForm,setCategoryForm]=useState<any>({id:'',name_ar:'',name_en:'',sort_order:'0',is_active:true});
@@ -30,26 +30,48 @@ export default function StorefrontAdminEditor(){
   const [busy,setBusy]=useState(false);
   const [uploading,setUploading]=useState(false);
   const [error,setError]=useState('');
+  const [loadError,setLoadError]=useState('');
+  const [requestedAdmin,setRequestedAdmin]=useState(false);
   const [message,setMessage]=useState('');
+  const [copyForm,setCopyForm]=useState<any>({heroKickerAr:'',heroTitleAr:'',heroTitleAccentAr:'',heroLeadAr:'',heroCtaAr:'',heroBranchesCtaAr:'',announcementAr:'',footerDescriptionAr:'',menuTitleAr:'',menuSubtitleAr:''});
 
   const load=useCallback(async()=>{
+    const adminRequested = typeof window !== 'undefined' && (window.location.pathname === '/catalog-studio' || new URLSearchParams(window.location.search).get('admin') === '1');
+    if(adminRequested){setRequestedAdmin(true);setEnabled(true);}
+    setLoadError('');
     try{
-      const {data:{user}}=await createSupabaseBrowserClient().auth.getUser();
-      if(!user)return;
-      const response=await fetch('/api/admin/owner',{cache:'no-store',credentials:'same-origin'});
-      if(!response.ok)return;
-      const result=await response.json();
-      if(!['super_admin','owner'].includes(result.profile?.role))return;
+      const {data:{user},error:authError}=await createSupabaseBrowserClient().auth.getUser();
+      if(authError)throw new Error(authError.message);
+      if(!user){
+        if(adminRequested)setLoadError('انتهت جلسة الدخول أو لم يتم تسجيل الدخول. سجّل الدخول بحساب الإدارة ثم أعد فتح إدارة المنيو.');
+        return;
+      }
+      const response=await fetch('/api/admin/catalog',{cache:'no-store',credentials:'same-origin'});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const message=result.message_ar||result.message||result.error||`فشل تحميل إدارة المنيو (HTTP ${response.status}).`;
+        setLoadError(message);
+        return;
+      }
+      const canManage = ['super_admin','owner'].includes(result.profile?.role)
+        || (result.profile?.role === 'branch_manager' && Array.isArray(result.profile?.permissions) && result.profile.permissions.includes('catalog_manage'));
+      if(!canManage){
+        setProfile(result.profile||null);
+        setLoadError('حسابك لا يملك صلاحية إدارة المنتجات والمنيو. يلزم تفعيل صلاحية catalog_manage من مدير النظام.');
+        return;
+      }
       setProfile(result.profile);
       setData(result);
-    }catch{
-      setProfile(null);
+      setCopyForm({heroKickerAr:'طازج من المطبخ إلى يدك',heroTitleAr:'اختَر وجبتك.',heroTitleAccentAr:'ونحن نجهّز الباقي.',heroLeadAr:'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.',heroCtaAr:'ابدأ طلبك',heroBranchesCtaAr:'مواقع الفروع',announcementAr:'تحضير طازج عند الطلب • استلام مباشر من فروعنا',footerDescriptionAr:'نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.',menuTitleAr:'قائمة برجر هاوس',menuSubtitleAr:'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.',...(result.settings?.published_theme||{})});
+      if(adminRequested){setEnabled(true);setOpen(true);}
+    }catch(error:any){
+      setLoadError(error?.message||'تعذر الاتصال بخدمة إدارة المنيو.');
     }
   },[]);
   useEffect(()=>{void load();},[load]);
 
   const callAction=async(payload:any)=>{
-    const response=await fetch('/api/admin/owner',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
+    const response=await fetch('/api/admin/catalog',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
     const result=await response.json();
     if(!response.ok)throw new Error(result.message_ar||result.error||'تعذر حفظ التغيير.');
     return result;
@@ -91,7 +113,6 @@ export default function StorefrontAdminEditor(){
     event.preventDefault();setBusy(true);setError('');setMessage('');
     try{
       if(!productForm.category_id)throw new Error('اختر قسم المنتج.');
-      if(!productForm.image_url)throw new Error('ارفع صورة المنتج أولاً.');
       if(!productForm.name_ar.trim()||!productForm.name_en.trim())throw new Error('أدخل اسم المنتج بالعربية والإنجليزية.');
       const id=productForm.id||('bh-'+crypto.randomUUID().replace(/-/g,'').slice(0,16));
       await callAction({action:'UPSERT_PRODUCT',product:{
@@ -104,8 +125,18 @@ export default function StorefrontAdminEditor(){
         sizes:productForm.sizes.map((size:any,index:number)=>({...size,id:size.id||('sz-'+crypto.randomUUID().replace(/-/g,'').slice(0,14)),sort_order:index}))
       }});
       setMessage('تم حفظ المنتج.');
-      await load();setEditing(false);setProductForm(blankProduct());window.location.reload();
+      await load();setEditing(false);setProductForm(blankProduct());
     }catch(e:any){setError(e.message||'تعذر حفظ المنتج.');}
+    finally{setBusy(false);}
+  };
+
+  const saveCopy=async(event:any)=>{
+    event.preventDefault();setBusy(true);setError('');setMessage('');
+    try{
+      await callAction({action:'UPDATE_SITE_COPY',copy:copyForm});
+      setMessage('تم حفظ نصوص الصفحة الرئيسية ونشرها مباشرة.');
+      await load();
+    }catch(e:any){setError(e.message||'تعذر حفظ النصوص.');}
     finally{setBusy(false);}
   };
 
@@ -134,14 +165,23 @@ export default function StorefrontAdminEditor(){
   };
 
   const deactivate=async(action:string,key:string,id:string)=>{
-    if(!window.confirm('سيتم إخفاء العنصر من المتجر دون حذف بياناته. هل تريد المتابعة؟'))return;
+    const prompt = action.startsWith('DELETE_') ? 'تأكيد الحذف: سيُحذف العنصر إن لم يكن مرتبطًا بسجلات، وإلا سيُؤرشف ويختفي من المنيو. هل تريد المتابعة؟' : 'سيتم إخفاء العنصر من المتجر دون حذف بياناته. هل تريد المتابعة؟';
+    if(!window.confirm(prompt))return;
     setBusy(true);setError('');setMessage('');
-    try{await callAction({action,[key]:id});setMessage('تم إخفاء العنصر من المتجر.');await load();window.location.reload();}
+    try{const result=await callAction({action,[key]:id});setMessage(result.message_ar || (result.deleted?'تم الحذف بنجاح.':'تم تحديث العنصر في المنيو.'));await load();}
     catch(e:any){setError(e.message||'تعذر تنفيذ الإجراء.');}
     finally{setBusy(false);}
   };
 
-  if(!profile||!['super_admin','owner'].includes(profile.role))return null;
+  const canManageCatalog = Boolean(profile && (['super_admin','owner'].includes(profile.role) || (profile.role === 'branch_manager' && Array.isArray(profile.permissions) && profile.permissions.includes('catalog_manage'))));
+  if(!canManageCatalog){
+    if(!requestedAdmin)return null;
+    return <div dir="rtl" className="fixed inset-x-3 bottom-4 z-[120] mx-auto max-w-xl rounded-2xl border border-red-400/40 bg-[#171216] p-4 text-[#FAFAFA] shadow-2xl">
+      <b className="text-sm text-red-200">تعذر فتح إدارة المنتجات والمنيو</b>
+      <p role="alert" className="mt-2 text-xs leading-6 text-[#E4E4E7]">{loadError||'لم يتم تحميل صلاحيات إدارة المنيو.'}</p>
+      <div className="mt-3 flex flex-wrap gap-2"><a href="/menu-studio" className="rounded-lg bg-[#F2B705] px-4 py-2.5 text-xs font-black text-[#09090B]">صفحة تشخيص إدارة المنيو</a><a href="/auth/login" className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-bold">تسجيل الدخول</a></div>
+    </div>;
+  }
 
   return <>
     {!enabled?<button type="button" onClick={()=>setEnabled(true)} className="fixed bottom-24 right-4 z-[85] rounded-xl border border-[#F2B705]/50 bg-[#141417] px-4 py-3 text-xs font-bold text-[#F2B705] shadow-xl">تعديل المتجر والمنيو</button>
@@ -150,56 +190,65 @@ export default function StorefrontAdminEditor(){
       <div className="flex flex-wrap gap-2"><button onClick={()=>{setOpen(true);setTab('products');}} className="rounded-lg bg-[#F2B705] px-3 py-2 text-[11px] font-bold text-[#0A0A0C]">إدارة المنتجات والأقسام</button><button onClick={()=>setEnabled(false)} className="rounded-lg border border-white/10 px-3 py-2 text-[11px] text-[#F6F3EC]">إغلاق وضع الإدارة</button></div>
     </div>}
 
-    {open&&<div className="fixed inset-0 z-[110] overflow-y-auto bg-black/75 p-3 sm:p-6" dir="rtl">
-      <section className="mx-auto my-4 max-w-5xl rounded-2xl border border-white/10 bg-[#141417] p-4 text-[#F6F3EC] sm:p-6">
+    {open&&<div className="fixed inset-0 z-[110] overflow-x-hidden overflow-y-auto bg-black/75 p-2 sm:p-4" dir="rtl">
+      <section className="mx-auto my-2 w-full max-h-[calc(100dvh-1rem)] max-w-4xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#141417] p-3 text-[#F6F3EC] shadow-2xl sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.16em] text-[#F2B705]">VISUAL STORE EDITOR</span><h2 className="mt-1 text-xl font-bold">إدارة المتجر والمنيو</h2></div><button onClick={()=>{setOpen(false);setEditing(false);}} className="rounded-lg border border-white/10 px-3 py-2 text-xs">إغلاق</button></div>
         <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10 pb-4">
-          {(['products','categories','addons','promos'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#9E9BA3]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':'العروض'}</button>)}
+          {(['products','categories','addons','promos'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#D4D4D8]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':'الإعلانات'}</button>)}
+          {profile?.role!=='branch_manager'&&<button onClick={()=>{setTab('copy');setError('');setMessage('');}} className={tab==='copy'?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#D4D4D8]'}>نصوص الصفحة</button>}
         </div>
         {(error||message)&&<p role={error?'alert':'status'} className={error?'mt-4 text-xs text-red-300':'mt-4 text-xs text-emerald-300'}>{error||message}</p>}
 
-        {tab==='products'&&<div className="mt-4 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+        {tab==='products'&&<div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
           <div className="space-y-3">
             <button onClick={startNewProduct} className="w-full rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">+ أضف منتج</button>
-            <div className="max-h-[65vh] space-y-2 overflow-y-auto">
-              {(data?.products||[]).map((product:any)=><article key={product.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3">
+            <div className="max-h-[38vh] space-y-2 overflow-y-auto lg:max-h-[68vh]">
+              {(data?.products||[]).map((product:any)=><article key={product.id} className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-2 sm:gap-3 sm:p-3">
                 <img src={product.image_url} alt="" className="h-14 w-14 rounded-lg object-cover"/>
                 <div className="min-w-0 flex-1"><b className="block truncate text-xs">{product.name_ar}</b><span className="text-[10px] text-[#F2B705]">{Number(product.base_price).toFixed(2)} ر.س · {product.is_active?'نشط':'مخفي'}</span></div>
-                <button onClick={()=>startEditProduct(product)} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button>
-                {product.is_active&&<button onClick={()=>deactivate('DEACTIVATE_PRODUCT','product_id',product.id)} className="rounded-lg border border-red-500/30 px-2 py-2 text-[10px] text-red-300">إخفاء</button>}
+                <button onClick={()=>startEditProduct(product)} className="rounded-lg border border-[#71717A] bg-[#27272A] px-3 py-2 text-[10px] font-bold text-[#FAFAFA]">✎ تعديل</button>
+                <button onClick={()=>deactivate('DELETE_PRODUCT','product_id',product.id)} className="rounded-lg border border-red-500/50 bg-red-950/30 px-2 py-2 text-[10px] font-bold text-red-200">حذف</button>
               </article>)}
             </div>
           </div>
-          <form onSubmit={saveProduct} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4">
+          <form onSubmit={saveProduct} className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-white/10 bg-[#1B1B1F] p-3 sm:p-4">
             <h3 className="text-sm font-bold">{editing?'تعديل المنتج':'إضافة منتج جديد'}</h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-[11px] text-[#9E9BA3]">الاسم بالعربية<input required value={productForm.name_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,name_ar:e.target.value}))} className={inputClass}/></label>
-              <label className="text-[11px] text-[#9E9BA3]">الاسم بالإنجليزية<input required dir="ltr" value={productForm.name_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,name_en:e.target.value}))} className={inputClass}/></label>
-              <label className="text-[11px] text-[#9E9BA3]">السعر<input required min="0" step="0.01" type="number" value={productForm.base_price} onChange={e=>setProductForm((v:ProductForm)=>({...v,base_price:e.target.value}))} className={inputClass}/></label>
-              <label className="text-[11px] text-[#9E9BA3]">القسم<select required value={productForm.category_id} onChange={e=>setProductForm((v:ProductForm)=>({...v,category_id:e.target.value}))} className={inputClass}><option value="">اختر القسم</option>{(data?.categories||[]).filter((x:any)=>x.is_active).map((x:any)=><option key={x.id} value={x.id}>{x.name_ar}</option>)}</select></label>
-              <label className="text-[11px] text-[#9E9BA3]">وقت التجهيز بالدقائق<input type="number" min="1" value={productForm.prep_minutes} onChange={e=>setProductForm((v:ProductForm)=>({...v,prep_minutes:e.target.value}))} className={inputClass}/></label>
-              <label className="text-[11px] text-[#9E9BA3]">ترتيب العرض<input type="number" value={productForm.sort_order} onChange={e=>setProductForm((v:ProductForm)=>({...v,sort_order:e.target.value}))} className={inputClass}/></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">الاسم بالعربية<input required value={productForm.name_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,name_ar:e.target.value}))} className={inputClass}/></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">الاسم بالإنجليزية<input required dir="ltr" value={productForm.name_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,name_en:e.target.value}))} className={inputClass}/></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">السعر<input required min="0" step="0.01" type="number" value={productForm.base_price} onChange={e=>setProductForm((v:ProductForm)=>({...v,base_price:e.target.value}))} className={inputClass}/></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">القسم<select required value={productForm.category_id} onChange={e=>setProductForm((v:ProductForm)=>({...v,category_id:e.target.value}))} className={inputClass}><option value="">اختر القسم</option>{(data?.categories||[]).filter((x:any)=>x.is_active).map((x:any)=><option key={x.id} value={x.id}>{x.name_ar}</option>)}</select></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">وقت التجهيز بالدقائق<input type="number" min="1" value={productForm.prep_minutes} onChange={e=>setProductForm((v:ProductForm)=>({...v,prep_minutes:e.target.value}))} className={inputClass}/></label>
+              <label className="block min-w-0 text-[11px] text-[#D4D4D8]">ترتيب العرض<input type="number" value={productForm.sort_order} onChange={e=>setProductForm((v:ProductForm)=>({...v,sort_order:e.target.value}))} className={inputClass}/></label>
             </div>
-            <label className="block text-[11px] text-[#9E9BA3]">الوصف بالعربية<textarea rows={2} value={productForm.description_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,description_ar:e.target.value}))} className={inputClass}/></label>
-            <label className="block text-[11px] text-[#9E9BA3]">الوصف بالإنجليزية<textarea dir="ltr" rows={2} value={productForm.description_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,description_en:e.target.value}))} className={inputClass}/></label>
-            <div className="flex flex-wrap items-center gap-3"><label className="cursor-pointer rounded-lg border border-[#F2B705]/40 px-3 py-2 text-[11px] font-bold text-[#F2B705]">{uploading?'جارٍ رفع الصورة…':'رفع صورة من الجهاز'}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploading} onChange={e=>{void uploadImage(e.target.files?.[0]);e.currentTarget.value='';}}/></label>{productForm.image_url&&<img src={productForm.image_url} alt="معاينة" className="h-14 w-14 rounded-lg object-cover"/>}</div>
-            <div className="rounded-lg border border-white/10 p-3"><b className="text-xs">الإضافات المتاحة لهذا المنتج</b><div className="mt-2 grid grid-cols-2 gap-2">{(data?.addons||[]).filter((a:any)=>a.is_active).map((addon:any)=><label key={addon.id} className="flex items-center gap-2 text-[11px] text-[#9E9BA3]"><input type="checkbox" checked={productForm.allowed_addon_ids.includes(addon.id)} onChange={e=>setProductForm((v:ProductForm)=>({...v,allowed_addon_ids:e.target.checked?[...v.allowed_addon_ids,addon.id]:v.allowed_addon_ids.filter(id=>id!==addon.id)}))}/>{addon.name_ar} · {addon.price} ر.س</label>)}</div></div>
-            <div className="rounded-lg border border-white/10 p-3"><b className="text-xs">الأحجام</b><div className="mt-2 space-y-2">{productForm.sizes.map((size:any,index:number)=><div key={size.id||index} className="grid grid-cols-3 gap-2"><input value={size.name_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,name_ar:e.target.value}:s)}))} placeholder="الحجم بالعربية" className={inputClass}/><input dir="ltr" value={size.name_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,name_en:e.target.value}:s)}))} placeholder="Size" className={inputClass}/><input type="number" step="0.01" value={size.price_delta} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,price_delta:Number(e.target.value)}:s)}))} placeholder="فرق السعر" className={inputClass}/></div>)}</div><div className="mt-3 grid grid-cols-3 gap-2"><input value={sizeForm.name_ar} onChange={e=>setSizeForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="حجم جديد" className={inputClass}/><input dir="ltr" value={sizeForm.name_en} onChange={e=>setSizeForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="New size" className={inputClass}/><input type="number" step="0.01" value={sizeForm.price_delta} onChange={e=>setSizeForm((v:any)=>({...v,price_delta:e.target.value}))} placeholder="فرق السعر" className={inputClass}/></div><button type="button" onClick={addSize} className="mt-2 text-[11px] font-bold text-[#F2B705]">+ إضافة حجم</button></div>
+            <label className="block min-w-0 text-[11px] text-[#D4D4D8]">الوصف بالعربية<textarea rows={2} value={productForm.description_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,description_ar:e.target.value}))} className={inputClass}/></label>
+            <label className="block min-w-0 text-[11px] text-[#D4D4D8]">الوصف بالإنجليزية<textarea dir="ltr" rows={2} value={productForm.description_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,description_en:e.target.value}))} className={inputClass}/></label>
+            <div className="rounded-xl border border-[#52525B] bg-[#09090B] p-3 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-[#FAFAFA]">صورة المنتج</b><label className="cursor-pointer rounded-lg bg-[#F5B800] px-4 py-2.5 text-xs font-black text-[#09090B]">{uploading?'جارٍ رفع الصورة…':'اختر صورة من الاستوديو'}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploading} onChange={e=>{void uploadImage(e.target.files?.[0]);e.currentTarget.value='';}}/></label></div>{productForm.image_url?<div className="flex items-center gap-3"><img src={productForm.image_url} alt="معاينة صورة المنتج" className="h-24 w-24 rounded-xl border border-white/10 object-cover"/><div className="space-y-2"><p className="text-xs text-[#D4D4D8]">الصورة الحالية ستظهر مباشرة في المنيو بعد الحفظ.</p><button type="button" onClick={()=>setProductForm(v=>({...v,image_url:''}))} className="rounded-lg border border-red-400/50 px-3 py-2 text-xs font-bold text-red-300">إزالة الصورة</button></div></div>:<p className="text-xs text-[#A1A1AA]">لا توجد صورة محددة. يمكنك الحفظ دون صورة أو اختيار صورة جديدة.</p>}<div><p className="mb-2 text-xs font-bold text-[#E4E4E7]">أو اختر صورة مستخدمة في منتج آخر</p><div className="flex gap-2 overflow-x-auto pb-2">{Array.from(new Map((data?.products||[]).filter((p:any)=>p.image_url).map((p:any)=>[p.image_url,p])).values()).map((p:any)=><button type="button" key={p.image_url} onClick={()=>setProductForm(v=>({...v,image_url:p.image_url}))} title={p.name_ar} className={`shrink-0 rounded-lg border-2 p-1 ${productForm.image_url===p.image_url?'border-[#F5B800]':'border-[#52525B]'}`}><img src={p.image_url} alt={p.name_ar} className="h-16 w-16 rounded-md object-cover"/><span className="block max-w-16 truncate pt-1 text-[9px] text-[#E4E4E7]">{p.name_ar}</span></button>)}</div></div></div>
+            <div className="rounded-lg border border-white/10 p-3"><b className="text-xs">الإضافات المتاحة لهذا المنتج</b><div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">{(data?.addons||[]).filter((a:any)=>a.is_active).map((addon:any)=><label key={addon.id} className="flex items-center gap-2 text-[11px] text-[#D4D4D8]"><input type="checkbox" checked={productForm.allowed_addon_ids.includes(addon.id)} onChange={e=>setProductForm((v:ProductForm)=>({...v,allowed_addon_ids:e.target.checked?[...v.allowed_addon_ids,addon.id]:v.allowed_addon_ids.filter(id=>id!==addon.id)}))}/>{addon.name_ar} · {addon.price} ر.س</label>)}</div></div>
+            <div className="rounded-lg border border-white/10 p-3"><b className="text-xs">الأحجام</b><div className="mt-2 space-y-2">{productForm.sizes.map((size:any,index:number)=><div key={size.id||index} className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,.7fr)_auto]"><input value={size.name_ar} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,name_ar:e.target.value}:s)}))} placeholder="الحجم بالعربية" className={inputClass}/><input dir="ltr" value={size.name_en} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,name_en:e.target.value}:s)}))} placeholder="Size" className={inputClass}/><input type="number" step="0.01" value={size.price_delta} onChange={e=>setProductForm((v:ProductForm)=>({...v,sizes:v.sizes.map((s:any,i:number)=>i===index?{...s,price_delta:Number(e.target.value)}:s)}))} placeholder="فرق السعر" className={inputClass}/><button type="button" onClick={()=>setProductForm(v=>({...v,sizes:v.sizes.filter((_:any,i:number)=>i!==index)}))} className="rounded-lg border border-red-500/40 px-3 text-xs text-red-300" aria-label="حذف الحجم">×</button></div>)}</div><div className="mt-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3"><input value={sizeForm.name_ar} onChange={e=>setSizeForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="حجم جديد" className={inputClass}/><input dir="ltr" value={sizeForm.name_en} onChange={e=>setSizeForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="New size" className={inputClass}/><input type="number" step="0.01" value={sizeForm.price_delta} onChange={e=>setSizeForm((v:any)=>({...v,price_delta:e.target.value}))} placeholder="فرق السعر" className={inputClass}/></div><button type="button" onClick={addSize} className="mt-2 text-[11px] font-bold text-[#F2B705]">+ إضافة حجم</button></div>
             <div className="flex flex-wrap gap-4 text-xs"><label className="flex items-center gap-2"><input type="checkbox" checked={productForm.is_featured} onChange={e=>setProductForm((v:ProductForm)=>({...v,is_featured:e.target.checked}))}/>منتج مميز</label><label className="flex items-center gap-2"><input type="checkbox" checked={productForm.is_active} onChange={e=>setProductForm((v:ProductForm)=>({...v,is_active:e.target.checked}))}/>ظاهر في المنيو</label></div>
-            <button disabled={busy||uploading} className="w-full rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C] disabled:opacity-40">{busy?'جارٍ الحفظ…':'حفظ المنتج'}</button>
+            <button disabled={busy||uploading} className="w-full rounded-lg bg-[#F5B800] px-4 py-3 text-sm font-black text-[#09090B] disabled:opacity-40">{busy?'جارٍ الحفظ…':'حفظ المنتج'}</button>
           </form>
         </div>}
 
         {tab==='categories'&&<div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <form onSubmit={saveCategory} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><h3 className="text-sm font-bold">إضافة أو تعديل قسم</h3><input value={categoryForm.name_ar} onChange={e=>setCategoryForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم القسم بالعربية" className={inputClass}/><input dir="ltr" value={categoryForm.name_en} onChange={e=>setCategoryForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Category name" className={inputClass}/><input type="number" value={categoryForm.sort_order} onChange={e=>setCategoryForm((v:any)=>({...v,sort_order:e.target.value}))} placeholder="ترتيب العرض" className={inputClass}/><button disabled={busy} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">حفظ القسم</button></form>
-          <div className="space-y-2">{(data?.categories||[]).map((category:any)=><div key={category.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-3"><div><b className="text-xs">{category.name_ar}</b><p className="text-[10px] text-[#9E9BA3]">{category.is_active?'ظاهر':'مخفي'}</p></div><div className="flex gap-2"><button onClick={()=>setCategoryForm({...category,sort_order:String(category.sort_order)})} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button>{category.is_active&&<button onClick={()=>deactivate('DEACTIVATE_CATEGORY','category_id',category.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-[10px] text-red-300">إخفاء</button>}</div></div>)}</div>
+          <form onSubmit={saveCategory} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-bold text-[#FAFAFA]">إضافة أو تعديل قسم</h3><button type="button" onClick={()=>setCategoryForm({id:'',name_ar:'',name_en:'',sort_order:String((data?.categories?.length||0)+1),is_active:true})} className="rounded-lg border border-[#71717A] bg-[#27272A] px-3 py-2 text-xs font-bold text-[#FAFAFA]">+ قسم جديد</button></div><input value={categoryForm.name_ar} onChange={e=>setCategoryForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم القسم بالعربية" className={inputClass}/><input dir="ltr" value={categoryForm.name_en} onChange={e=>setCategoryForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Category name" className={inputClass}/><input type="number" value={categoryForm.sort_order} onChange={e=>setCategoryForm((v:any)=>({...v,sort_order:e.target.value}))} placeholder="ترتيب العرض" className={inputClass}/><label className="flex items-center gap-2 text-xs font-semibold text-[#E4E4E7]"><input type="checkbox" checked={categoryForm.is_active!==false} onChange={e=>setCategoryForm((v:any)=>({...v,is_active:e.target.checked}))}/> القسم ظاهر في المنيو</label><button disabled={busy} className="rounded-lg bg-[#F5B800] px-4 py-3 text-xs font-black text-[#09090B]">حفظ القسم</button></form>
+          <div className="space-y-2">{(data?.categories||[]).map((category:any)=><div key={category.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-3"><div><b className="text-xs">{category.name_ar}</b><p className="text-[10px] text-[#D4D4D8]">{category.is_active?'ظاهر':'مخفي'}</p></div><div className="flex gap-2"><button onClick={()=>setCategoryForm({...category,sort_order:String(category.sort_order)})} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button><button onClick={()=>deactivate('DELETE_CATEGORY','category_id',category.id)} className="rounded-lg border border-red-500/50 bg-red-950/30 px-3 py-2 text-[10px] font-bold text-red-200">حذف</button></div></div>)}</div>
         </div>}
 
         {tab==='promos'&&<div className="mt-4"><PromoManager /></div>}
+        {tab==='copy'&&<form onSubmit={saveCopy} className="mt-4 space-y-4 rounded-xl border border-[#52525B] bg-[#16161A] p-4">
+          <div><h3 className="text-base font-black text-[#FAFAFA]">تحرير نصوص الصفحة الرئيسية</h3><p className="mt-1 text-xs text-[#D4D4D8]">عدّل النصوص التي تظهر للعميل في واجهة المتجر. تحفظ وتنشر مباشرة.</p></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {([['heroKickerAr','الجملة الصغيرة أعلى العنوان'],['heroTitleAr','العنوان الرئيسي'],['heroTitleAccentAr','السطر المميز'],['heroLeadAr','وصف الواجهة'],['heroCtaAr','نص زر الطلب'],['heroBranchesCtaAr','نص زر الفروع'],['announcementAr','شريط الإعلان العلوي'],['menuTitleAr','عنوان قسم المنيو'],['menuSubtitleAr','وصف قسم المنيو'],['footerDescriptionAr','وصف التذييل']] as const).map(([key,label])=><label key={key} className="block text-xs font-bold text-[#E4E4E7]">{label}<textarea rows={key==='heroLeadAr'||key==='footerDescriptionAr'||key==='menuSubtitleAr'?3:2} value={copyForm[key]||''} onChange={e=>setCopyForm((v:any)=>({...v,[key]:e.target.value}))} className={inputClass+" mt-2"}/></label>)}
+          </div>
+          <button disabled={busy} className="w-full rounded-xl bg-[#F5B800] px-4 py-3.5 text-sm font-black text-[#09090B] disabled:opacity-50">{busy?'جارٍ الحفظ…':'حفظ ونشر النصوص'}</button>
+        </form>}
+
 
         {tab==='addons'&&<div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <form onSubmit={saveAddon} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><h3 className="text-sm font-bold">إضافة أو تعديل إضافة</h3><input value={addonForm.name_ar} onChange={e=>setAddonForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم الإضافة بالعربية" className={inputClass}/><input dir="ltr" value={addonForm.name_en} onChange={e=>setAddonForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Addon name" className={inputClass}/><input type="number" min="0" step="0.01" value={addonForm.price} onChange={e=>setAddonForm((v:any)=>({...v,price:e.target.value}))} placeholder="السعر" className={inputClass}/><input type="number" min="1" max="10" value={addonForm.max_per_item} onChange={e=>setAddonForm((v:any)=>({...v,max_per_item:e.target.value}))} placeholder="الحد الأقصى" className={inputClass}/><button disabled={busy} className="rounded-lg bg-[#F2B705] px-4 py-3 text-xs font-bold text-[#0A0A0C]">حفظ الإضافة</button></form>
-          <div className="space-y-2">{(data?.addons||[]).map((addon:any)=><div key={addon.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-3"><div><b className="text-xs">{addon.name_ar}</b><p className="text-[10px] text-[#9E9BA3]">{addon.price} ر.س · {addon.is_active?'نشطة':'مخفية'}</p></div><div className="flex gap-2"><button onClick={()=>setAddonForm({...addon,price:String(addon.price),max_per_item:String(addon.max_per_item)})} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button>{addon.is_active&&<button onClick={()=>deactivate('DEACTIVATE_ADDON','addon_id',addon.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-[10px] text-red-300">إخفاء</button>}</div></div>)}</div>
+          <form onSubmit={saveAddon} className="space-y-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-bold text-[#FAFAFA]">إضافة أو تعديل إضافة</h3><button type="button" onClick={()=>setAddonForm({id:'',name_ar:'',name_en:'',price:'',max_per_item:'3',is_active:true})} className="rounded-lg border border-[#71717A] bg-[#27272A] px-3 py-2 text-xs font-bold text-[#FAFAFA]">+ إضافة جديدة</button></div><input value={addonForm.name_ar} onChange={e=>setAddonForm((v:any)=>({...v,name_ar:e.target.value}))} placeholder="اسم الإضافة بالعربية" className={inputClass}/><input dir="ltr" value={addonForm.name_en} onChange={e=>setAddonForm((v:any)=>({...v,name_en:e.target.value}))} placeholder="Addon name" className={inputClass}/><input type="number" min="0" step="0.01" value={addonForm.price} onChange={e=>setAddonForm((v:any)=>({...v,price:e.target.value}))} placeholder="السعر" className={inputClass}/><input type="number" min="1" max="10" value={addonForm.max_per_item} onChange={e=>setAddonForm((v:any)=>({...v,max_per_item:e.target.value}))} placeholder="الحد الأقصى" className={inputClass}/><label className="flex items-center gap-2 text-xs font-semibold text-[#E4E4E7]"><input type="checkbox" checked={addonForm.is_active!==false} onChange={e=>setAddonForm((v:any)=>({...v,is_active:e.target.checked}))}/> الإضافة متاحة للعملاء</label><button disabled={busy} className="rounded-lg bg-[#F5B800] px-4 py-3 text-xs font-black text-[#09090B]">حفظ الإضافة</button></form>
+          <div className="space-y-2">{(data?.addons||[]).map((addon:any)=><div key={addon.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1B1B1F] p-3"><div><b className="text-xs">{addon.name_ar}</b><p className="text-[10px] text-[#D4D4D8]">{addon.price} ر.س · {addon.is_active?'نشطة':'مخفية'}</p></div><div className="flex gap-2"><button onClick={()=>setAddonForm({...addon,price:String(addon.price),max_per_item:String(addon.max_per_item)})} className="rounded-lg border border-white/10 px-3 py-2 text-[10px]">تعديل</button><button onClick={()=>deactivate('DELETE_ADDON','addon_id',addon.id)} className="rounded-lg border border-red-500/50 bg-red-950/30 px-3 py-2 text-[10px] font-bold text-red-200">حذف</button></div></div>)}</div>
         </div>}
       </section>
     </div>}

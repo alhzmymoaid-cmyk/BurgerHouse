@@ -7,6 +7,11 @@ export const dynamic = 'force-dynamic';
 const elevated = (role: string) => role === 'super_admin' || role === 'owner';
 const allowed = (profile: any, branchId: string | null) =>
   elevated(profile.role) || (profile.role === 'branch_manager' && !!profile.assigned_branch_id && branchId === profile.assigned_branch_id);
+const isSafePromoTarget = (value: string) => {
+  if (value.startsWith('#')) return true;
+  if (value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')) return true;
+  try { return new URL(value).protocol === 'https:'; } catch { return false; }
+};
 
 export async function GET() {
   const auth = createSupabaseServerClient();
@@ -30,12 +35,17 @@ export async function POST(request: NextRequest) {
   if (!body.image_url?.trim()) {
     return NextResponse.json({ error:'PROMO_IMAGE_REQUIRED' }, { status:400 });
   }
+  const targetUrl = String(body.target_url || '#menu-section').trim();
+  if (!isSafePromoTarget(targetUrl)) return NextResponse.json({ error:'INVALID_PROMO_TARGET_URL' }, { status:400 });
+  let imageUrl: URL;
+  try { imageUrl = new URL(String(body.image_url).trim()); } catch { return NextResponse.json({ error:'INVALID_PROMO_IMAGE_URL' }, { status:400 }); }
+  if (imageUrl.protocol !== 'https:') return NextResponse.json({ error:'INVALID_PROMO_IMAGE_URL' }, { status:400 });
   const service = createSupabaseServiceRoleClient();
   const payload = {
     branch_id: branchId, title_ar: String(body.title_ar || 'إعلان').trim(), title_en: body.title_en || null,
     subtitle_ar: body.subtitle_ar || null, subtitle_en: body.subtitle_en || null,
     image_url: String(body.image_url).trim(), badge_text: body.badge_text || 'عرض اليوم',
-    cta_label: body.cta_label || 'اطلب الآن', target_url: body.target_url || '#menu-section',
+    cta_label: body.cta_label || 'اطلب الآن', target_url: targetUrl,
     target_product_id: body.target_product_id || null, target_category_id: body.target_category_id || null,
     starts_at: body.starts_at || new Date().toISOString(), ends_at: body.ends_at || null,
     sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
@@ -60,6 +70,16 @@ export async function PATCH(request: NextRequest) {
   const patch: Record<string,unknown> = {};
   for (const key of ['title_ar','title_en','subtitle_ar','subtitle_en','image_url','badge_text','cta_label','target_url','target_product_id','target_category_id','starts_at','ends_at','sort_order','is_active']) {
     if (Object.prototype.hasOwnProperty.call(body,key)) patch[key] = body[key];
+  }
+  if (typeof patch.target_url === 'string' && !isSafePromoTarget(patch.target_url)) {
+    return NextResponse.json({ error:'INVALID_PROMO_TARGET_URL' }, { status:400 });
+  }
+  if (typeof patch.image_url === 'string') {
+    try {
+      if (new URL(patch.image_url).protocol !== 'https:') return NextResponse.json({ error:'INVALID_PROMO_IMAGE_URL' }, { status:400 });
+    } catch {
+      return NextResponse.json({ error:'INVALID_PROMO_IMAGE_URL' }, { status:400 });
+    }
   }
   if (elevated(check.profile.role) && Object.prototype.hasOwnProperty.call(body,'branch_id')) patch.branch_id = body.branch_id || null;
   if (check.profile.role === 'branch_manager' && existing.branch_id !== check.profile.assigned_branch_id) return NextResponse.json({ error:'BRANCH_SCOPE_FORBIDDEN' }, { status:403 });

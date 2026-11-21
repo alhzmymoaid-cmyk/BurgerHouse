@@ -37,10 +37,11 @@ export async function middleware(request: NextRequest) {
 
   const isStaffRoute = pathname.startsWith('/staff');
   const isOwnerRoute = pathname.startsWith('/owner-studio') || pathname.startsWith('/api/admin/owner') || pathname.startsWith('/api/media/upload');
+  const isCatalogRoute = pathname.startsWith('/catalog-studio');
   const isSovereignRoute = pathname.startsWith('/bh-sovereign-vault') || pathname.startsWith('/api/admin/sovereign');
   const isOrderStatusMutation = pathname.startsWith('/api/orders/') && pathname.endsWith('/status');
 
-  if (isStaffRoute || isOwnerRoute || isSovereignRoute || isOrderStatusMutation) {
+  if (isStaffRoute || isOwnerRoute || isCatalogRoute || isSovereignRoute || isOrderStatusMutation) {
     const {
       data: { user },
       error: userErr,
@@ -54,14 +55,14 @@ export async function middleware(request: NextRequest) {
         );
       }
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = '/auth/login';
+      loginUrl.pathname = isSovereignRoute ? '/auth/login/admin' : isOwnerRoute ? '/auth/login/owner' : isCatalogRoute ? '/auth/login/catalog' : '/auth/login/staff';
       loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
     const { data: profile, error: profErr } = await supabase
       .from('user_profiles')
-      .select('role, is_active, assigned_branch_id')
+      .select('role, is_active, assigned_branch_id, permissions')
       .eq('id', user.id)
       .single();
 
@@ -73,9 +74,19 @@ export async function middleware(request: NextRequest) {
         );
       }
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = '/auth/login';
+      loginUrl.pathname = isSovereignRoute ? '/auth/login/admin' : isOwnerRoute ? '/auth/login/owner' : isCatalogRoute ? '/auth/login/catalog' : '/auth/login/staff';
       loginUrl.searchParams.set('error', 'unauthorized_profile');
+      loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Branch managers use branch-scoped controls in the staff workspace.
+    // The current product/category/add-on records are shared globally, so do not expose the global editor.
+    if (isCatalogRoute && profile.role === 'branch_manager') {
+      const staffUrl = request.nextUrl.clone();
+      staffUrl.pathname = '/staff/orders';
+      staffUrl.searchParams.set('notice', 'branch_catalog_controls');
+      return NextResponse.redirect(staffUrl);
     }
 
     // Strict Role Gate for Sovereign Super Admin Vault
@@ -89,12 +100,19 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Strict Role Gate for Restaurant Owner Studio
-    if (isOwnerRoute && !['super_admin', 'owner'].includes(profile.role)) {
+    // Owner studio remains owner-only; catalog image uploads may use an explicit catalog permission.
+    const hasCatalogPermission = profile.role === 'branch_manager'
+      && Array.isArray((profile as any).permissions)
+      && (profile as any).permissions.includes('catalog_manage');
+    const isCatalogUpload = pathname.startsWith('/api/media/upload');
+    if (isCatalogRoute && !['super_admin', 'owner'].includes(profile.role) && !hasCatalogPermission) {
+      return NextResponse.json({ error: 'CATALOG_PRIVILEGE_REQUIRED', message: 'تحتاج إلى صلاحية إدارة المنتجات والمنيو.' }, { status: 403 });
+    }
+    if (isOwnerRoute && !['super_admin', 'owner'].includes(profile.role) && !(isCatalogUpload && hasCatalogPermission)) {
       return NextResponse.json(
         {
           error: 'OWNER_PRIVILEGE_REQUIRED',
-          message: 'Only the restaurant owner or super_admin can access Owner Studio.'
+          message: 'تحتاج إلى صلاحية إدارة المتجر للوصول إلى هذه العملية.'
         },
         { status: 403 }
       );

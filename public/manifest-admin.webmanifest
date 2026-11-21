@@ -6,7 +6,7 @@
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/bh-sovereign-vault",
-  "scope": "/bh-sovereign-vault",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0A0A0C",

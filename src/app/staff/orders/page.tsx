@@ -4,7 +4,7 @@ import BranchCatalogControls from '@/components/branch-catalog-controls';
 
 import PromoManager from '@/components/promo-manager';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
@@ -28,7 +28,11 @@ export default function StaffLiveOrdersPage() {
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+  const soundEnabledRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const seenOrderCodesRef = useRef<Set<string> | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState('');
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -39,26 +43,52 @@ export default function StaffLiveOrdersPage() {
   const [printOrderCode, setPrintOrderCode] = useState<string | null>(null);
 
   const playChime = useCallback(() => {
-    if (!soundEnabled || typeof window === 'undefined') return;
+    if (!soundEnabledRef.current || !audioUnlockedRef.current) return;
+    const ctx = audioContextRef.current;
+    if (!ctx || ctx.state !== 'running') return;
     try {
-      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.6);
-    } catch {
-      // Ignore audio errors before user gesture
+      const startAt = ctx.currentTime;
+      [659.25, 880, 1046.5].forEach((frequency, index) => {
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const noteStart = startAt + index * 0.14;
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, noteStart);
+        gain.gain.setValueAtTime(0.0001, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.22, noteStart + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.42);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(noteStart);
+        oscillator.stop(noteStart + 0.44);
+      });
+    } catch (error) {
+      console.warn('Order chime could not be played:', error);
     }
-  }, [soundEnabled]);
+  }, []);
+
+  const toggleOrderSound = async () => {
+    if (soundEnabledRef.current) {
+      soundEnabledRef.current = false;
+      setSoundEnabled(false);
+      return;
+    }
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) throw new Error('هذا المتصفح لا يدعم تشغيل الصوت.');
+      if (!audioContextRef.current) audioContextRef.current = new AudioCtx();
+      await audioContextRef.current.resume();
+      audioUnlockedRef.current = audioContextRef.current.state === 'running';
+      if (!audioUnlockedRef.current) throw new Error('لم يسمح المتصفح بتشغيل الصوت. اضغط تفعيل الصوت مرة أخرى.');
+      soundEnabledRef.current = true;
+      setSoundEnabled(true);
+      playChime();
+    } catch (error: any) {
+      soundEnabledRef.current = false;
+      setSoundEnabled(false);
+      setPushMessage(error?.message || 'تعذر تفعيل صوت الطلبات.');
+    }
+  };
 
   const enablePushNotifications = async () => {
     setPushBusy(true);
@@ -78,7 +108,8 @@ export default function StaffLiveOrdersPage() {
       if (permission !== 'granted') throw new Error('لم تسمح بإرسال الإشعارات. فعّلها من إعدادات المتصفح.');
       const registration = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription = existingSubscription || await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: decodeVapidKey(publicKey)
       });
@@ -122,15 +153,43 @@ export default function StaffLiveOrdersPage() {
         return;
       }
       setActorProfile(data.actor_profile);
-      setOrders(data.orders || []);
+      const nextOrders = data.orders || [];
+      const nextCodes = new Set<string>(nextOrders.map((order: any) => String(order.order_code || order.id)));
+      const previouslySeen = seenOrderCodesRef.current;
+      if (previouslySeen === null) {
+        // Establish a baseline on first load; do not sound for old orders.
+        seenOrderCodesRef.current = nextCodes;
+      } else {
+        const arrived = nextOrders.some((order: any) => {
+          const code = String(order.order_code || order.id);
+          return !previouslySeen.has(code) && ['new', 'pending_confirmation'].includes(order.status);
+        });
+        nextCodes.forEach((code) => previouslySeen.add(code));
+        if (arrived) playChime();
+      }
+      setOrders(nextOrders);
     } catch (err: any) {
       setErrorBanner(err?.message || 'تعذر الاتصال بخادم الطلبات');
     }
-  }, []);
+  }, [playChime]);
 
   useEffect(() => {
     fetchLiveOrders();
   }, [fetchLiveOrders]);
+
+  useEffect(() => {
+    if (!actorProfile || !('serviceWorker' in navigator)) return;
+    let active = true;
+    void navigator.serviceWorker.getRegistration('/sw.js')
+      .then((registration) => registration?.pushManager.getSubscription())
+      .then((subscription) => {
+        if (active) setPushEnabled(Boolean(subscription));
+      })
+      .catch(() => {
+        if (active) setPushEnabled(false);
+      });
+    return () => { active = false; };
+  }, [actorProfile]);
 
   useEffect(() => {
     let active = true;
@@ -165,14 +224,17 @@ export default function StaffLiveOrdersPage() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              playChime();
-            }
+          () => {
+            // Only ring for newly observed orders in the branch-authorized list.
+            // Polling and Realtime share the same deduplication set.
             fetchLiveOrders();
           }
         )
-        .subscribe();
+        .subscribe((status, error) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.error('Staff order Realtime subscription issue:', status, error);
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
@@ -180,7 +242,7 @@ export default function StaffLiveOrdersPage() {
     } catch {
       return undefined;
     }
-  }, [fetchLiveOrders, playChime]);
+  }, [fetchLiveOrders]);
 
   /**
    * Server-Authenticated Status Transition:
@@ -272,7 +334,7 @@ export default function StaffLiveOrdersPage() {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <input type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث برقم الطلب أو الجوال" className="col-span-2 min-w-0 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white outline-none placeholder:text-[#777b6b] sm:w-56"/>
-            <button onClick={() => setSoundEnabled((enabled) => !enabled)} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'الصوت يعمل' : 'الصوت صامت'}</button>
+            <button onClick={toggleOrderSound} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'صوت الطلبات يعمل' : 'تفعيل صوت الطلبات'}</button>
             <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-xl bg-[#f5c542] px-3 py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل الإشعارات'}</button>
             <button disabled={pushBusy} onClick={sendTestPush} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8] disabled:opacity-50">اختبار الإشعار</button>
             {actorProfile?.role === "branch_manager" && <a href="/manager/analytics" className="rounded-xl border border-white/10 px-3 py-3 text-center text-xs font-bold text-[#F2B705]">إحصائيات الفرع</a>}
@@ -281,7 +343,15 @@ export default function StaffLiveOrdersPage() {
           </div>
         </div>
       </header>
-      {actorProfile?.role === 'branch_manager' && <><PromoManager /><BranchCatalogControls /></>}
+      {actorProfile?.role === 'branch_manager' && (
+        <details className="mb-5 rounded-2xl border border-[#d8d0c1] bg-white p-4">
+          <summary className="cursor-pointer text-sm font-black text-[#4b3a1d]">إدارة الفرع: توفر المنيو والإعلانات</summary>
+          <div className="mt-4 space-y-4">
+            <BranchCatalogControls />
+            <PromoManager />
+          </div>
+        </details>
+      )}
 
 
       {pushMessage && <div className="mb-4 rounded-lg border border-[#68572b] bg-[#282313] p-3 text-xs font-bold text-[#f2df9d]" role="status">{pushMessage}</div>}
@@ -316,14 +386,15 @@ export default function StaffLiveOrdersPage() {
             const nextStatuses = ((VALID_STATUS_TRANSITIONS as any)[order.status] || []).filter((st: string) => allowedRoleTargets.includes(st));
             const action = primaryAction[order.status];
             const canAdvance = Boolean(action && nextStatuses.includes(action.target));
-            const elapsedMinutes = Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
-            const timeTone = elapsedMinutes >= 20 ? 'bg-red-950/40 text-red-300 border-red-500/30' : elapsedMinutes >= 12 ? 'bg-amber-950/40 text-amber-300 border-amber-500/30' : 'bg-white/5 text-[#9E9BA3] border-white/10';
+            const terminalOrder = ['completed', 'rejected', 'cancelled'].includes(order.status);
+            const elapsedMinutes = terminalOrder ? null : Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
+            const timeTone = elapsedMinutes === null ? 'bg-white/5 text-[#9E9BA3] border-white/10' : elapsedMinutes >= 20 ? 'bg-red-950/40 text-red-300 border-red-500/30' : elapsedMinutes >= 12 ? 'bg-amber-950/40 text-amber-300 border-amber-500/30' : 'bg-white/5 text-[#9E9BA3] border-white/10';
             const sensitiveStatuses = nextStatuses.filter((status: string) => status === 'rejected' || status === 'cancelled');
             return (
               <article key={order.order_code} className={printOrderCode === order.order_code ? "bh-staff-order-card bh-print-order" : "bh-staff-order-card"}>
                 <div className="flex items-center justify-between gap-3 border-b border-[#eeeae2] bg-[#fbfaf7] px-4 py-4">
                   <div><p className="text-[9px] font-black tracking-[.15em] text-[#a65e36]">ORDER NUMBER</p><p className="mt-1 font-mono text-2xl font-black tabular-nums text-[#29251f]">#{order.order_number ?? '—'}</p></div>
-                  <div className="text-left"><span className="inline-flex rounded-full border border-white/10 bg-[#1B1B1F] px-3 py-2 text-[10px] font-black text-[#F2B705]">{(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}</span><p className="mt-2 text-[9px] text-[#9E9BA3]">{order.created_at ? new Date(order.created_at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : ''}</p><div className="mt-2 flex flex-wrap justify-end gap-2"><span className={"rounded-md border px-2 py-1 text-[9px] font-bold tabular-nums " + timeTone}>{elapsedMinutes} دقيقة</span><button type="button" onClick={()=>printOrder(order.order_code)} className="no-print rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold text-[#F2B705]">طباعة 80mm</button></div></div>
+                  <div className="text-left"><span className="inline-flex rounded-full border border-white/10 bg-[#1B1B1F] px-3 py-2 text-[10px] font-black text-[#F2B705]">{(ORDER_STATUS_META as any)[order.status]?.label_ar || order.status}</span><p className="mt-2 text-[9px] text-[#9E9BA3]">{order.created_at ? new Date(order.created_at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}) : ''}</p><div className="mt-2 flex flex-wrap justify-end gap-2"><span className={"rounded-md border px-2 py-1 text-[9px] font-bold tabular-nums " + timeTone}>{elapsedMinutes === null ? '—' : elapsedMinutes + ' دقيقة'}</span><button type="button" onClick={()=>printOrder(order.order_code)} className="no-print rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold text-[#F2B705]">طباعة 80mm</button></div></div>
                 </div>
                 <div className="space-y-4 p-4">
                   <div className="flex items-start justify-between gap-3">

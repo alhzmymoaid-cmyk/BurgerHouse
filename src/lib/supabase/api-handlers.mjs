@@ -331,8 +331,8 @@ export async function handleSovereignAdminRequest({
       .update({
         site_online: Boolean(body.site_online),
         maintenance_mode: Boolean(body.maintenance_mode),
-        maintenance_message_ar: body.maintenance_message_ar || undefined,
-        maintenance_message_en: body.maintenance_message_en || undefined,
+        ...(typeof body.maintenance_message_ar === 'string' ? { maintenance_message_ar: body.maintenance_message_ar.trim().slice(0, 500) } : {}),
+        ...(typeof body.maintenance_message_en === 'string' ? { maintenance_message_en: body.maintenance_message_en.trim().slice(0, 500) } : {}),
         updated_by: superAdmin.id,
         updated_at: new Date().toISOString()
       })
@@ -356,16 +356,63 @@ export async function handleSovereignAdminRequest({
   }
 
   if (action === 'MANAGE_USER_PROFILE_STATUS') {
-    const { target_user_id, is_active, new_role, assigned_branch_id } = body;
+    const { target_user_id, is_active, new_role, assigned_branch_id, permissions } = body;
+    const targetId = String(target_user_id || '').trim();
+    const validRoles = ['owner', 'branch_manager', 'cashier', 'kitchen_staff', 'super_admin'];
+    if (!targetId) return { status: 400, body: { error: 'TARGET_USER_ID_REQUIRED' } };
+    if (new_role && !validRoles.includes(new_role)) return { status: 400, body: { error: 'INVALID_STAFF_ROLE' } };
+
+    const { data: targetRows, error: targetLookupError } = await serviceSupabase
+      .from('user_profiles')
+      .select('id,role,assigned_branch_id')
+      .eq('id', targetId);
+    if (targetLookupError) return { status: 400, body: { error: targetLookupError.message } };
+    const target = Array.isArray(targetRows) ? targetRows[0] : null;
+    if (!target) return { status: 404, body: { error: 'STAFF_PROFILE_NOT_FOUND' } };
+
+    if (targetId === superAdmin.id && (
+      is_active === false || (new_role && new_role !== 'super_admin')
+    )) {
+      return { status: 409, body: { error: 'SUPER_ADMIN_SELF_LOCKOUT_BLOCKED', message_ar: 'لا يمكن تعطيل حساب مدير النظام الحالي أو خفض صلاحيته من الجلسة نفسها.' } };
+    }
+
+    const nextRole = new_role || target.role;
+    let nextBranchId = assigned_branch_id !== undefined ? (assigned_branch_id || null) : target.assigned_branch_id;
+    if (new_role && ['owner', 'super_admin'].includes(new_role) && assigned_branch_id === undefined) {
+      nextBranchId = null;
+    }
+    if (['branch_manager', 'cashier', 'kitchen_staff'].includes(nextRole) && !nextBranchId) {
+      return { status: 400, body: { error: 'BRANCH_REQUIRED_FOR_STAFF_ROLE', message_ar: 'يجب تعيين فرع لهذا الحساب.' } };
+    }
+    if (permissions !== undefined && (!Array.isArray(permissions) || permissions.some((permission) => permission !== 'catalog_manage'))) {
+      return { status: 400, body: { error: 'INVALID_STAFF_PERMISSIONS' } };
+    }
+    if (permissions !== undefined && nextRole !== 'branch_manager' && permissions.length) {
+      return { status: 400, body: { error: 'PERMISSIONS_REQUIRE_BRANCH_MANAGER_ROLE' } };
+    }
+    if (nextBranchId) {
+      const { data: branchRows, error: branchLookupError } = await serviceSupabase
+        .from('branches').select('id').eq('id', nextBranchId);
+      if (branchLookupError) return { status: 400, body: { error: branchLookupError.message } };
+      if (!Array.isArray(branchRows) || !branchRows.length) return { status: 400, body: { error: 'BRANCH_NOT_FOUND' } };
+    }
+
     const updatePayload = { updated_at: new Date().toISOString() };
     if (typeof is_active === 'boolean') updatePayload.is_active = is_active;
     if (new_role) updatePayload.role = new_role;
-    if (assigned_branch_id !== undefined) updatePayload.assigned_branch_id = assigned_branch_id;
+    if (assigned_branch_id !== undefined || (new_role && ['owner', 'super_admin'].includes(new_role))) {
+      updatePayload.assigned_branch_id = nextBranchId;
+    }
+    if (permissions !== undefined) {
+      updatePayload.permissions = nextRole === 'branch_manager' && permissions.includes('catalog_manage') ? ['catalog_manage'] : [];
+    } else if (new_role) {
+      updatePayload.permissions = [];
+    }
 
     const { data, error } = await serviceSupabase
       .from('user_profiles')
       .update(updatePayload)
-      .eq('id', target_user_id)
+      .eq('id', targetId)
       .select('*')
       .single();
 
@@ -377,7 +424,7 @@ export async function handleSovereignAdminRequest({
       actor_role: superAdmin.role,
       action: 'MANAGE_USER_PROFILE_STATUS',
       target_type: 'user_profile',
-      target_id: target_user_id,
+      target_id: targetId,
       metadata: updatePayload
     });
 
@@ -480,7 +527,7 @@ export async function handleOwnerAdminRequest({
   serviceSupabase,
   body
 }) {
-  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner']);
+  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner', 'branch_manager']);
   if (!authCheck.ok) {
     return {
       status: authCheck.status,
@@ -490,6 +537,19 @@ export async function handleOwnerAdminRequest({
 
   const actor = authCheck.profile;
   const action = body?.action;
+  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON']);
+  if (actor.role === 'branch_manager') {
+    return {
+      status: 403,
+      body: {
+        error: 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED',
+        message_ar: 'لا يمكن تعديل بيانات المنيو العامة من حساب مدير الفرع؛ لأنها مشتركة بين الفروع. استخدم أدوات توفر المنيو الخاصة بفرعك حتى تتوفر إدارة مستقلة لمنتجات كل فرع.'
+      }
+    };
+  }
+  if (actor.role === 'branch_manager' && !catalogActions.has(action)) {
+    return { status: 403, body: { error: 'CATALOG_ACTION_FORBIDDEN', message_ar: 'هذه العملية خارج صلاحية إدارة المنيو.' } };
+  }
 
   if (action === 'TOGGLE_PAYMENT_METHOD') {
     const { payment_method_id, is_enabled } = body;
@@ -563,6 +623,39 @@ export async function handleOwnerAdminRequest({
     const productData = { ...(body.product || {}) };
     const sizes = Array.isArray(productData.sizes) ? productData.sizes : null;
     delete productData.sizes;
+
+    let sizeRows = null;
+    if (sizes !== null) {
+      sizeRows = sizes.map((size, index) => ({
+        id: String(size.id || '').trim(),
+        product_id: String(productData.id || ''),
+        name_ar: String(size.name_ar || '').trim(),
+        name_en: String(size.name_en || '').trim(),
+        price_delta: Number(size.price_delta ?? 0),
+        is_default: Boolean(size.is_default),
+        sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
+      }));
+      if (sizeRows.some((size) => !size.id || !size.name_ar || !size.name_en || !Number.isFinite(size.price_delta))) {
+        return { status: 400, body: { error: 'INVALID_PRODUCT_SIZE_FIELDS' } };
+      }
+      if (new Set(sizeRows.map((size) => size.id)).size !== sizeRows.length) {
+        return { status: 400, body: { error: 'DUPLICATE_PRODUCT_SIZE_IDS' } };
+      }
+      if (sizeRows.length && !sizeRows.some((size) => size.is_default)) sizeRows[0].is_default = true;
+      if (sizeRows.filter((size) => size.is_default).length > 1) {
+        return { status: 400, body: { error: 'MULTIPLE_DEFAULT_PRODUCT_SIZES' } };
+      }
+      const sizeIds = sizeRows.map((size) => size.id);
+      if (sizeIds.length) {
+        const { data: conflictingSizes, error: conflictLookupError } = await serviceSupabase
+          .from('product_sizes').select('id,product_id').in('id', sizeIds);
+        if (conflictLookupError) return { status: 400, body: { error: conflictLookupError.message } };
+        if ((conflictingSizes || []).some((size) => size.product_id !== productData.id)) {
+          return { status: 409, body: { error: 'PRODUCT_SIZE_ID_BELONGS_TO_ANOTHER_PRODUCT' } };
+        }
+      }
+    }
+
     const { data, error } = await serviceSupabase
       .from('products')
       .upsert({ ...productData, updated_at: new Date().toISOString() }, { onConflict: 'id' })
@@ -571,21 +664,23 @@ export async function handleOwnerAdminRequest({
 
     if (error) return { status: 400, body: { error: error.message } };
 
-    if (sizes && sizes.length) {
-      const sizeRows = sizes.map((size, index) => ({
-        id: String(size.id || ''),
-        product_id: data.id,
-        name_ar: String(size.name_ar || '').trim(),
-        name_en: String(size.name_en || '').trim(),
-        price_delta: Number(size.price_delta || 0),
-        is_default: Boolean(size.is_default),
-        sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
-      })).filter((size) => size.id && size.name_ar && size.name_en);
+    if (sizeRows !== null) {
+      // Upsert desired sizes before removing stale ones. A failed write therefore
+      // cannot erase the product's previously working size options.
       if (sizeRows.length) {
         const { error: sizesError } = await serviceSupabase
-          .from('product_sizes')
-          .upsert(sizeRows, { onConflict: 'id' });
+          .from('product_sizes').upsert(sizeRows.map((size) => ({ ...size, product_id: data.id })), { onConflict: 'id' });
         if (sizesError) return { status: 400, body: { error: sizesError.message } };
+      }
+      const { data: currentSizes, error: currentSizesError } = await serviceSupabase
+        .from('product_sizes').select('id').eq('product_id', data.id);
+      if (currentSizesError) return { status: 400, body: { error: currentSizesError.message } };
+      const desiredIds = new Set(sizeRows.map((size) => size.id));
+      const staleIds = (currentSizes || []).map((size) => size.id).filter((id) => !desiredIds.has(id));
+      if (staleIds.length) {
+        const { error: staleDeleteError } = await serviceSupabase
+          .from('product_sizes').delete().eq('product_id', data.id).in('id', staleIds);
+        if (staleDeleteError) return { status: 400, body: { error: staleDeleteError.message } };
       }
     }
 
@@ -596,10 +691,27 @@ export async function handleOwnerAdminRequest({
       action: 'UPSERT_PRODUCT',
       target_type: 'product',
       target_id: data.id,
-      metadata: { base_price: data.base_price, sizes_saved: sizes?.length || 0 }
+      metadata: { base_price: data.base_price, sizes_saved: sizeRows?.length || 0 }
     });
 
     return { status: 200, body: { ok: true, product: data } };
+  }
+
+  if (action === 'DELETE_PRODUCT') {
+    const productId = String(body.product_id || '');
+    if (!productId) return { status: 400, body: { error: 'PRODUCT_ID_REQUIRED' } };
+    const { count, error: usageError } = await serviceSupabase.from('order_items').select('id', { count: 'exact', head: true }).eq('product_id', productId);
+    if (usageError) return { status: 400, body: { error: usageError.message } };
+    if ((count || 0) > 0) {
+      const { error } = await serviceSupabase.from('products').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', productId);
+      if (error) return { status: 400, body: { error: error.message } };
+      await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'ARCHIVE_PRODUCT', target_type: 'product', target_id: productId, metadata: { reason: 'historical_order_items', usage_count: count } });
+      return { status: 200, body: { ok: true, archived: true, message_ar: 'المنتج مرتبط بطلبات سابقة؛ تم أرشفته للحفاظ على سجل الطلبات.' } };
+    }
+    const { error } = await serviceSupabase.from('products').delete().eq('id', productId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_PRODUCT', target_type: 'product', target_id: productId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
   }
 
   if (action === 'DEACTIVATE_PRODUCT') {
@@ -641,6 +753,24 @@ export async function handleOwnerAdminRequest({
     return { status: 200, body: { ok: true, category: data } };
   }
 
+  if (action === 'DELETE_CATEGORY') {
+    const categoryId = String(body.category_id || '');
+    if (!categoryId) return { status: 400, body: { error: 'CATEGORY_ID_REQUIRED' } };
+    const { count, error: usageError } = await serviceSupabase.from('products').select('id', { count: 'exact', head: true }).eq('category_id', categoryId);
+    if (usageError) return { status: 400, body: { error: usageError.message } };
+    if ((count || 0) > 0) {
+      const { error } = await serviceSupabase.from('categories').update({ is_active: false }).eq('id', categoryId);
+      if (error) return { status: 400, body: { error: error.message } };
+      await serviceSupabase.from('products').update({ is_active: false, updated_at: new Date().toISOString() }).eq('category_id', categoryId);
+      await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'ARCHIVE_CATEGORY', target_type: 'category', target_id: categoryId, metadata: { products_archived: count } });
+      return { status: 200, body: { ok: true, archived: true, message_ar: 'القسم يحتوي منتجات؛ تم أرشفته وإخفاء منتجاته من المنيو.' } };
+    }
+    const { error } = await serviceSupabase.from('categories').delete().eq('id', categoryId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_CATEGORY', target_type: 'category', target_id: categoryId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
+  }
+
   if (action === 'DEACTIVATE_CATEGORY') {
     const categoryId = String(body.category_id || '');
     if (!categoryId) return { status: 400, body: { error: 'CATEGORY_ID_REQUIRED' } };
@@ -677,6 +807,25 @@ export async function handleOwnerAdminRequest({
     return { status: 200, body: { ok: true, addon: data } };
   }
 
+  if (action === 'DELETE_ADDON') {
+    const addonId = String(body.addon_id || '');
+    if (!addonId) return { status: 400, body: { error: 'ADDON_ID_REQUIRED' } };
+    const { data: products, error: productsError } = await serviceSupabase.from('products').select('id,allowed_addon_ids');
+    if (productsError) return { status: 400, body: { error: productsError.message } };
+    for (const product of products || []) {
+      const currentIds = product.allowed_addon_ids || [];
+      const nextIds = currentIds.filter((id) => id !== addonId);
+      if (nextIds.length !== currentIds.length) {
+        const { error } = await serviceSupabase.from('products').update({ allowed_addon_ids: nextIds, updated_at: new Date().toISOString() }).eq('id', product.id);
+        if (error) return { status: 400, body: { error: error.message } };
+      }
+    }
+    const { error } = await serviceSupabase.from('product_addons').delete().eq('id', addonId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_ADDON', target_type: 'product_addon', target_id: addonId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
+  }
+
   if (action === 'DEACTIVATE_ADDON') {
     const addonId = String(body.addon_id || '');
     if (!addonId) return { status: 400, body: { error: 'ADDON_ID_REQUIRED' } };
@@ -706,23 +855,78 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'MANAGE_STAFF_MEMBER') {
-    const staff = body.staff;
-    // Owner can NEVER create or modify a super_admin or owner profile
-    if (actor.role === 'owner' && !['branch_manager', 'cashier', 'kitchen_staff'].includes(staff.role)) {
-      return {
-        status: 403,
-        body: { error: 'OWNER_CANNOT_ASSIGN_PRIVILEGED_ROLE' }
+    const staff = body.staff && typeof body.staff === 'object' ? body.staff : null;
+    if (!staff || !String(staff.id || '').trim()) {
+      return { status: 400, body: { error: 'STAFF_PROFILE_ID_REQUIRED' } };
+    }
+
+    let staffPayload = staff;
+    if (actor.role === 'owner') {
+      const allowedStaffRoles = ['branch_manager', 'cashier', 'kitchen_staff'];
+      if (!allowedStaffRoles.includes(staff.role)) {
+        return { status: 403, body: { error: 'OWNER_CANNOT_ASSIGN_PRIVILEGED_ROLE' } };
+      }
+
+      // Check the existing role as well as the submitted role. Otherwise an owner
+      // could demote an existing owner/super_admin by submitting a lower role.
+      const { data: existingStaffRows, error: lookupError } = await serviceSupabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', staff.id);
+      if (lookupError) return { status: 400, body: { error: lookupError.message } };
+      const existingStaff = Array.isArray(existingStaffRows) ? existingStaffRows[0] : null;
+      if (existingStaff && !allowedStaffRoles.includes(existingStaff.role)) {
+        return { status: 403, body: { error: 'OWNER_CANNOT_MODIFY_PRIVILEGED_PROFILE' } };
+      }
+
+      // Owners may update operational staff fields only; permissions and other
+      // privileged profile attributes remain under Super Admin control.
+      staffPayload = {
+        id: staff.id,
+        email: String(staff.email || '').trim().toLowerCase(),
+        full_name: String(staff.full_name || '').trim(),
+        role: staff.role,
+        assigned_branch_id: staff.assigned_branch_id || null,
+        is_active: staff.is_active !== false,
+        updated_at: new Date().toISOString()
       };
+      if (!staffPayload.email || !staffPayload.full_name) {
+        return { status: 400, body: { error: 'STAFF_PROFILE_FIELDS_REQUIRED' } };
+      }
     }
 
     const { data, error } = await serviceSupabase
       .from('user_profiles')
-      .upsert(staff, { onConflict: 'id' })
+      .upsert(staffPayload, { onConflict: 'id' })
       .select('*')
       .single();
 
     if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id,
+      actor_name: actor.full_name,
+      actor_role: actor.role,
+      action: 'MANAGE_STAFF_MEMBER',
+      target_type: 'user_profile',
+      target_id: data.id,
+      metadata: { role: data.role, assigned_branch_id: data.assigned_branch_id, is_active: data.is_active }
+    });
     return { status: 200, body: { ok: true, staff: data } };
+  }
+
+  if (action === 'UPDATE_SITE_COPY') {
+    const allowedKeys = ['heroKickerAr','heroTitleAr','heroTitleAccentAr','heroLeadAr','heroCtaAr','heroBranchesCtaAr','announcementAr','footerDescriptionAr','menuTitleAr','menuSubtitleAr'];
+    const incoming = body.copy && typeof body.copy === 'object' ? body.copy : {};
+    const copy = Object.fromEntries(allowedKeys.filter((key) => Object.prototype.hasOwnProperty.call(incoming, key)).map((key) => [key, String(incoming[key] || '').trim().slice(0, 220)]));
+    if (!Object.keys(copy).length) return { status: 400, body: { error: 'SITE_COPY_EMPTY' } };
+    const { data: current, error: readError } = await serviceSupabase.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single();
+    if (readError || !current) return { status: 400, body: { error: readError?.message || 'SITE_SETTINGS_NOT_FOUND' } };
+    const nextDraft = { ...(current.draft_theme || {}), ...copy };
+    const nextPublished = { ...(current.published_theme || {}), ...copy };
+    const { data, error } = await serviceSupabase.from('system_settings').update({ draft_theme: nextDraft, published_theme: nextPublished, updated_at: new Date().toISOString(), updated_by: actor.id }).eq('id', 1).select('draft_theme,published_theme').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'UPDATE_SITE_COPY', target_type: 'system_settings', target_id: '1', metadata: { changed_fields: Object.keys(copy) } });
+    return { status: 200, body: { ok: true, settings: data } };
   }
 
   if (action === 'UPDATE_THEME_CONFIG') {
@@ -760,11 +964,20 @@ export async function handleMediaUploadRequest({
   fileBuffer,
   productId = null
 }) {
-  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner']);
+  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner', 'branch_manager']);
   if (!authCheck.ok) {
     return {
       status: authCheck.status,
       body: { error: authCheck.code, message: authCheck.message }
+    };
+  }
+  if (authCheck.profile.role === 'branch_manager') {
+    return {
+      status: 403,
+      body: {
+        error: 'BRANCH_MEDIA_SCOPE_NOT_IMPLEMENTED',
+        message: 'رفع صور المنتجات من مدير الفرع متوقف مؤقتًا لأن المنتجات الحالية مشتركة بين الفروع.'
+      }
     };
   }
 

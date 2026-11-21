@@ -31,7 +31,14 @@ export async function POST() {
         return false;
       }
     }));
-    return NextResponse.json({ ok: results.some(Boolean), sent: results.filter(Boolean).length });
+    const sent = results.filter(Boolean).length;
+    if (sent === 0) {
+      return NextResponse.json({
+        error: 'PUSH_DELIVERY_FAILED',
+        message_ar: 'لم يصل إشعار الاختبار إلى أي جهاز. تحقق من اشتراك الجهاز ومفاتيح الإشعارات.'
+      }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true, sent });
   } catch (error: any) {
     return NextResponse.json({ error: 'PUSH_TEST_FAILED', message: error?.message || 'تعذر إرسال إشعار الاختبار.' }, { status: 500 });
   }

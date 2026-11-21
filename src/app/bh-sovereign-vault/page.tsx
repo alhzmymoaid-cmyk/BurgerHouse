@@ -72,6 +72,21 @@ export default function SovereignSuperAdminVaultPage(){
         <button onClick={()=>void loadSovereignData()} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold"><RefreshCw size={14}/> تحديث البيانات</button>
       </div>
     </header>
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <a href="/catalog-studio" className="group rounded-2xl border border-[#F2B705]/35 bg-[#1B1B1F] p-5 transition hover:border-[#F2B705] hover:bg-[#222226]">
+        <div className="flex items-center justify-between gap-3">
+          <div><span className="text-[10px] font-bold tracking-[.14em] text-[#F2B705]">CATALOG CONTROL</span><h2 className="mt-2 text-base font-bold text-[#F6F3EC]">إدارة المنتجات والمنيو</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">المنتجات، الأقسام، الأسعار، الأحجام، الإضافات، الصور وإعلانات المتجر.</p></div>
+          <span aria-hidden="true" className="text-2xl text-[#F2B705]">←</span>
+        </div>
+        <span className="mt-4 inline-flex rounded-lg bg-[#F2B705] px-4 py-2.5 text-xs font-black text-[#0A0A0C]">فتح إدارة المنيو</span>
+      </a>
+      <a href="/owner-studio" className="rounded-2xl border border-white/10 bg-[#141417] p-5 transition hover:border-white/25">
+        <span className="text-[10px] font-bold tracking-[.14em] text-[#A1A1AA]">OWNER CONTROL</span><h2 className="mt-2 text-base font-bold">لوحة المالك</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">الفروع، وسائل الدفع، التحليلات وإعدادات المتجر.</p><span className="mt-4 inline-flex text-xs font-bold text-[#F2B705]">فتح لوحة المالك ←</span>
+      </a>
+      <a href="/staff/orders" className="rounded-2xl border border-white/10 bg-[#141417] p-5 transition hover:border-white/25">
+        <span className="text-[10px] font-bold tracking-[.14em] text-[#A1A1AA]">STAFF OPERATIONS</span><h2 className="mt-2 text-base font-bold">واجهة تشغيل الموظفين</h2><p className="mt-2 text-xs leading-6 text-[#A1A1AA]">مراجعة شاشة الطلبات وسير العمل التشغيلي للفرع.</p><span className="mt-4 inline-flex text-xs font-bold text-[#F2B705]">فتح واجهة الموظفين ←</span>
+      </a>
+    </section>
     <PromoManager />
     {notice&&<p role="status" className="rounded-lg border border-white/10 bg-[#141417] p-3 text-xs text-[#F2B705]">{notice}</p>}
 
@@ -106,10 +121,11 @@ export default function SovereignSuperAdminVaultPage(){
           <div className="flex gap-2"><select value={newStaff.assigned_branch_id} onChange={e=>setNewStaff(v=>({...v,assigned_branch_id:e.target.value}))} className={field}><option value="">اختر الفرع</option>{(vaultData.branches||[]).map((branch:any)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select><button disabled={busy} className="shrink-0 rounded-lg bg-[#F2B705] px-4 text-xs font-bold text-[#0A0A0C] disabled:opacity-50">إضافة</button></div>
           <p className="text-[10px] leading-5 text-[#9E9BA3] sm:col-span-2 xl:col-span-5">أنشئ حساب الدخول ثم سلّم كلمة المرور المؤقتة للموظف بطريقة آمنة. يمكن تغيير الصلاحية والفرع أو إيقاف الحساب من القائمة أدناه.</p>
         </form>
-        <div className="mt-4 space-y-2">{(vaultData.user_profiles||[]).map((staff:any)=><article key={staff.id} className="grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3 lg:grid-cols-[1.2fr_1fr_1fr_auto] lg:items-center">
+        <div className="mt-4 space-y-2">{(vaultData.user_profiles||[]).map((staff:any)=><article key={staff.id} className="grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto] lg:items-center">
           <div><b className="text-xs">{staff.full_name}</b><p className="mt-1 text-[10px] text-[#9E9BA3]" dir="ltr">{staff.email}</p></div>
-          <select value={staff.role} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,new_role:e.target.value})} className={field}>{roles.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select>
-          <select value={staff.assigned_branch_id||''} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,assigned_branch_id:e.target.value||null})} className={field}><option value="">بدون فرع محدد</option>{(vaultData.branches||[]).map((branch:any)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select>
+          <select disabled={busy||staff.id===vaultData.super_admin?.id} value={staff.role} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,new_role:e.target.value})} className={field}>{roles.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select>
+          <select disabled={busy||staff.id===vaultData.super_admin?.id} value={staff.assigned_branch_id||''} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,assigned_branch_id:e.target.value||null})} className={field}><option value="">بدون فرع محدد</option>{(vaultData.branches||[]).map((branch:any)=><option key={branch.id} value={branch.id}>{branch.name_ar}</option>)}</select>
+          {staff.role==='branch_manager'?<label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-[#E4E4E7]"><input type="checkbox" disabled={busy||staff.id===vaultData.super_admin?.id} checked={Array.isArray(staff.permissions)&&staff.permissions.includes('catalog_manage')} onChange={e=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,permissions:e.target.checked?['catalog_manage']:[]})}/> إدارة المنتجات والمنيو</label>:<span className="text-[10px] text-[#71717A]">—</span>}
           <button disabled={busy||staff.id===vaultData.super_admin?.id} onClick={()=>void executeSovereignAction({action:'MANAGE_USER_PROFILE_STATUS',target_user_id:staff.id,is_active:!staff.is_active})} className={staff.is_active?'rounded-lg border border-red-500/30 px-3 py-2 text-[10px] text-red-300':'rounded-lg border border-emerald-500/30 px-3 py-2 text-[10px] text-emerald-300'}>{staff.is_active?'إيقاف الحساب':'تفعيل الحساب'}</button>
         </article>)}</div>
       </section>

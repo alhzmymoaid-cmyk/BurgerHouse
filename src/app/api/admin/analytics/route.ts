@@ -49,7 +49,7 @@ export async function GET() {
         : service.from('customer_profiles').select('id', { count: 'exact', head: true })
     ]);
 
-    if (totalRes.error || completedRes.error || rejectedRes.error || monthOrdersRes.error) {
+    if (totalRes.error || completedRes.error || rejectedRes.error || monthOrdersRes.error || branchesRes.error || customersRes.error) {
       throw new Error('ANALYTICS_QUERY_FAILED');
     }
 

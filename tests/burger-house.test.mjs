@@ -836,6 +836,133 @@ test('5. Cross-Branch Isolation: Staff Cannot View or Transition Another Branch 
   assert.equal(crossBranchAttempt.body.error, 'CROSS_BRANCH_ACCESS_DENIED');
 });
 
+test('Owner cannot demote or overwrite an existing privileged profile through staff management', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const ownerClient = cloud.createClientInstance('uid-owner');
+  const serviceClient = cloud.createClientInstance('uid-super-admin');
+
+  const attempt = await handleOwnerAdminRequest({
+    authSupabase: ownerClient,
+    serviceSupabase: serviceClient,
+    body: {
+      action: 'MANAGE_STAFF_MEMBER',
+      staff: {
+        id: 'uid-super-admin',
+        email: 'creator@burgerhouse.sa',
+        full_name: 'Changed by owner',
+        role: 'cashier',
+        assigned_branch_id: 'br-jed-sultan',
+        is_active: true,
+        permissions: ['*']
+      }
+    }
+  });
+
+  assert.equal(attempt.status, 403);
+  assert.equal(attempt.body.error, 'OWNER_CANNOT_MODIFY_PRIVILEGED_PROFILE');
+  assert.equal(cloud.user_profiles.find((profile) => profile.id === 'uid-super-admin').role, 'super_admin');
+});
+
+test('Sovereign admin cannot demote or deactivate its own active account', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'MANAGE_USER_PROFILE_STATUS',
+      target_user_id: 'uid-super-admin',
+      new_role: 'owner'
+    }
+  });
+
+  assert.equal(result.status, 409);
+  assert.equal(result.body.error, 'SUPER_ADMIN_SELF_LOCKOUT_BLOCKED');
+  const profile = cloud.user_profiles.find((row) => row.id === 'uid-super-admin');
+  assert.equal(profile.role, 'super_admin');
+  assert.equal(profile.is_active, true);
+});
+
+test('Sovereign admin can clear a previously saved maintenance message', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'SET_SYSTEM_AVAILABILITY',
+      site_online: true,
+      maintenance_mode: false,
+      maintenance_message_ar: ''
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(cloud.system_settings[0].maintenance_message_ar, '');
+});
+
+test('Super Admin can explicitly grant catalog management to a branch manager', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'MANAGE_USER_PROFILE_STATUS',
+      target_user_id: 'uid-mgr-sultan',
+      permissions: ['catalog_manage']
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.profile.permissions, ['catalog_manage']);
+});
+
+test('Branch manager cannot mutate shared global catalog records', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const manager = cloud.user_profiles.find((profile) => profile.id === 'uid-mgr-sultan');
+  manager.permissions = ['catalog_manage'];
+  const managerClient = cloud.createClientInstance('uid-mgr-sultan');
+  const serviceClient = cloud.createClientInstance('uid-super-admin');
+
+  for (const body of [
+    { action: 'UPSERT_PRODUCT', product: { id: 'prd-wagyu-smash', name_ar: 'تغيير عام' } },
+    { action: 'DELETE_PRODUCT', product_id: 'prd-wagyu-smash' },
+    { action: 'UPSERT_CATEGORY', category: { id: 'cat-burgers', name_ar: 'قسم عام', name_en: 'Global' } },
+    { action: 'UPSERT_ADDON', addon: { id: 'addon-cheese', name_ar: 'جبن', name_en: 'Cheese', price: 1 } }
+  ]) {
+    const result = await handleOwnerAdminRequest({
+      authSupabase: managerClient,
+      serviceSupabase: serviceClient,
+      body
+    });
+    assert.equal(result.status, 403);
+    assert.equal(result.body.error, 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED');
+  }
+});
+
+test('Branch manager catalog permission does not allow global homepage copy changes', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const manager = cloud.user_profiles.find((profile) => profile.id === 'uid-mgr-sultan');
+  manager.permissions = ['catalog_manage'];
+  const managerClient = cloud.createClientInstance('uid-mgr-sultan');
+
+  const result = await handleOwnerAdminRequest({
+    authSupabase: managerClient,
+    serviceSupabase: managerClient,
+    body: {
+      action: 'UPDATE_SITE_COPY',
+      copy: { heroTitleAr: 'Unauthorized global change' }
+    }
+  });
+
+  assert.equal(result.status, 403);
+  assert.equal(result.body.error, 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED');
+});
+
 test('6. Owner Blocked from Sovereign Super Admin API Even When Spoofing Body Actor', async () => {
   const cloud = new SharedSupabaseCloudState();
   const ownerClient = cloud.createClientInstance('uid-owner'); // Authenticated as 'owner'

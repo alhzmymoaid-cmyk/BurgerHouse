@@ -156,7 +156,8 @@ export default function StorefrontAdminEditor(){
     finally{setBusy(false);}
   };
 
-  if(!profile||!['super_admin','owner'].includes(profile.role))return null;
+  const canManageCatalog = Boolean(profile && (['super_admin','owner'].includes(profile.role) || (profile.role === 'branch_manager' && Array.isArray(profile.permissions) && profile.permissions.includes('catalog_manage'))));
+  if(!canManageCatalog)return null;
 
   return <>
     {!enabled?<button type="button" onClick={()=>setEnabled(true)} className="fixed bottom-24 right-4 z-[85] rounded-xl border border-[#F2B705]/50 bg-[#141417] px-4 py-3 text-xs font-bold text-[#F2B705] shadow-xl">تعديل المتجر والمنيو</button>

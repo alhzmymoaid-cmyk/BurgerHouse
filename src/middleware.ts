@@ -89,12 +89,16 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Strict Role Gate for Restaurant Owner Studio
-    if (isOwnerRoute && !['super_admin', 'owner'].includes(profile.role)) {
+    // Owner studio remains owner-only; catalog image uploads may use an explicit catalog permission.
+    const hasCatalogPermission = profile.role === 'branch_manager'
+      && Array.isArray((profile as any).permissions)
+      && (profile as any).permissions.includes('catalog_manage');
+    const isCatalogUpload = pathname.startsWith('/api/media/upload');
+    if (isOwnerRoute && !['super_admin', 'owner'].includes(profile.role) && !(isCatalogUpload && hasCatalogPermission)) {
       return NextResponse.json(
         {
           error: 'OWNER_PRIVILEGE_REQUIRED',
-          message: 'Only the restaurant owner or super_admin can access Owner Studio.'
+          message: 'تحتاج إلى صلاحية إدارة المتجر للوصول إلى هذه العملية.'
         },
         { status: 403 }
       );

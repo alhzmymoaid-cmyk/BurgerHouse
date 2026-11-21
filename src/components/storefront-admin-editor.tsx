@@ -191,7 +191,7 @@ export default function StorefrontAdminEditor(){
     </div>}
 
     {open&&<div className="fixed inset-0 z-[110] overflow-x-hidden overflow-y-auto bg-black/75 p-2 sm:p-4" dir="rtl">
-      <section className="mx-auto my-2 w-full max-w-4xl overflow-x-hidden rounded-2xl border border-white/10 bg-[#141417] p-3 text-[#F6F3EC] shadow-2xl sm:p-5">
+      <section className="mx-auto my-2 w-full max-h-[calc(100dvh-1rem)] max-w-4xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#141417] p-3 text-[#F6F3EC] shadow-2xl sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.16em] text-[#F2B705]">VISUAL STORE EDITOR</span><h2 className="mt-1 text-xl font-bold">إدارة المتجر والمنيو</h2></div><button onClick={()=>{setOpen(false);setEditing(false);}} className="rounded-lg border border-white/10 px-3 py-2 text-xs">إغلاق</button></div>
         <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10 pb-4">
           {(['products','categories','addons','promos'] as const).map(key=><button key={key} onClick={()=>{setTab(key);setError('');setMessage('');}} className={tab===key?'rounded-lg bg-[#F2B705] px-4 py-2 text-xs font-bold text-[#0A0A0C]':'rounded-lg border border-white/10 px-4 py-2 text-xs text-[#D4D4D8]'}>{key==='products'?'المنتجات':key==='categories'?'الأقسام':key==='addons'?'الإضافات':'الإعلانات'}</button>)}

@@ -74,8 +74,9 @@ export async function middleware(request: NextRequest) {
         );
       }
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = '/auth/login';
+      loginUrl.pathname = isSovereignRoute ? '/auth/login/admin' : isOwnerRoute ? '/auth/login/owner' : isCatalogRoute ? '/auth/login/catalog' : '/auth/login/staff';
       loginUrl.searchParams.set('error', 'unauthorized_profile');
+      loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
     }
 

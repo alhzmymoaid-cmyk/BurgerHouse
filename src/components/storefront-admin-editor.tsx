@@ -36,7 +36,7 @@ export default function StorefrontAdminEditor(){
     try{
       const {data:{user}}=await createSupabaseBrowserClient().auth.getUser();
       if(!user)return;
-      const response=await fetch('/api/admin/owner',{cache:'no-store',credentials:'same-origin'});
+      const response=await fetch('/api/admin/catalog',{cache:'no-store',credentials:'same-origin'});
       if(!response.ok)return;
       const result=await response.json();
       if(!['super_admin','owner'].includes(result.profile?.role))return;
@@ -50,7 +50,7 @@ export default function StorefrontAdminEditor(){
   useEffect(()=>{void load();},[load]);
 
   const callAction=async(payload:any)=>{
-    const response=await fetch('/api/admin/owner',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
+    const response=await fetch('/api/admin/catalog',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
     const result=await response.json();
     if(!response.ok)throw new Error(result.message_ar||result.error||'تعذر حفظ التغيير.');
     return result;

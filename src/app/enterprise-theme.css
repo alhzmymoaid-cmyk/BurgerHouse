@@ -399,3 +399,40 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
 .bh-orders .bh-order-status-banner p {
   margin-top:6px;color:#E8D8B8!important;font-size:15px;font-weight:600;
 }
+
+
+/* Product card final surface: one consistent dark palette, no light/white layers */
+.bh-storefront #menu-section .bh-v2-product-card,
+.bh-storefront #menu-section article.bh-v2-product-card {
+  background:#211E19!important;
+  background-color:#211E19!important;
+  background-image:none!important;
+  border:1px solid rgba(226,213,190,.16)!important;
+  color:#F2EEE6!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-photo,
+.bh-storefront #menu-section .bh-v2-product-card > button.bh-v2-product-photo {
+  background:#171619!important;
+  background-color:#171619!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-info {
+  background:#211E19!important;
+  background-color:#211E19!important;
+  background-image:none!important;
+  color:#F2EEE6!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-info h4,
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-title,
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-title * {
+  color:#F2EEE6!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-info p,
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-bottom > span {
+  color:#AAA39A!important;
+}
+.bh-storefront #menu-section .bh-v2-product-card .bh-v2-product-title > span {
+  color:#D6A84F!important;
+}

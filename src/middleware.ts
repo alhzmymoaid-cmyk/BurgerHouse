@@ -80,6 +80,15 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    // Branch managers use branch-scoped controls in the staff workspace.
+    // The current product/category/add-on records are shared globally, so do not expose the global editor.
+    if (isCatalogRoute && profile.role === 'branch_manager') {
+      const staffUrl = request.nextUrl.clone();
+      staffUrl.pathname = '/staff/orders';
+      staffUrl.searchParams.set('notice', 'branch_catalog_controls');
+      return NextResponse.redirect(staffUrl);
+    }
+
     // Strict Role Gate for Sovereign Super Admin Vault
     if (isSovereignRoute && profile.role !== 'super_admin') {
       return NextResponse.json(

@@ -357,15 +357,51 @@ export async function handleSovereignAdminRequest({
 
   if (action === 'MANAGE_USER_PROFILE_STATUS') {
     const { target_user_id, is_active, new_role, assigned_branch_id } = body;
+    const targetId = String(target_user_id || '').trim();
+    const validRoles = ['owner', 'branch_manager', 'cashier', 'kitchen_staff', 'super_admin'];
+    if (!targetId) return { status: 400, body: { error: 'TARGET_USER_ID_REQUIRED' } };
+    if (new_role && !validRoles.includes(new_role)) return { status: 400, body: { error: 'INVALID_STAFF_ROLE' } };
+
+    const { data: targetRows, error: targetLookupError } = await serviceSupabase
+      .from('user_profiles')
+      .select('id,role,assigned_branch_id')
+      .eq('id', targetId);
+    if (targetLookupError) return { status: 400, body: { error: targetLookupError.message } };
+    const target = Array.isArray(targetRows) ? targetRows[0] : null;
+    if (!target) return { status: 404, body: { error: 'STAFF_PROFILE_NOT_FOUND' } };
+
+    if (targetId === superAdmin.id && (
+      is_active === false || (new_role && new_role !== 'super_admin')
+    )) {
+      return { status: 409, body: { error: 'SUPER_ADMIN_SELF_LOCKOUT_BLOCKED', message_ar: 'لا يمكن تعطيل حساب مدير النظام الحالي أو خفض صلاحيته من الجلسة نفسها.' } };
+    }
+
+    const nextRole = new_role || target.role;
+    let nextBranchId = assigned_branch_id !== undefined ? (assigned_branch_id || null) : target.assigned_branch_id;
+    if (new_role && ['owner', 'super_admin'].includes(new_role) && assigned_branch_id === undefined) {
+      nextBranchId = null;
+    }
+    if (['branch_manager', 'cashier', 'kitchen_staff'].includes(nextRole) && !nextBranchId) {
+      return { status: 400, body: { error: 'BRANCH_REQUIRED_FOR_STAFF_ROLE', message_ar: 'يجب تعيين فرع لهذا الحساب.' } };
+    }
+    if (nextBranchId) {
+      const { data: branchRows, error: branchLookupError } = await serviceSupabase
+        .from('branches').select('id').eq('id', nextBranchId);
+      if (branchLookupError) return { status: 400, body: { error: branchLookupError.message } };
+      if (!Array.isArray(branchRows) || !branchRows.length) return { status: 400, body: { error: 'BRANCH_NOT_FOUND' } };
+    }
+
     const updatePayload = { updated_at: new Date().toISOString() };
     if (typeof is_active === 'boolean') updatePayload.is_active = is_active;
     if (new_role) updatePayload.role = new_role;
-    if (assigned_branch_id !== undefined) updatePayload.assigned_branch_id = assigned_branch_id;
+    if (assigned_branch_id !== undefined || (new_role && ['owner', 'super_admin'].includes(new_role))) {
+      updatePayload.assigned_branch_id = nextBranchId;
+    }
 
     const { data, error } = await serviceSupabase
       .from('user_profiles')
       .update(updatePayload)
-      .eq('id', target_user_id)
+      .eq('id', targetId)
       .select('*')
       .single();
 
@@ -377,7 +413,7 @@ export async function handleSovereignAdminRequest({
       actor_role: superAdmin.role,
       action: 'MANAGE_USER_PROFILE_STATUS',
       target_type: 'user_profile',
-      target_id: target_user_id,
+      target_id: targetId,
       metadata: updatePayload
     });
 

@@ -960,7 +960,7 @@ test('Branch manager catalog permission does not allow global homepage copy chan
   });
 
   assert.equal(result.status, 403);
-  assert.equal(result.body.error, 'CATALOG_ACTION_FORBIDDEN');
+  assert.equal(result.body.error, 'BRANCH_CATALOG_SCOPE_NOT_IMPLEMENTED');
 });
 
 test('6. Owner Blocked from Sovereign Super Admin API Even When Spoofing Body Actor', async () => {

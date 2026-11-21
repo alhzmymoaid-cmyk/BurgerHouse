@@ -21,6 +21,9 @@ export async function GET() {
       serviceSupabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100)
     ]);
 
+    const queryError = [settingsRes.error, profilesRes.error, branchesRes.error, blockedRes.error, abuseRes.error, auditRes.error].find(Boolean);
+    if (queryError) return NextResponse.json({ error: 'SOVEREIGN_DATA_LOAD_FAILED', message: queryError.message }, { status: 500 });
+
     return NextResponse.json({
       super_admin: authCheck.profile,
       settings: settingsRes.data,

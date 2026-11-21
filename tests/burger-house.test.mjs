@@ -903,6 +903,43 @@ test('Sovereign admin can clear a previously saved maintenance message', async (
   assert.equal(cloud.system_settings[0].maintenance_message_ar, '');
 });
 
+test('Super Admin can explicitly grant catalog management to a branch manager', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const adminClient = cloud.createClientInstance('uid-super-admin');
+
+  const result = await handleSovereignAdminRequest({
+    authSupabase: adminClient,
+    serviceSupabase: adminClient,
+    body: {
+      action: 'MANAGE_USER_PROFILE_STATUS',
+      target_user_id: 'uid-mgr-sultan',
+      permissions: ['catalog_manage']
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.profile.permissions, ['catalog_manage']);
+});
+
+test('Branch manager catalog permission does not allow global homepage copy changes', async () => {
+  const cloud = new SharedSupabaseCloudState();
+  const manager = cloud.user_profiles.find((profile) => profile.id === 'uid-mgr-sultan');
+  manager.permissions = ['catalog_manage'];
+  const managerClient = cloud.createClientInstance('uid-mgr-sultan');
+
+  const result = await handleOwnerAdminRequest({
+    authSupabase: managerClient,
+    serviceSupabase: managerClient,
+    body: {
+      action: 'UPDATE_SITE_COPY',
+      copy: { heroTitleAr: 'Unauthorized global change' }
+    }
+  });
+
+  assert.equal(result.status, 403);
+  assert.equal(result.body.error, 'CATALOG_ACTION_FORBIDDEN');
+});
+
 test('6. Owner Blocked from Sovereign Super Admin API Even When Spoofing Body Actor', async () => {
   const cloud = new SharedSupabaseCloudState();
   const ownerClient = cloud.createClientInstance('uid-owner'); // Authenticated as 'owner'

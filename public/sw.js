@@ -14,6 +14,7 @@ self.addEventListener('push',event=>{
     tag:data.tag||'bh-new-order',
     renotify:true,
     requireInteraction:true,
+    silent:false,
     vibrate:[250,120,250,120,450],
     data:{url:data.url||'/staff/orders'}
   };

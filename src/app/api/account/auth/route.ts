@@ -108,6 +108,25 @@ export async function POST(request: NextRequest) {
     }
 
     if (mode === 'signup') {
+      // The auth.users trigger creates customer_profiles and enforces unique phone.
+      // Check the unique phone first so an existing account is reported as a normal
+      // 409 response instead of surfacing as a noisy Auth/Postgres 500.
+      const { data: existingPhoneProfile, error: phoneLookupError } = await service
+        .from('customer_profiles')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle();
+      if (phoneLookupError) {
+        console.error('Customer signup phone lookup failed:', phoneLookupError.message);
+        return reply({ error: 'AUTH_TEMPORARILY_UNAVAILABLE', message_ar: 'تعذر التحقق من رقم الجوال الآن. حاول بعد قليل.' }, 503);
+      }
+      if (existingPhoneProfile) {
+        return reply({
+          error: 'ACCOUNT_ALREADY_EXISTS',
+          message_ar: 'رقم الجوال مرتبط بحساب موجود. اختر «لدي حساب» وسجّل الدخول، ولا تنشئ حسابًا جديدًا.'
+        }, 409);
+      }
+
       const { data: created, error: createError } = await service.auth.admin.createUser({
         email: alias,
         password,
@@ -120,8 +139,17 @@ export async function POST(request: NextRequest) {
         const message = createError?.message || '';
         const code = String((createError as any)?.code || '');
         const status = Number((createError as any)?.status || 0);
-        console.error('Customer Auth createUser failed:', { code, status, message });
-        const phoneConflict = /customer_profiles_phone_key|duplicate key|unique constraint|database error creating new user/i.test(message) || code === '23505';
+        let phoneConflict = /customer_profiles_phone_key|duplicate key|unique constraint/i.test(message) || code === '23505';
+        if (!phoneConflict && /database error creating new user/i.test(message)) {
+          const { data: phoneOwner } = await service
+            .from('customer_profiles')
+            .select('id')
+            .eq('phone', phone)
+            .maybeSingle();
+          phoneConflict = Boolean(phoneOwner);
+        }
+        if (phoneConflict) console.warn('Customer signup rejected because the phone is already linked to an account.');
+        else console.error('Customer Auth createUser failed:', { code, status, message });
         const duplicate = /already|exists|registered|duplicate|unique constraint/i.test(message) || code === 'email_exists';
         const rateLimited = status === 429 || /rate.?limit|too many requests/i.test(message);
         const weakPassword = /weak password|password should|password is too short/i.test(message);

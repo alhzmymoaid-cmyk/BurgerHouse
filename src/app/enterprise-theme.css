@@ -327,3 +327,75 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
   border-color:var(--bh-line)!important;
 }
 .bh-storefront .bh-v2-product-tag { background:#30291F!important;color:#E4C27C!important; }
+
+
+/* Readability patch: product names and checkout controls must never blend into surfaces */
+.bh-storefront .bh-v2-product-card .bh-v2-product-info h4,
+.bh-storefront .bh-v2-product-card .bh-v2-product-info .bh-v2-product-title,
+.bh-storefront .bh-v2-product-card .bh-v2-product-info .bh-v2-product-title *,
+.bh-storefront #menu-section .bh-v2-product-card h4 {
+  color:#F7F1E7!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+}
+.bh-storefront .bh-checkout-dialog {
+  background:#171619!important;
+  color:#F2EEE6!important;
+  border:1px solid rgba(226,213,190,.2)!important;
+}
+.bh-storefront .bh-checkout-dialog section,
+.bh-storefront .bh-checkout-dialog [class*="rounded-xl"],
+.bh-storefront .bh-checkout-dialog [class*="rounded-2xl"] {
+  background:#211E19!important;
+  border-color:rgba(226,213,190,.18)!important;
+}
+.bh-storefront .bh-checkout-dialog h1,
+.bh-storefront .bh-checkout-dialog h2,
+.bh-storefront .bh-checkout-dialog h3,
+.bh-storefront .bh-checkout-dialog label,
+.bh-storefront .bh-checkout-dialog section div,
+.bh-storefront .bh-checkout-dialog section span,
+.bh-storefront .bh-checkout-dialog section p,
+.bh-storefront .bh-checkout-dialog strong {
+  color:#F2EEE6!important;
+}
+.bh-storefront .bh-checkout-dialog input,
+.bh-storefront .bh-checkout-dialog textarea,
+.bh-storefront .bh-checkout-dialog select {
+  background:#0D0D0F!important;
+  color:#FFFFFF!important;
+  border:1px solid #75664D!important;
+  caret-color:#D6A84F!important;
+}
+.bh-storefront .bh-checkout-dialog input::placeholder,
+.bh-storefront .bh-checkout-dialog textarea::placeholder { color:#B9B0A2!important; opacity:1!important; }
+.bh-storefront .bh-checkout-dialog button {
+  color:#F2EEE6!important;
+}
+.bh-storefront .bh-checkout-dialog button[type="submit"],
+.bh-storefront .bh-checkout-dialog button.bg-\\[\\#f5c542\\],
+.bh-storefront .bh-checkout-dialog button.bg-\\[\\#E76F32\\] {
+  color:#17130B!important;
+}
+.bh-storefront .bh-checkout-dialog button:disabled { opacity:.58; }
+.bh-storefront .bh-checkout-dialog .text-red-200 { color:#FCA5A5!important; }
+.bh-storefront .bh-checkout-dialog .text-emerald-300 { color:#86EFAC!important; }
+.bh-storefront .bh-checkout-dialog .text-\\[\\#ffd65b\\],
+.bh-storefront .bh-checkout-dialog .text-\\[\\#F2B705\\] { color:#F2C66D!important; }
+.bh-storefront .bh-checkout-dialog .text-\\[\\#aaa493\\],
+.bh-storefront .bh-checkout-dialog .text-\\[\\#8d8878\\] { color:#B9B0A2!important; }
+
+/* Large, high-contrast customer order status */
+.bh-orders .bh-order-status-banner {
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:20px;padding:20px;
+  border:2px solid #D6A84F;border-radius:16px;
+  background:#302719!important;color:#FFF4D8!important;
+  box-shadow:0 8px 26px rgba(0,0,0,.24);
+}
+.bh-orders .bh-order-status-banner strong {
+  display:block;color:#FFF4D8!important;
+  font-size:clamp(22px,5vw,30px);font-weight:900;line-height:1.35;
+}
+.bh-orders .bh-order-status-banner p {
+  margin-top:6px;color:#E8D8B8!important;font-size:15px;font-weight:600;
+}

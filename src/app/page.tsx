@@ -600,9 +600,9 @@ export default function StorefrontPage() {
             <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#777064]">اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.</p></div>
             <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a84f32]"/></div>
           </div>
-          <div className="mb-9 flex gap-2 overflow-x-auto pb-2">
-            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>كل الأصناف</button>
-            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap bg-[#211f1b] px-5 py-3 text-xs font-bold text-white':'whitespace-nowrap border border-[#d8d0c4] bg-white px-5 py-3 text-xs font-bold text-[#655e53] hover:border-[#a84f32]'}>{category.name_ar}</button>)}
+          <div className="bh-category-rail mb-9 flex gap-2 overflow-x-auto pb-2">
+            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>كل الأصناف</button>
+            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>{category.name_ar}</button>)}
           </div>
 
           {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
@@ -620,7 +620,7 @@ export default function StorefrontPage() {
                       {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
                     </button>
                     <div className="bh-v2-product-info">
-                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8cd] bg-white/90 text-[#a84f32] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
+                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-[#242428] text-[#F5B800] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
                       <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
                       <p>{product.description_ar}</p>
                       <div className="bh-v2-product-bottom">

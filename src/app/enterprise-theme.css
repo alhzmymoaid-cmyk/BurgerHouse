@@ -49,6 +49,8 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
 .bh-storefront .bh-v2-product-card { overflow:hidden; background:var(--bh-card)!important; border:1px solid var(--bh-line)!important; border-radius:16px!important; box-shadow:none!important; }
 .bh-storefront .bh-v2-product-photo { border:0!important; background:var(--bh-surface)!important; }
 .bh-storefront .bh-v2-product-photo img { width:100%; height:100%; object-fit:cover; border-radius:16px; }
+.bh-storefront .bh-v2-product-photo img { filter:brightness(.86) contrast(1.03); }
+.bh-storefront .bh-v2-product-info>div button { background:#242428!important; color:var(--bh-yellow)!important; border-color:var(--bh-line)!important; }
 .bh-storefront .bh-v2-product-tag { display:none!important; }
 .bh-storefront .bh-v2-product-info h4 { color:var(--bh-text)!important; }
 .bh-storefront .bh-v2-product-info p { color:var(--bh-muted)!important; }

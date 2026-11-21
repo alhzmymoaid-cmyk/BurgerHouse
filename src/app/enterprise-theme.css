@@ -129,22 +129,29 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
 }
 
 
-/* Storefront menu refinements: dark product cards and high-contrast category controls */
-.bh-storefront .bh-v2-product-card { background:#16161A!important; border:1px solid rgba(255,255,255,.08)!important; }
-.bh-storefront .bh-v2-product-info { background:#16161A!important; }
-.bh-storefront .bh-v2-product-info h4 { color:#F5F3EE!important; }
-.bh-storefront .bh-v2-product-info p { color:#A1A1AA!important; }
-.bh-storefront .bh-v2-product-title>span { color:#F5B800!important; }
-.bh-storefront .bh-v2-product-info>div button { background:#242428!important; color:#F5B800!important; border:1px solid rgba(255,255,255,.08)!important; }
+/* Storefront product cards: warm cream surface, natural food photography, readable contrast */
+.bh-storefront .bh-v2-product-card {
+  background:#F3EBDD!important;
+  border:1px solid #E4D7C3!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.16)!important;
+}
+.bh-storefront .bh-v2-product-photo { background:#E9DECC!important; }
+.bh-storefront .bh-v2-product-photo img { filter:none!important; }
+.bh-storefront .bh-v2-product-info { background:#F3EBDD!important; }
+.bh-storefront .bh-v2-product-info h4 { color:#29231C!important; }
+.bh-storefront .bh-v2-product-info p { color:#74695B!important; }
+.bh-storefront .bh-v2-product-title>span { color:#98610E!important; }
+.bh-storefront .bh-v2-product-info>div button {
+  background:#E9DECC!important;color:#76500D!important;border:1px solid #D9C9AD!important;
+}
+.bh-storefront .bh-v2-product-bottom>span { color:#766B5D!important; }
+.bh-storefront .bh-v2-product-bottom button {
+  background:#F2B705!important;color:#17130A!important;border:0!important;
+}
 .bh-storefront .bh-category-rail button { border-radius:12px!important; }
-.bh-storefront .bh-category-rail button:not([class*="bg-[#F5B800]"]) { background:#1A1A20!important; color:#E4E4E7!important; border:1px solid rgba(255,255,255,.08)!important; }
-.bh-storefront .bh-category-rail button[class*="bg-[#F5B800]"] { background:#F5B800!important; color:#09090B!important; border:1px solid #F5B800!important; }
-
-
-/* High-contrast administration surfaces */
-.bh-owner-shell { color:#FAFAFA!important; }
-.bh-owner-shell label { color:#E4E4E7!important; }
-.bh-owner-shell input,.bh-owner-shell select,.bh-owner-shell textarea { background:#09090B!important; color:#FAFAFA!important; border:1px solid #52525B!important; }
-.bh-owner-shell input::placeholder,.bh-owner-shell textarea::placeholder { color:#A1A1AA!important; }
-.bh-owner-shell button { outline-offset:3px; }
-.bh-owner-shell button:focus-visible,.bh-owner-shell a:focus-visible,.bh-owner-shell input:focus-visible,.bh-owner-shell select:focus-visible,.bh-owner-shell textarea:focus-visible { outline:2px solid #F5B800!important; }
+.bh-storefront .bh-category-rail button:not([class*="bg-[#F5B800]"]) {
+  background:#1A1A20!important;color:#E4E4E7!important;border:1px solid rgba(255,255,255,.08)!important;
+}
+.bh-storefront .bh-category-rail button[class*="bg-[#F5B800]"] {
+  background:#F5B800!important;color:#09090B!important;border:1px solid #F5B800!important;
+}

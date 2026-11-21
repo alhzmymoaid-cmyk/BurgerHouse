@@ -42,12 +42,19 @@ export async function PATCH(
           .maybeSingle();
         if (order?.customer_id) {
           const notice = customerNotice[targetStatus];
-          await sendCustomerOrderPush(serviceSupabase, order.customer_id, {
+          const pushResult = await sendCustomerOrderPush(serviceSupabase, order.customer_id, {
             title: notice.title,
             body: notice.body(order.order_number),
             url: `/orders/${order.id}`,
             tag: `bh-order-${targetStatus}-${order.id}`
           });
+          if (!pushResult.configured || pushResult.sent === 0) {
+            console.warn('Customer order status push was not delivered:', {
+              configured: pushResult.configured,
+              subscriptionsMatched: pushResult.sent + (pushResult.failed || 0),
+              status: targetStatus
+            });
+          }
         }
       } catch (pushError) {
         console.error('Customer order status notification failed:', pushError);

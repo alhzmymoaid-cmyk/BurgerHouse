@@ -405,7 +405,7 @@ export async function handleSovereignAdminRequest({
     }
     if (permissions !== undefined) {
       updatePayload.permissions = nextRole === 'branch_manager' && permissions.includes('catalog_manage') ? ['catalog_manage'] : [];
-    } else if (new_role && nextRole !== 'branch_manager') {
+    } else if (new_role) {
       updatePayload.permissions = [];
     }
 

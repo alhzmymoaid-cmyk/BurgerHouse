@@ -39,7 +39,9 @@ export default function StorefrontAdminEditor(){
       const response=await fetch('/api/admin/catalog',{cache:'no-store',credentials:'same-origin'});
       if(!response.ok)return;
       const result=await response.json();
-      if(!['super_admin','owner'].includes(result.profile?.role))return;
+      const canManage = ['super_admin','owner'].includes(result.profile?.role)
+        || (result.profile?.role === 'branch_manager' && Array.isArray(result.profile?.permissions) && result.profile.permissions.includes('catalog_manage'));
+      if(!canManage)return;
       setProfile(result.profile);
       setData(result);
       if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1') { setEnabled(true); setOpen(true); }

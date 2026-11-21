@@ -184,8 +184,7 @@ export default function StorefrontAdminEditor(){
   }
 
   return <>
-    {!enabled?<button type="button" onClick={()=>setEnabled(true)} className="fixed bottom-24 right-4 z-[85] rounded-xl border border-[#F2B705]/50 bg-[#141417] px-4 py-3 text-xs font-bold text-[#F2B705] shadow-xl">تعديل المتجر والمنيو</button>
-    :<div className="fixed inset-x-0 top-[calc(72px+env(safe-area-inset-top))] z-[85] flex flex-wrap items-center justify-between gap-2 border-y border-[#F2B705]/30 bg-[#141417] px-4 py-3 shadow-lg">
+    {enabled&&<div className="fixed inset-x-0 top-[calc(72px+env(safe-area-inset-top))] z-[85] flex flex-wrap items-center justify-between gap-2 border-y border-[#F2B705]/30 bg-[#141417] px-4 py-3 shadow-lg">
       <span className="text-xs font-bold text-[#F2B705]">وضع الإدارة مفعّل</span>
       <div className="flex flex-wrap gap-2"><button onClick={()=>{setOpen(true);setTab('products');}} className="rounded-lg bg-[#F2B705] px-3 py-2 text-[11px] font-bold text-[#0A0A0C]">إدارة المنتجات والأقسام</button><button onClick={()=>setEnabled(false)} className="rounded-lg border border-white/10 px-3 py-2 text-[11px] text-[#F6F3EC]">إغلاق وضع الإدارة</button></div>
     </div>}

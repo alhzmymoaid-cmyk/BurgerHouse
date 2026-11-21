@@ -12,11 +12,20 @@ declare global {
   interface Navigator { standalone?: boolean; }
 }
 
-const DISMISS_KEY = 'bh-pwa-dismissed-at-v1';
+const DISMISS_KEY = 'bh-pwa-dismissed-at-v2';
+const APP_CONFIG = {
+  customer: { path: '/', title: 'BURGER HOUSE', description: 'ثبّت متجر برجر هاوس للوصول إليه بسرعة', icon: '/icons/customer-192.png?v=4' },
+  admin: { path: '/bh-sovereign-vault', title: 'BH Admin', description: 'ثبّت تطبيق الإدارة العامة لبرجر هاوس', icon: '/icons/admin-192.png?v=4' },
+  owner: { path: '/owner-studio', title: 'BH Owner', description: 'ثبّت تطبيق إدارة المالك لبرجر هاوس', icon: '/icons/admin-192.png?v=4' },
+  staff: { path: '/staff/orders', title: 'BH Staff', description: 'ثبّت تطبيق تشغيل الموظفين والطلبات', icon: '/icons/staff-192.png?v=4' },
+} as const;
 const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000;
 
 export default function SmartPwaInstallBanner() {
   const pathname = usePathname();
+  const appType = pathname === '/' ? 'customer' : pathname === '/bh-sovereign-vault' ? 'admin' : pathname === '/owner-studio' ? 'owner' : pathname === '/staff/orders' ? 'staff' : null;
+  const appConfig = appType ? APP_CONFIG[appType] : null;
+  const dismissKey = appType ? `${DISMISS_KEY}-${appType}` : DISMISS_KEY;
   const promptRef = useRef<InstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -43,7 +52,8 @@ export default function SmartPwaInstallBanner() {
       return;
     }
 
-    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    if (!appType) return;
+    const dismissedAt = Number(localStorage.getItem(dismissKey) || 0);
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_TTL) {
       // Explicitly opening the install flow from the menu is still allowed.
     } else if (dismissedAt) {
@@ -51,8 +61,8 @@ export default function SmartPwaInstallBanner() {
     }
 
     const showIfAllowed = () => {
-      if (pathname !== '/' || isStandalone()) return;
-      const dismissed = Number(localStorage.getItem(DISMISS_KEY) || 0);
+      if (!appType || isStandalone()) return;
+      const dismissed = Number(localStorage.getItem(dismissKey) || 0);
       if (dismissed && Date.now() - dismissed < DISMISS_TTL) return;
       setVisible(true);
     };
@@ -69,7 +79,7 @@ export default function SmartPwaInstallBanner() {
       setSheetOpen(false);
     };
     const onManualOpen = () => {
-      if (isStandalone()) return;
+      if (!appType || isStandalone()) return;
       setVisible(true);
       setSheetOpen(false);
     };
@@ -92,10 +102,10 @@ export default function SmartPwaInstallBanner() {
       window.removeEventListener('bh:open-install', onManualOpen);
       window.removeEventListener('pointerdown', onFirstInteraction);
     };
-  }, [isStandalone, pathname]);
+  }, [isStandalone, pathname, appType, dismissKey]);
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    localStorage.setItem(dismissKey, String(Date.now()));
     setVisible(false);
     setSheetOpen(false);
   };
@@ -114,13 +124,13 @@ export default function SmartPwaInstallBanner() {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(new URL(appConfig?.path || '/', window.location.origin).href);
       setCopied(true);
       setSheetOpen(true);
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
       const input = document.createElement('textarea');
-      input.value = window.location.href;
+      input.value = new URL(appConfig?.path || '/', window.location.origin).href;
       input.style.position = 'fixed';
       input.style.opacity = '0';
       document.body.appendChild(input);
@@ -133,7 +143,7 @@ export default function SmartPwaInstallBanner() {
     }
   };
 
-  if (pathname !== '/' || !visible || installed) return null;
+  if (!appConfig || !visible || installed) return null;
 
   const isIosSafari = device === 'ios-safari';
   const isIosOther = device === 'ios-other';
@@ -141,10 +151,10 @@ export default function SmartPwaInstallBanner() {
   return (
     <>
       <aside className="bh-pwa-banner" dir="rtl" role="region" aria-label="تثبيت تطبيق برجر هاوس">
-        <div className="bh-pwa-app-icon"><img src="/icons/customer-192.png?v=4" alt="" /></div>
+        <div className="bh-pwa-app-icon"><img src={appConfig.icon} alt="" /></div>
         <div className="bh-pwa-banner-copy">
-          <strong>ثبّت تطبيق BURGER HOUSE</strong>
-          <span>{isIosOther ? 'افتح الرابط في Safari ثم أضفه إلى الشاشة الرئيسية' : 'ثبّت المتجر للوصول إليه بسرعة من الشاشة الرئيسية'}</span>
+          <strong>ثبّت {appConfig.title}</strong>
+          <span>{isIosOther ? 'افتح الرابط في Safari ثم أضفه إلى الشاشة الرئيسية' : appConfig.description}</span>
         </div>
         {isIosOther ? (
           <button type="button" className="bh-pwa-primary bh-pwa-copy" onClick={copyLink}>
@@ -166,8 +176,8 @@ export default function SmartPwaInstallBanner() {
             <div className="bh-pwa-sheet-handle"/>
             <button type="button" className="bh-pwa-sheet-close" onClick={() => setSheetOpen(false)} aria-label="إغلاق"><X size={18}/></button>
             <div className="bh-pwa-sheet-app">
-              <img src="/icons/customer-192.png?v=4" alt="" />
-              <div><small>BURGER HOUSE</small><h2 id="bh-pwa-sheet-title">إضافة BURGER HOUSE إلى الشاشة الرئيسية</h2></div>
+              <img src={appConfig.icon} alt="" />
+              <div><small>{appConfig.title}</small><h2 id="bh-pwa-sheet-title">إضافة {appConfig.title} إلى الشاشة الرئيسية</h2></div>
             </div>
             {isIosSafari ? (
               <ol className="bh-pwa-steps">

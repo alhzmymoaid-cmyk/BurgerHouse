@@ -4,7 +4,7 @@ import BranchCatalogControls from '@/components/branch-catalog-controls';
 
 import PromoManager from '@/components/promo-manager';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
@@ -28,7 +28,11 @@ export default function StaffLiveOrdersPage() {
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+  const soundEnabledRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const seenOrderCodesRef = useRef<Set<string> | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState('');
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -39,26 +43,52 @@ export default function StaffLiveOrdersPage() {
   const [printOrderCode, setPrintOrderCode] = useState<string | null>(null);
 
   const playChime = useCallback(() => {
-    if (!soundEnabled || typeof window === 'undefined') return;
+    if (!soundEnabledRef.current || !audioUnlockedRef.current) return;
+    const ctx = audioContextRef.current;
+    if (!ctx || ctx.state !== 'running') return;
     try {
-      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.6);
-    } catch {
-      // Ignore audio errors before user gesture
+      const startAt = ctx.currentTime;
+      [659.25, 880, 1046.5].forEach((frequency, index) => {
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const noteStart = startAt + index * 0.14;
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, noteStart);
+        gain.gain.setValueAtTime(0.0001, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.22, noteStart + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.42);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(noteStart);
+        oscillator.stop(noteStart + 0.44);
+      });
+    } catch (error) {
+      console.warn('Order chime could not be played:', error);
     }
-  }, [soundEnabled]);
+  }, []);
+
+  const toggleOrderSound = async () => {
+    if (soundEnabledRef.current) {
+      soundEnabledRef.current = false;
+      setSoundEnabled(false);
+      return;
+    }
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) throw new Error('هذا المتصفح لا يدعم تشغيل الصوت.');
+      if (!audioContextRef.current) audioContextRef.current = new AudioCtx();
+      await audioContextRef.current.resume();
+      audioUnlockedRef.current = audioContextRef.current.state === 'running';
+      if (!audioUnlockedRef.current) throw new Error('لم يسمح المتصفح بتشغيل الصوت. اضغط تفعيل الصوت مرة أخرى.');
+      soundEnabledRef.current = true;
+      setSoundEnabled(true);
+      playChime();
+    } catch (error: any) {
+      soundEnabledRef.current = false;
+      setSoundEnabled(false);
+      setPushMessage(error?.message || 'تعذر تفعيل صوت الطلبات.');
+    }
+  };
 
   const enablePushNotifications = async () => {
     setPushBusy(true);
@@ -123,11 +153,25 @@ export default function StaffLiveOrdersPage() {
         return;
       }
       setActorProfile(data.actor_profile);
-      setOrders(data.orders || []);
+      const nextOrders = data.orders || [];
+      const nextCodes = new Set<string>(nextOrders.map((order: any) => String(order.order_code || order.id)));
+      const previouslySeen = seenOrderCodesRef.current;
+      if (previouslySeen === null) {
+        // Establish a baseline on first load; do not sound for old orders.
+        seenOrderCodesRef.current = nextCodes;
+      } else {
+        const arrived = nextOrders.some((order: any) => {
+          const code = String(order.order_code || order.id);
+          return !previouslySeen.has(code) && ['new', 'pending_confirmation'].includes(order.status);
+        });
+        nextCodes.forEach((code) => previouslySeen.add(code));
+        if (arrived) playChime();
+      }
+      setOrders(nextOrders);
     } catch (err: any) {
       setErrorBanner(err?.message || 'تعذر الاتصال بخادم الطلبات');
     }
-  }, []);
+  }, [playChime]);
 
   useEffect(() => {
     fetchLiveOrders();
@@ -180,14 +224,17 @@ export default function StaffLiveOrdersPage() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              playChime();
-            }
+          () => {
+            // Only ring for newly observed orders in the branch-authorized list.
+            // Polling and Realtime share the same deduplication set.
             fetchLiveOrders();
           }
         )
-        .subscribe();
+        .subscribe((status, error) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.error('Staff order Realtime subscription issue:', status, error);
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
@@ -195,7 +242,7 @@ export default function StaffLiveOrdersPage() {
     } catch {
       return undefined;
     }
-  }, [fetchLiveOrders, playChime]);
+  }, [fetchLiveOrders]);
 
   /**
    * Server-Authenticated Status Transition:
@@ -287,7 +334,7 @@ export default function StaffLiveOrdersPage() {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <input type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث برقم الطلب أو الجوال" className="col-span-2 min-w-0 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white outline-none placeholder:text-[#777b6b] sm:w-56"/>
-            <button onClick={() => setSoundEnabled((enabled) => !enabled)} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'الصوت يعمل' : 'الصوت صامت'}</button>
+            <button onClick={toggleOrderSound} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8]">{soundEnabled ? 'صوت الطلبات يعمل' : 'تفعيل صوت الطلبات'}</button>
             <button disabled={pushBusy} onClick={enablePushNotifications} className="rounded-xl bg-[#f5c542] px-3 py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{pushBusy ? 'جارٍ التفعيل...' : pushEnabled ? 'الإشعارات مفعلة' : 'تفعيل الإشعارات'}</button>
             <button disabled={pushBusy} onClick={sendTestPush} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-bold text-[#e8dfc8] disabled:opacity-50">اختبار الإشعار</button>
             {actorProfile?.role === "branch_manager" && <a href="/manager/analytics" className="rounded-xl border border-white/10 px-3 py-3 text-center text-xs font-bold text-[#F2B705]">إحصائيات الفرع</a>}

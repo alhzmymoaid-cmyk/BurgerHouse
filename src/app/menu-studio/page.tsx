@@ -8,7 +8,19 @@ export const dynamic = 'force-dynamic';
 export default async function MenuStudioPage() {
   const auth = createSupabaseServerClient();
   const check = await requireAuthenticatedProfile(auth, ['super_admin', 'owner', 'branch_manager']);
-  if (!check.ok) redirect('/auth/login?redirectTo=/menu-studio');
+  if (!check.ok && check.status === 401) redirect('/auth/login?redirectTo=/menu-studio');
+  if (!check.ok) {
+    return (
+      <main dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0A0A0C] px-4 py-10 text-[#FAFAFA]">
+        <section className="w-full max-w-xl rounded-2xl border border-red-400/30 bg-[#16161A] p-7">
+          <p className="text-xs font-black tracking-[.18em] text-red-300">BURGER HOUSE · ACCESS CONTROL</p>
+          <h1 className="mt-3 text-xl font-black">هذا الحساب غير مخوّل لإدارة المنيو</h1>
+          <p className="mt-3 text-sm leading-7 text-[#D4D4D8]">سجّل الدخول بحساب مالك أو مدير نظام، أو اطلب من مدير النظام منحك الصلاحية المناسبة. لم يتم تغيير أي صلاحية تلقائيًا.</p>
+          <div className="mt-6 flex flex-wrap gap-2"><Link href="/staff/orders" className="rounded-xl border border-[#52525B] px-5 py-3 text-sm font-bold">واجهة الموظفين</Link><Link href="/" className="rounded-xl bg-[#F5B800] px-5 py-3 text-sm font-black text-[#09090B]">العودة للمتجر</Link></div>
+        </section>
+      </main>
+    );
+  }
   const allowed = ['super_admin', 'owner'].includes(check.profile.role)
     || (check.profile.role === 'branch_manager' && Array.isArray(check.profile.permissions) && check.profile.permissions.includes('catalog_manage'));
 

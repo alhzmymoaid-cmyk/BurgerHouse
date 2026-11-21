@@ -40,6 +40,9 @@ export default function SmartPwaInstallBanner() {
   ), []);
 
   useEffect(() => {
+    setVisible(false);
+    setSheetOpen(false);
+    setInstalled(false);
     const ua = navigator.userAgent;
     const ios = /iPhone|iPad|iPod/i.test(ua) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

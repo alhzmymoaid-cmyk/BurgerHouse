@@ -480,7 +480,7 @@ export async function handleOwnerAdminRequest({
   serviceSupabase,
   body
 }) {
-  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner']);
+  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner', 'branch_manager']);
   if (!authCheck.ok) {
     return {
       status: authCheck.status,
@@ -490,6 +490,13 @@ export async function handleOwnerAdminRequest({
 
   const actor = authCheck.profile;
   const action = body?.action;
+  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON','UPDATE_SITE_COPY']);
+  if (actor.role === 'branch_manager' && !(Array.isArray(actor.permissions) && actor.permissions.includes('catalog_manage'))) {
+    return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message_ar: 'حسابك لا يملك صلاحية إدارة المنيو.' } };
+  }
+  if (actor.role === 'branch_manager' && !catalogActions.has(action)) {
+    return { status: 403, body: { error: 'CATALOG_ACTION_FORBIDDEN', message_ar: 'هذه العملية خارج صلاحية إدارة المنيو.' } };
+  }
 
   if (action === 'TOGGLE_PAYMENT_METHOD') {
     const { payment_method_id, is_enabled } = body;
@@ -571,7 +578,9 @@ export async function handleOwnerAdminRequest({
 
     if (error) return { status: 400, body: { error: error.message } };
 
-    if (sizes && sizes.length) {
+    if (sizes !== null) {
+      const { error: clearSizesError } = await serviceSupabase.from('product_sizes').delete().eq('product_id', data.id);
+      if (clearSizesError) return { status: 400, body: { error: clearSizesError.message } };
       const sizeRows = sizes.map((size, index) => ({
         id: String(size.id || ''),
         product_id: data.id,
@@ -582,9 +591,7 @@ export async function handleOwnerAdminRequest({
         sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
       })).filter((size) => size.id && size.name_ar && size.name_en);
       if (sizeRows.length) {
-        const { error: sizesError } = await serviceSupabase
-          .from('product_sizes')
-          .upsert(sizeRows, { onConflict: 'id' });
+        const { error: sizesError } = await serviceSupabase.from('product_sizes').insert(sizeRows);
         if (sizesError) return { status: 400, body: { error: sizesError.message } };
       }
     }
@@ -600,6 +607,23 @@ export async function handleOwnerAdminRequest({
     });
 
     return { status: 200, body: { ok: true, product: data } };
+  }
+
+  if (action === 'DELETE_PRODUCT') {
+    const productId = String(body.product_id || '');
+    if (!productId) return { status: 400, body: { error: 'PRODUCT_ID_REQUIRED' } };
+    const { count, error: usageError } = await serviceSupabase.from('order_items').select('id', { count: 'exact', head: true }).eq('product_id', productId);
+    if (usageError) return { status: 400, body: { error: usageError.message } };
+    if ((count || 0) > 0) {
+      const { error } = await serviceSupabase.from('products').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', productId);
+      if (error) return { status: 400, body: { error: error.message } };
+      await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'ARCHIVE_PRODUCT', target_type: 'product', target_id: productId, metadata: { reason: 'historical_order_items', usage_count: count } });
+      return { status: 200, body: { ok: true, archived: true, message_ar: 'المنتج مرتبط بطلبات سابقة؛ تم أرشفته للحفاظ على سجل الطلبات.' } };
+    }
+    const { error } = await serviceSupabase.from('products').delete().eq('id', productId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_PRODUCT', target_type: 'product', target_id: productId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
   }
 
   if (action === 'DEACTIVATE_PRODUCT') {
@@ -641,6 +665,24 @@ export async function handleOwnerAdminRequest({
     return { status: 200, body: { ok: true, category: data } };
   }
 
+  if (action === 'DELETE_CATEGORY') {
+    const categoryId = String(body.category_id || '');
+    if (!categoryId) return { status: 400, body: { error: 'CATEGORY_ID_REQUIRED' } };
+    const { count, error: usageError } = await serviceSupabase.from('products').select('id', { count: 'exact', head: true }).eq('category_id', categoryId);
+    if (usageError) return { status: 400, body: { error: usageError.message } };
+    if ((count || 0) > 0) {
+      const { error } = await serviceSupabase.from('categories').update({ is_active: false }).eq('id', categoryId);
+      if (error) return { status: 400, body: { error: error.message } };
+      await serviceSupabase.from('products').update({ is_active: false, updated_at: new Date().toISOString() }).eq('category_id', categoryId);
+      await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'ARCHIVE_CATEGORY', target_type: 'category', target_id: categoryId, metadata: { products_archived: count } });
+      return { status: 200, body: { ok: true, archived: true, message_ar: 'القسم يحتوي منتجات؛ تم أرشفته وإخفاء منتجاته من المنيو.' } };
+    }
+    const { error } = await serviceSupabase.from('categories').delete().eq('id', categoryId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_CATEGORY', target_type: 'category', target_id: categoryId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
+  }
+
   if (action === 'DEACTIVATE_CATEGORY') {
     const categoryId = String(body.category_id || '');
     if (!categoryId) return { status: 400, body: { error: 'CATEGORY_ID_REQUIRED' } };
@@ -675,6 +717,25 @@ export async function handleOwnerAdminRequest({
       action: 'UPSERT_ADDON', target_type: 'product_addon', target_id: data.id, metadata: { price: data.price }
     });
     return { status: 200, body: { ok: true, addon: data } };
+  }
+
+  if (action === 'DELETE_ADDON') {
+    const addonId = String(body.addon_id || '');
+    if (!addonId) return { status: 400, body: { error: 'ADDON_ID_REQUIRED' } };
+    const { data: products, error: productsError } = await serviceSupabase.from('products').select('id,allowed_addon_ids');
+    if (productsError) return { status: 400, body: { error: productsError.message } };
+    for (const product of products || []) {
+      const currentIds = product.allowed_addon_ids || [];
+      const nextIds = currentIds.filter((id) => id !== addonId);
+      if (nextIds.length !== currentIds.length) {
+        const { error } = await serviceSupabase.from('products').update({ allowed_addon_ids: nextIds, updated_at: new Date().toISOString() }).eq('id', product.id);
+        if (error) return { status: 400, body: { error: error.message } };
+      }
+    }
+    const { error } = await serviceSupabase.from('product_addons').delete().eq('id', addonId);
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'DELETE_ADDON', target_type: 'product_addon', target_id: addonId, metadata: {} });
+    return { status: 200, body: { ok: true, deleted: true } };
   }
 
   if (action === 'DEACTIVATE_ADDON') {
@@ -725,6 +786,21 @@ export async function handleOwnerAdminRequest({
     return { status: 200, body: { ok: true, staff: data } };
   }
 
+  if (action === 'UPDATE_SITE_COPY') {
+    const allowedKeys = ['heroKickerAr','heroTitleAr','heroTitleAccentAr','heroLeadAr','heroCtaAr','heroBranchesCtaAr','announcementAr','footerDescriptionAr','menuTitleAr','menuSubtitleAr'];
+    const incoming = body.copy && typeof body.copy === 'object' ? body.copy : {};
+    const copy = Object.fromEntries(allowedKeys.filter((key) => Object.prototype.hasOwnProperty.call(incoming, key)).map((key) => [key, String(incoming[key] || '').trim().slice(0, 220)]));
+    if (!Object.keys(copy).length) return { status: 400, body: { error: 'SITE_COPY_EMPTY' } };
+    const { data: current, error: readError } = await serviceSupabase.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single();
+    if (readError || !current) return { status: 400, body: { error: readError?.message || 'SITE_SETTINGS_NOT_FOUND' } };
+    const nextDraft = { ...(current.draft_theme || {}), ...copy };
+    const nextPublished = { ...(current.published_theme || {}), ...copy };
+    const { data, error } = await serviceSupabase.from('system_settings').update({ draft_theme: nextDraft, published_theme: nextPublished, updated_at: new Date().toISOString(), updated_by: actor.id }).eq('id', 1).select('draft_theme,published_theme').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'UPDATE_SITE_COPY', target_type: 'system_settings', target_id: '1', metadata: { changed_fields: Object.keys(copy) } });
+    return { status: 200, body: { ok: true, settings: data } };
+  }
+
   if (action === 'UPDATE_THEME_CONFIG') {
     const { draft_theme, publish_now } = body;
     const updateObj = { draft_theme, updated_at: new Date().toISOString() };
@@ -760,12 +836,15 @@ export async function handleMediaUploadRequest({
   fileBuffer,
   productId = null
 }) {
-  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner']);
+  const authCheck = await requireAuthenticatedProfile(authSupabase, ['super_admin', 'owner', 'branch_manager']);
   if (!authCheck.ok) {
     return {
       status: authCheck.status,
       body: { error: authCheck.code, message: authCheck.message }
     };
+  }
+  if (authCheck.profile.role === 'branch_manager' && !(Array.isArray(authCheck.profile.permissions) && authCheck.profile.permissions.includes('catalog_manage'))) {
+    return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message: 'حسابك لا يملك صلاحية إدارة صور المنيو.' } };
   }
 
   const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];

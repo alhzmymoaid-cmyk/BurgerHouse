@@ -12,9 +12,10 @@ export async function GET() {
     }
 
     const serviceSupabase = createSupabaseServiceRoleClient();
-    const [settingsRes, profilesRes, blockedRes, abuseRes, auditRes] = await Promise.all([
+    const [settingsRes, profilesRes, branchesRes, blockedRes, abuseRes, auditRes] = await Promise.all([
       serviceSupabase.from('system_settings').select('*').eq('id', 1).single(),
       serviceSupabase.from('user_profiles').select('*').order('created_at', { ascending: false }),
+      serviceSupabase.from('branches').select('id,name_ar').order('name_ar', { ascending: true }),
       serviceSupabase.from('blocked_entities').select('*').order('created_at', { ascending: false }),
       serviceSupabase.from('security_abuse_logs').select('*').order('created_at', { ascending: false }).limit(100),
       serviceSupabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100)
@@ -24,6 +25,7 @@ export async function GET() {
       super_admin: authCheck.profile,
       settings: settingsRes.data,
       user_profiles: profilesRes.data || [],
+      branches: branchesRes.data || [],
       blocked_entities: blockedRes.data || [],
       security_abuse_logs: abuseRes.data || [],
       audit_logs: auditRes.data || []

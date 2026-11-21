@@ -5,18 +5,22 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound, UtensilsCrossed, Phone } from 'lucide-react';
 
-export default function CustomerAccountPage() {
+export default function CustomerAccountPage({ initialMode = 'login' }: { initialMode?: 'login' | 'signup' | 'forgot' }) {
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(initialMode);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [previousOrderCode, setPreviousOrderCode] = useState('');
+  const [previousTrackingToken, setPreviousTrackingToken] = useState('');
+  const [notice, setNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [forgotName, setForgotName] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
-  const [supportWhatsApp, setSupportWhatsApp] = useState('');
+  const supportWhatsApp = '966535717670';
 
   useEffect(() => {
     let active = true;
@@ -27,18 +31,23 @@ export default function CustomerAccountPage() {
     }).catch(() => undefined);
     if (window.location.hash === '#signup') setMode('signup');
     if (window.location.hash === '#forgot') setMode('forgot');
-    fetch('/api/catalog', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      const number = String(data?.settings?.support_whatsapp || data?.settings?.support_phone || '').replace(/\D/g, '');
-      if (number) setSupportWhatsApp(number);
-    }).catch(() => undefined);
     return () => { active = false; };
   }, [router]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (mode === 'forgot') return;
+    if (mode === 'signup' && Boolean(previousOrderCode.trim()) !== Boolean(previousTrackingToken.trim())) {
+      setError('لربط طلب سابق، أدخل رقم الطلب ورمز التتبع معًا.');
+      return;
+    }
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const response = await fetch('/api/account/auth', {
         method: 'POST',
@@ -50,6 +59,20 @@ export default function CustomerAccountPage() {
       const result = await response.json();
       if (!response.ok || !result.ok) {
         throw new Error(result.message_ar || 'تعذر إكمال العملية. تحقق من البيانات وحاول مرة أخرى.');
+      }
+      setConfirmPassword('');
+      if (mode === 'signup' && previousOrderCode.trim() && previousTrackingToken.trim()) {
+        const claimResponse = await fetch('/api/account/claim-guest-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          cache: 'no-store',
+          body: JSON.stringify({ order_code: previousOrderCode.trim(), tracking_token: previousTrackingToken.trim() }),
+        });
+        if (!claimResponse.ok) {
+          setNotice('تم إنشاء حسابك، لكن لم نتمكن من ربط الطلب السابق. تأكد من رقم الطلب ورمز التتبع، ويمكنك متابعة طلباتك من هنا.');
+          return;
+        }
       }
       router.replace('/account/orders');
       router.refresh();
@@ -103,6 +126,7 @@ export default function CustomerAccountPage() {
             <button type="button" onClick={() => { setMode('login'); setError(''); }} className="mb-4 text-xs font-bold text-[#a65e36] underline">العودة إلى تسجيل الدخول</button>
           )}
 
+          {notice && <div className="bh-account-notice mb-4" role="status">{notice} <a className="font-bold underline" href="/account/orders">عرض طلباتي</a></div>}
           <form onSubmit={submit} className="bh-account-form">
             {(mode === 'signup' || mode === 'forgot') && (
               <label className="bh-account-label">
@@ -131,7 +155,29 @@ export default function CustomerAccountPage() {
                 <button type="button" className="bh-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{showPassword ? <EyeOff/> : <Eye/>}</button>
               </div>
               {mode === 'signup' && <small>استخدم كلمة مرور يصعب تخمينها ولا تشاركها مع أحد.</small>}
+            {mode === 'signup' && <label className="bh-account-label">
+              <span>تأكيد كلمة المرور</span>
+              <div className="bh-field">
+                <LockKeyhole aria-hidden="true"/>
+                <input required minLength={8} maxLength={72} autoComplete="new-password" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"/>
+              </div>
+            </label>}
+            {mode === 'signup' && <div className="grid gap-3 rounded-xl border border-white/10 bg-[#1B1B1F] p-3">
+              <div>
+                <b className="text-xs text-[#F2B705]">طلبت سابقًا كضيف؟</b>
+                <p className="mt-1 text-[11px] leading-6 text-[#9E9BA3]">يمكنك ربط طلب سابق بإدخال رقم الطلب ورمز التتبع الموجود مع إيصال الطلب. لا نربط الطلبات اعتمادًا على رقم الجوال وحده.</p>
+              </div>
+              <label className="bh-account-label">
+                <span>رقم الطلب السابق (اختياري)</span>
+                <input dir="ltr" autoComplete="off" value={previousOrderCode} onChange={e => setPreviousOrderCode(e.target.value.toUpperCase().slice(0,40))} placeholder="BH-000000" className="w-full rounded-lg border border-white/10 bg-[#141417] px-3 py-3 text-sm text-[#F6F3EC]"/>
+              </label>
+              <label className="bh-account-label">
+                <span>رمز التتبع الخاص بالطلب (اختياري)</span>
+                <input dir="ltr" autoComplete="off" spellCheck={false} value={previousTrackingToken} onChange={e => setPreviousTrackingToken(e.target.value.trim().slice(0,256))} placeholder="trk_..." className="w-full rounded-lg border border-white/10 bg-[#141417] px-3 py-3 text-sm text-[#F6F3EC]"/>
+              </label>
+            </div>}
               {mode === 'login' && <button type="button" onClick={() => { setMode('forgot'); setError(''); setForgotName(name); setForgotPhone(phone); }} className="mt-2 text-xs font-bold text-[#a65e36] underline">نسيت كلمة المرور؟</button>}
+              {mode === 'login' && <a href="/register" className="mt-2 block text-xs font-semibold text-[#9E9BA3] underline">طلبت سابقًا كضيف؟ أنشئ حسابًا لمتابعة طلباتك</a>}
             </label>}
 
             {error && <div className="bh-account-alert" role="alert">{error}</div>}

@@ -12,10 +12,12 @@ export async function GET() {
     }
 
     const serviceSupabase = createSupabaseServiceRoleClient();
-    const [branchesRes, productsRes, overridesRes, paymentsRes, promosRes, staffRes, ordersRes, logsRes, settingsRes] =
+    const [branchesRes, productsRes, categoriesRes, addonsRes, overridesRes, paymentsRes, promosRes, staffRes, ordersRes, logsRes, settingsRes] =
       await Promise.all([
         serviceSupabase.from('branches').select('*').order('created_at', { ascending: true }),
         serviceSupabase.from('products').select('*, product_sizes(*)').order('sort_order', { ascending: true }),
+        serviceSupabase.from('categories').select('*').order('sort_order', { ascending: true }),
+        serviceSupabase.from('product_addons').select('*').order('name_ar', { ascending: true }),
         serviceSupabase.from('branch_product_overrides').select('*'),
         serviceSupabase.from('payment_methods').select('*').order('sort_order', { ascending: true }),
         serviceSupabase.from('promotions').select('*').order('created_at', { ascending: false }),
@@ -30,6 +32,8 @@ export async function GET() {
       settings: settingsRes.data,
       branches: branchesRes.data || [],
       products: productsRes.data || [],
+      categories: categoriesRes.data || [],
+      addons: addonsRes.data || [],
       branch_overrides: overridesRes.data || [],
       payment_methods: paymentsRes.data || [],
       promotions: promosRes.data || [],

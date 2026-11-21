@@ -7,6 +7,11 @@ import { sendBranchOrderPush } from '@/lib/web-push';
 export async function POST(request: NextRequest) {
   try {
     const serviceSupabase = createSupabaseServiceRoleClient();
+    const { data: siteSettings, error: siteSettingsError } = await serviceSupabase
+      .from('system_settings').select('site_online,maintenance_mode,maintenance_message_ar').eq('id',1).single();
+    if (siteSettingsError || !siteSettings || siteSettings.site_online === false || siteSettings.maintenance_mode === true) {
+      return NextResponse.json({ error:'STORE_TEMPORARILY_UNAVAILABLE', message_ar:siteSettings?.maintenance_message_ar || 'لا نستقبل الطلبات في الوقت الحالي. نعود إليكم قريبًا.' }, { status:503 });
+    }
     const idempotencyKey = request.headers.get('Idempotency-Key') || '';
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
     const sessionFingerprint = request.headers.get('x-bh-session') || request.cookies.get('bh_session_id')?.value || 'anon-session';

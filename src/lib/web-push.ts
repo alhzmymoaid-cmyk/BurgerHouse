@@ -46,3 +46,34 @@ export async function sendBranchOrderPush(
   }));
   return { sent, configured: true };
 }
+
+export async function sendCustomerOrderPush(
+  serviceSupabase: any,
+  customerId: string,
+  payload: { title: string; body: string; url?: string; tag?: string }
+) {
+  const client = getWebPushClient();
+  if (!client) return { sent: 0, configured: false };
+  const { data: subscriptions, error } = await serviceSupabase
+    .from('customer_push_subscriptions')
+    .select('endpoint,p256dh,auth')
+    .eq('customer_id', customerId);
+  if (error) throw error;
+  let sent = 0;
+  await Promise.all((subscriptions || []).map(async (subscription: any) => {
+    try {
+      await client.sendNotification(
+        { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+        JSON.stringify(payload),
+        { TTL: 60 * 60, urgency: 'high' }
+      );
+      sent += 1;
+    } catch (error: any) {
+      if (error?.statusCode === 404 || error?.statusCode === 410) {
+        await serviceSupabase.from('customer_push_subscriptions').delete()
+          .eq('endpoint', subscription.endpoint).eq('customer_id', customerId);
+      }
+    }
+  }));
+  return { sent, configured: true };
+}

@@ -14,18 +14,8 @@ type Props = { banners?: PromoBanner[]; branchId: string; products?: Product[];
   onOpenProduct?: (product: Product) => void; onSelectCategory?: (id: string) => void };
 
 const DEMO_BANNERS: PromoBanner[] = [
-  {
-    id: 'bh-demo-new-burger', branch_id: null, title_ar: 'برجر جديد على النار',
-    subtitle_ar: 'واغيو طري وخبز بريوش محمّص… جرّبه الآن',
-    image_url: '/images/hero-wagyu-smash.jpg', badge_text: 'جديد',
-    cta_label: 'اطلب الآن', target_category_id: 'cat-wagyu', sort_order: 1,
-  },
-  {
-    id: 'bh-demo-new-meal', branch_id: null, title_ar: 'عرض الوجبة الجديدة',
-    subtitle_ar: 'وجبة متكاملة بسعر خاص لفترة محدودة',
-    image_url: 'https://images.pexels.com/photos/5639696/pexels-photo-5639696.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    badge_text: 'خصم خاص', cta_label: 'تصفح العرض', target_category_id: 'cat-meals', sort_order: 2,
-  },
+  { id: 'bh-demo-new-burger', branch_id: null, title_ar: 'برجر جديد على النار', image_url: '/images/hero-wagyu-smash.jpg', target_category_id: 'cat-wagyu', sort_order: 1 },
+  { id: 'bh-demo-new-meal', branch_id: null, title_ar: 'عرض الوجبة الجديدة', image_url: '/images/smoked-brisket-burger.jpg', target_category_id: 'cat-meals', sort_order: 2 },
 ];
 
 export default function PromoCarousel({ banners = [], branchId, products = [], onOpenProduct, onSelectCategory }: Props) {
@@ -48,7 +38,7 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
         rail.current?.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         return next;
       });
-    }, 5000);
+    }, 4500);
     return () => window.clearInterval(timer);
   }, [displayBanners.length]);
 
@@ -74,10 +64,11 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
   return (
     <section className="bh-promo-section mx-auto max-w-7xl px-4 py-6 lg:px-8" aria-label="عروض برجر هاوس">
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div><span className="text-[10px] font-black tracking-[.2em] text-[#F5B800]">BURGER HOUSE OFFERS</span>
-          <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">عروض برجر هاوس</h2>
-          <p className="mt-1 text-xs text-[#A1A1AA]">اختيارات وعروض مميزة من فروعنا</p></div>
-        <span className="text-[10px] text-[#A1A1AA]">{visible.length ? `${visible.length} عروض` : 'عروض مختارة'}</span>
+        <div>
+          <span className="text-[10px] font-semibold tracking-[.16em] text-[#F2B705]">BURGER HOUSE</span>
+          <h2 className="mt-1 text-xl font-semibold sm:text-2xl">العروض</h2>
+        </div>
+        <span className="text-[10px] text-[#9E9BA3]">{visible.length ? `${visible.length} عروض` : 'عروض مختارة'}</span>
       </div>
       <div ref={rail} dir="rtl" className="bh-promo-rail flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2" onPointerDown={() => { paused.current = true; }} onWheel={() => { paused.current = true; }} onFocus={() => { paused.current = true; }}>
         {displayBanners.map((banner) => {
@@ -89,20 +80,15 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
             else document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
           };
           const categoryId = banner.target_category_id || (banner.id === 'bh-demo-new-meal' ? 'cat-meals' : 'cat-wagyu');
-          return <article key={banner.id} className="bh-promo-card relative isolate shrink-0 snap-center overflow-hidden rounded-2xl">
-            <SafeFoodImage src={banner.image_url} categoryId={categoryId} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#09090B]/95 via-[#09090B]/25 to-transparent" />
-            <span className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-[10px] font-black text-[#FFD036] backdrop-blur">{banner.badge_text || 'عرض اليوم'}</span>
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <h3 className="text-base font-black text-white sm:text-lg">{banner.title_ar}</h3>
-              {banner.subtitle_ar && <p className="mt-1 line-clamp-1 text-[11px] leading-5 text-white/80">{banner.subtitle_ar}</p>}
-              <button type="button" onClick={action} className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-[#F5B800] px-4 text-[11px] font-black text-[#09090B]">{banner.cta_label || 'اطلب الآن'}</button>
-            </div>
-          </article>;
+          return (
+            <button key={banner.id} type="button" className="bh-promo-card relative block shrink-0 snap-center overflow-hidden rounded-2xl text-start" onClick={action} aria-label={banner.title_ar || 'عرض برجر هاوس'}>
+              <SafeFoodImage src={banner.image_url} categoryId={categoryId} alt="" className="h-full w-full object-cover" />
+            </button>
+          );
         })}
       </div>
       {displayBanners.length > 1 && <div className="mt-2 flex justify-center gap-2" aria-label="مؤشر العروض">
-        {displayBanners.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; setActive(index); rail.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }} className={index===active?'h-1.5 w-5 rounded-full bg-[#F5B800]':'h-1.5 w-1.5 rounded-full bg-white/25'} />)}
+        {displayBanners.map((banner,index) => <button key={banner.id} type="button" aria-label={`العرض ${index+1}`} onClick={() => { paused.current = true; setActive(index); rail.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }} className={index===active?'h-1.5 w-5 rounded-full bg-[#F2B705]':'h-1.5 w-1.5 rounded-full bg-white/25'} />)}
       </div>}
     </section>
   );

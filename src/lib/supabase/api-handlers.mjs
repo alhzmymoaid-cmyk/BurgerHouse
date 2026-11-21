@@ -135,8 +135,9 @@ export async function handleCreateOrderRequest({
       p_session_fingerprint: sessionHash,
       p_risk_score: riskScore,
       p_tracking_token: preGeneratedToken,
-      p_client_claimed_total: payload.client_claimed_total ?? null,
-      p_check_timestamp: nowDate.toISOString()
+      p_client_claimed_total: payload.coupon_code ? null : (payload.client_claimed_total ?? null),
+      p_check_timestamp: nowDate.toISOString(),
+      p_coupon_code: typeof payload.coupon_code === 'string' ? payload.coupon_code.trim().toUpperCase() : null
     }
   );
 
@@ -150,6 +151,15 @@ export async function handleCreateOrderRequest({
     }
     if (msg.includes('RATE_LIMIT_EXCEEDED')) {
       return { status: 429, body: { error: 'RATE_LIMIT_EXCEEDED', message: msg } };
+    }
+    if (msg.includes('COUPON_INVALID_OR_EXPIRED')) {
+      return { status: 422, body: { error: 'COUPON_INVALID_OR_EXPIRED', message_ar: 'رمز الخصم غير صالح أو منتهي أو استُنفدت مرات استخدامه.' } };
+    }
+    if (msg.includes('COUPON_MINIMUM_ORDER_NOT_MET')) {
+      return { status: 422, body: { error: 'COUPON_MINIMUM_ORDER_NOT_MET', message_ar: 'قيمة الطلب أقل من الحد الأدنى لهذا الخصم.' } };
+    }
+    if (msg.includes('COUPON_INVALID_DISCOUNT')) {
+      return { status: 422, body: { error: 'COUPON_INVALID_DISCOUNT', message_ar: 'إعدادات الخصم غير صالحة. تواصل مع المطعم.' } };
     }
     if (
       msg.includes('BRANCH_NOT_ACCEPTING_ORDERS') ||
@@ -408,14 +418,25 @@ export async function handleSovereignAdminRequest({
 
   if (action === 'UNBLOCK_ENTITY') {
     const { entity_type, entity_value } = body;
-    const { error } = await serviceSupabase
+    const { data, error } = await serviceSupabase
       .from('blocked_entities')
-      .delete()
+      .update({ is_active: false })
       .eq('entity_type', entity_type)
-      .eq('entity_value', entity_value);
+      .eq('entity_value', entity_value)
+      .select('*')
+      .single();
 
     if (error) return { status: 400, body: { error: error.message } };
-    return { status: 200, body: { ok: true } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: superAdmin.id,
+      actor_name: superAdmin.full_name,
+      actor_role: superAdmin.role,
+      action: 'UNBLOCK_ENTITY',
+      target_type: entity_type,
+      target_id: entity_value,
+      metadata: { is_active: false }
+    });
+    return { status: 200, body: { ok: true, blocked: data } };
   }
 
   if (action === 'EXPORT_SYSTEM_SNAPSHOT') {
@@ -539,14 +560,34 @@ export async function handleOwnerAdminRequest({
   }
 
   if (action === 'UPSERT_PRODUCT') {
-    const productData = body.product;
+    const productData = { ...(body.product || {}) };
+    const sizes = Array.isArray(productData.sizes) ? productData.sizes : null;
+    delete productData.sizes;
     const { data, error } = await serviceSupabase
       .from('products')
-      .upsert(productData, { onConflict: 'id' })
+      .upsert({ ...productData, updated_at: new Date().toISOString() }, { onConflict: 'id' })
       .select('*')
       .single();
 
     if (error) return { status: 400, body: { error: error.message } };
+
+    if (sizes && sizes.length) {
+      const sizeRows = sizes.map((size, index) => ({
+        id: String(size.id || ''),
+        product_id: data.id,
+        name_ar: String(size.name_ar || '').trim(),
+        name_en: String(size.name_en || '').trim(),
+        price_delta: Number(size.price_delta || 0),
+        is_default: Boolean(size.is_default),
+        sort_order: Number.isFinite(Number(size.sort_order)) ? Number(size.sort_order) : index
+      })).filter((size) => size.id && size.name_ar && size.name_en);
+      if (sizeRows.length) {
+        const { error: sizesError } = await serviceSupabase
+          .from('product_sizes')
+          .upsert(sizeRows, { onConflict: 'id' });
+        if (sizesError) return { status: 400, body: { error: sizesError.message } };
+      }
+    }
 
     await serviceSupabase.from('audit_logs').insert({
       actor_id: actor.id,
@@ -555,10 +596,98 @@ export async function handleOwnerAdminRequest({
       action: 'UPSERT_PRODUCT',
       target_type: 'product',
       target_id: data.id,
-      metadata: { base_price: data.base_price }
+      metadata: { base_price: data.base_price, sizes_saved: sizes?.length || 0 }
     });
 
     return { status: 200, body: { ok: true, product: data } };
+  }
+
+  if (action === 'DEACTIVATE_PRODUCT') {
+    const productId = String(body.product_id || '');
+    if (!productId) return { status: 400, body: { error: 'PRODUCT_ID_REQUIRED' } };
+    const { data, error } = await serviceSupabase
+      .from('products')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', productId)
+      .select('id,is_active')
+      .single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'DEACTIVATE_PRODUCT', target_type: 'product', target_id: productId, metadata: { is_active: false }
+    });
+    return { status: 200, body: { ok: true, product: data } };
+  }
+
+  if (action === 'UPSERT_CATEGORY') {
+    const category = body.category || {};
+    const categoryId = String(category.id || '');
+    if (!categoryId || !String(category.name_ar || '').trim() || !String(category.name_en || '').trim()) {
+      return { status: 400, body: { error: 'CATEGORY_FIELDS_REQUIRED' } };
+    }
+    const { data, error } = await serviceSupabase.from('categories')
+      .upsert({
+        id: categoryId,
+        name_ar: String(category.name_ar).trim(),
+        name_en: String(category.name_en).trim(),
+        sort_order: Number(category.sort_order || 0),
+        is_active: category.is_active !== false
+      }, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_CATEGORY', target_type: 'category', target_id: data.id, metadata: { is_active: data.is_active }
+    });
+    return { status: 200, body: { ok: true, category: data } };
+  }
+
+  if (action === 'DEACTIVATE_CATEGORY') {
+    const categoryId = String(body.category_id || '');
+    if (!categoryId) return { status: 400, body: { error: 'CATEGORY_ID_REQUIRED' } };
+    const { data, error } = await serviceSupabase.from('categories')
+      .update({ is_active: false }).eq('id', categoryId).select('id,is_active').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'DEACTIVATE_CATEGORY', target_type: 'category', target_id: categoryId, metadata: { is_active: false }
+    });
+    return { status: 200, body: { ok: true, category: data } };
+  }
+
+  if (action === 'UPSERT_ADDON') {
+    const addon = body.addon || {};
+    const addonId = String(addon.id || '');
+    if (!addonId || !String(addon.name_ar || '').trim() || !String(addon.name_en || '').trim() || !Number.isFinite(Number(addon.price)) || Number(addon.price) < 0) {
+      return { status: 400, body: { error: 'ADDON_FIELDS_REQUIRED' } };
+    }
+    const { data, error } = await serviceSupabase.from('product_addons')
+      .upsert({
+        id: addonId,
+        name_ar: String(addon.name_ar).trim(),
+        name_en: String(addon.name_en).trim(),
+        price: Number(addon.price),
+        max_per_item: Math.max(1, Math.min(10, Number(addon.max_per_item || 3))),
+        is_active: addon.is_active !== false
+      }, { onConflict: 'id' }).select('*').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'UPSERT_ADDON', target_type: 'product_addon', target_id: data.id, metadata: { price: data.price }
+    });
+    return { status: 200, body: { ok: true, addon: data } };
+  }
+
+  if (action === 'DEACTIVATE_ADDON') {
+    const addonId = String(body.addon_id || '');
+    if (!addonId) return { status: 400, body: { error: 'ADDON_ID_REQUIRED' } };
+    const { data, error } = await serviceSupabase.from('product_addons')
+      .update({ is_active: false }).eq('id', addonId).select('id,is_active').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({
+      actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role,
+      action: 'DEACTIVATE_ADDON', target_type: 'product_addon', target_id: addonId, metadata: { is_active: false }
+    });
+    return { status: 200, body: { ok: true, addon: data } };
   }
 
   if (action === 'SET_BRANCH_PRICE_OVERRIDE') {

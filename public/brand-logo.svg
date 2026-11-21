@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 210" role="img" aria-labelledby="title">
+<title id="title">BURGER HOUSE</title>
+<g fill="none" stroke="#F2EBDD" stroke-width="6" stroke-linejoin="round">
+<path d="M72 78 130 28l58 50"/>
+</g>
+<path d="M91 83c4-20 20-32 39-32s35 12 39 32H91Z" fill="#E76F32"/>
+<path d="M96 87h68" stroke="#73935C" stroke-width="7" stroke-linecap="round"/>
+<path d="M94 96h72l-5 9H99Z" fill="#F2EBDD"/>
+<path d="M99 108h62c-4 12-15 18-31 18s-27-6-31-18Z" fill="#B94E2D"/>
+<text x="235" y="99" fill="#F2EBDD" font-family="Arial,sans-serif" font-size="67" font-weight="800" letter-spacing="2">BURGER</text>
+<text x="240" y="158" fill="#E76F32" font-family="Arial,sans-serif" font-size="43" font-weight="700" letter-spacing="15">HOUSE</text>
+<path d="M240 174h425" stroke="#E76F32" stroke-width="2"/>
+<text x="241" y="198" fill="#B8B3A9" font-family="Arial,sans-serif" font-size="13" letter-spacing="4">GOOD FOOD  •  GREAT MOOD</text>
+</svg>

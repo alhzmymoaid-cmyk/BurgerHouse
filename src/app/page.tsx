@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
 import SafeFoodImage from '@/components/safe-food-image';
+import StorefrontAdminEditor from '@/components/storefront-admin-editor';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
-  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download
+  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download, Heart
 } from 'lucide-react';
 
 type Size = { id: string; name_ar: string; price_delta: number; is_default?: boolean };
@@ -29,7 +30,7 @@ type CartLine = {
   quantity: number; note: string;
 };
 
-const ORDER_STATUS_LABELS: Record<string, string> = { new: 'بانتظار موافقة الفرع', pending_confirmation: 'بانتظار تأكيد الفرع', accepted: 'تم قبول طلبك', preparing: 'طلبك قيد التجهيز', ready_for_pickup: 'طلبك جاهز للاستلام', completed: 'تم استلام طلبك', rejected: 'تم رفض الطلب', cancelled: 'تم إلغاء الطلب' };
+const ORDER_STATUS_LABELS: Record<string, string> = { new: 'بانتظار موافقة الفرع', pending_confirmation: 'بانتظار تأكيد الفرع', accepted: 'تم قبول الطلب — قيد التجهيز', preparing: 'طلبك قيد التجهيز', ready_for_pickup: 'طلبك جاهز للاستلام', completed: 'تم استلام طلبك', rejected: 'تم رفض الطلب', cancelled: 'تم إلغاء الطلب' };
 const money = (value: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(value);
 const normalizePhone = (value: string) => {
   const digits = value.replace(/\D/g, '');
@@ -68,6 +69,7 @@ export default function StorefrontPage() {
   const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
   const [customerAuthMode, setCustomerAuthMode] = useState<'signup' | 'login'>('signup');
   const [customerPassword, setCustomerPassword] = useState('');
+  const [customerConfirmPassword, setCustomerConfirmPassword] = useState('');
   const [customerAuthBusy, setCustomerAuthBusy] = useState(false);
   const [customerAuthError, setCustomerAuthError] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
@@ -75,6 +77,12 @@ export default function StorefrontPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<any>(null);
   const [orderError, setOrderError] = useState('');
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPreview, setCouponPreview] = useState<any>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
 
   const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -138,6 +146,7 @@ export default function StorefrontPage() {
   const payments: Payment[] = catalog?.payment_methods || [];
   const activeBranch = branches.find((branch) => branch.id === branchId);
   const availableProducts = useMemo(() => products.filter((product) => {
+    if (showFavoritesOnly && !favoriteIds.includes(product.id)) return false;
     const override = catalog?.branch_overrides?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const branchControl = catalog?.branch_products?.find((entry: any) => entry.branch_id === branchId && entry.product_id === product.id);
     const soldOutToday = branchControl?.sold_out_until && new Date(branchControl.sold_out_until).getTime() > Date.now();
@@ -149,13 +158,42 @@ export default function StorefrontPage() {
       .map((value) => normalizeSearchText(String(value)));
     const matchesSearch = !normalizedSearch || searchableFields.some((value) => value.includes(normalizedSearch));
     return matchesCategory && matchesSearch && override?.is_available !== false && branchControl?.is_available !== false && !branchControl?.manual_disabled && !soldOutToday && branchCategory?.is_active !== false;
-  }), [products, activeCategory, search, catalog, branchId]);
+  }), [products, activeCategory, search, catalog, branchId, showFavoritesOnly, favoriteIds]);
 
   const categoryGroups = useMemo(() => categories
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0 && catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === group.id)?.is_active !== false), [categories, availableProducts, catalog, branchId]);
 
 
+
+
+  useEffect(() => {
+    if (!customerLoggedIn) { setFavoriteIds([]); return; }
+    let active = true;
+    fetch('/api/account/favorites', { cache: 'no-store', credentials: 'same-origin' })
+      .then(async response => { if (!response.ok) return []; const data = await response.json(); return (data.favorites || []).map((item: any) => String(item.product_id)); })
+      .then(ids => { if (active) setFavoriteIds(ids); })
+      .catch(() => { if (active) setFavoriteIds([]); });
+    return () => { active = false; };
+  }, [customerLoggedIn]);
+
+  const toggleFavorite = async (productId: string) => {
+    if (!customerLoggedIn) { setOrderError('سجّل الدخول إلى حساب العميل لحفظ منتجاتك المفضلة.'); setCheckoutOpen(true); return; }
+    if (favoriteBusy) return;
+    setFavoriteBusy(productId);
+    const removing = favoriteIds.includes(productId);
+    try {
+      const response = await fetch('/api/account/favorites', {
+        method: removing ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin', cache: 'no-store',
+        body: JSON.stringify({ product_id: productId })
+      });
+      if (!response.ok) throw new Error('تعذر تحديث المفضلة. حاول مرة أخرى.');
+      setFavoriteIds(current => removing ? current.filter(id => id !== productId) : [...current, productId]);
+    } catch (error: any) { setOrderError(error.message || 'تعذر تحديث المفضلة'); }
+    finally { setFavoriteBusy(null); }
+  };
 
   const addonFor = (id: string) => addons.find((addon) => addon.id === id);
   const linePrice = (line: CartLine) => {
@@ -166,8 +204,9 @@ export default function StorefrontPage() {
     return (base + sizeDelta + addonTotal) * line.quantity;
   };
   const subtotal = cart.reduce((sum, line) => sum + linePrice(line), 0);
-  const vat = Number(((subtotal * Number(catalog?.settings?.vat_percentage ?? 15)) / 100).toFixed(2));
-  const total = subtotal + vat;
+  const discountAmount = couponPreview?.code === couponCode.trim().toUpperCase() ? Number(couponPreview.discount_amount || 0) : 0;
+  const vat = Number((((subtotal - discountAmount) * Number(catalog?.settings?.vat_percentage ?? 15)) / 100).toFixed(2));
+  const total = subtotal - discountAmount + vat;
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const openProduct = (product: Product) => {
@@ -207,6 +246,10 @@ export default function StorefrontPage() {
       setCustomerAuthError('اكتب اسمك الكامل.');
       return;
     }
+    if (customerAuthMode === 'signup' && customerPassword !== customerConfirmPassword) {
+      setCustomerAuthError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
     if (customerPassword.length < 8) {
       setCustomerAuthError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
       return;
@@ -218,7 +261,7 @@ export default function StorefrontPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ mode: customerAuthMode, phone: normalized, password: customerPassword, fullName: customerName.trim() })
+        body: JSON.stringify({ mode: customerAuthMode, phone: customerAuthMode === 'signup' ? customerPhone : normalized, password: customerPassword, fullName: customerName.trim() })
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message_ar || 'تعذر إكمال تسجيل الحساب. حاول مرة أخرى.');
@@ -232,12 +275,28 @@ export default function StorefrontPage() {
       setCustomerPhone(profile?.phone || normalized);
       setCustomerLoggedIn(true);
       setCustomerPassword('');
+      setCustomerConfirmPassword('');
       setCustomerAuthError('');
     } catch (error: any) {
       setCustomerAuthError(error?.message || 'تعذر إكمال العملية. حاول مرة أخرى.');
     } finally {
       setCustomerAuthBusy(false);
     }
+  };
+
+
+  const validateCoupon = async () => {
+    setOrderError('');
+    if (!couponCode.trim()) { setCouponPreview(null); return; }
+    setCouponBusy(true);
+    try {
+      const response = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', cache: 'no-store', body: JSON.stringify({ code: couponCode, branch_id: branchId, subtotal }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message_ar || 'تعذر تطبيق رمز الخصم.');
+      setCouponCode(result.code);
+      setCouponPreview(result);
+    } catch (error: any) { setCouponPreview(null); setOrderError(error.message || 'رمز الخصم غير صالح.'); }
+    finally { setCouponBusy(false); }
   };
 
   const submitOrder = async () => {
@@ -259,6 +318,7 @@ export default function StorefrontPage() {
           customer_phone: normalizePhone(customerPhone),
           customer_notes: customerNotes.trim(),
           payment_method_id: paymentId,
+          coupon_code: couponPreview?.code || null,
           items: cart.map((line) => ({
             product_id: line.product.id,
             size_id: line.size?.id || null,
@@ -302,6 +362,7 @@ export default function StorefrontPage() {
           branch_id: branchId, customer_name: customerName.trim(),
           customer_phone: normalizePhone(customerPhone), customer_notes: customerNotes.trim(),
           payment_method_id: paymentId,
+          coupon_code: couponPreview?.code || null,
           items: cart.map((line) => ({ product_id: line.product.id, size_id: line.size?.id || null, addon_ids: line.addonIds, quantity: line.quantity, item_notes: line.note })),
           client_claimed_total: Number(total.toFixed(2)),
           require_captcha_verification: true,
@@ -333,19 +394,31 @@ export default function StorefrontPage() {
     }, () => undefined, { enableHighAccuracy: false, timeout: 8000 });
   };
 
+  if (catalog?.settings && (catalog.settings.site_online === false || catalog.settings.maintenance_mode === true)) {
+    const message = catalog.settings.maintenance_message_ar || 'نعتذر عن استقبال الطلبات حاليًا. نعود إليكم قريبًا.';
+    return (
+      <main dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0A0A0C] px-5 py-12 text-[#F6F3EC]">
+        <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#141417] p-8 text-center">
+          <img src="/brand-mark.svg" alt="BURGER HOUSE" className="mx-auto h-16 w-16"/>
+          <p className="mt-6 text-[10px] font-bold tracking-[.2em] text-[#F2B705]">BURGER HOUSE</p>
+          <h1 className="mt-3 text-2xl font-bold">{catalog.settings.site_online === false ? 'نعود إليكم قريبًا' : 'نجهّز لكم تجربة أفضل'}</h1>
+          <p className="mt-3 text-sm leading-7 text-[#9E9BA3]">{message}</p>
+          <a href="https://wa.me/966535717670" className="mt-6 inline-flex rounded-lg bg-[#F2B705] px-6 py-3 text-xs font-bold text-[#0A0A0C]">تواصل معنا</a>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className={`bh-storefront min-h-screen pb-[env(safe-area-inset-bottom)] bg-[#09090B] text-[#FAFAFA] ${cartCount > 0 ? 'bh-has-cart-items' : ''}`} dir="rtl">
+      <StorefrontAdminEditor />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#09090B]/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="bh-storefront-announcement bg-[#09090B] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#e9e2d5] sm:text-xs">
           تحضير طازج عند الطلب <span className="mx-2 text-[#b77b45]">•</span> استلام مباشر من فروعنا
         </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
-          <a href="/" className="flex items-center gap-3">
-            <img src="/brand-mark.svg" alt="شعار برجر هاوس" className="h-12 w-12 object-contain"/>
-            <div>
-              <div className="font-[Cairo] text-[17px] font-black tracking-[.12em]">BURGER HOUSE</div>
-              <div className="mt-0.5 text-[10px] font-bold tracking-[.18em] text-[#82796d]">CRAFTED OVER FIRE</div>
-            </div>
+          <a href="/" className="flex items-center gap-3" aria-label="Burger House">
+            <img src="/brand-logo.svg" alt="BURGER HOUSE — Good Food, Great Mood" className="h-12 w-auto max-w-[220px] object-contain"/>
           </a>
 
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
@@ -537,7 +610,7 @@ export default function StorefrontPage() {
           : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
           : <div className="space-y-14">
             {categoryGroups.map((group) => <section key={group.id}>
-              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div>
+              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><div className="flex items-center gap-3"><button type="button" onClick={()=>setShowFavoritesOnly(v=>!v)} className={showFavoritesOnly?'rounded-full bg-[#17191B] px-3 py-2 text-[10px] font-bold text-[#F2EBDD]':'rounded-full border border-[#d9d1c5] px-3 py-2 text-[10px] font-bold text-[#5f594f]'}>{showFavoritesOnly?'عرض كل المنتجات':'المفضلة'} ({favoriteIds.length})</button><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div></div>
               <div className="bh-v2-product-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {group.products.map((product)=>{
                   const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
@@ -547,6 +620,7 @@ export default function StorefrontPage() {
                       {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
                     </button>
                     <div className="bh-v2-product-info">
+                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8cd] bg-white/90 text-[#a84f32] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
                       <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
                       <p>{product.description_ar}</p>
                       <div className="bh-v2-product-bottom">
@@ -611,6 +685,11 @@ export default function StorefrontPage() {
       {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>
         <div className="mt-5 space-y-4">
+          <section className="rounded-xl border border-white/10 bg-[#202019] p-4">
+            <label className="mb-2 block text-xs font-bold text-[#e9e2d2]" htmlFor="bh-coupon">رمز الخصم</label>
+            <div className="flex gap-2"><input id="bh-coupon" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponPreview(null);}} placeholder="أدخل رمز الخصم" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white outline-none" dir="ltr"/><button type="button" disabled={couponBusy||!couponCode.trim()} onClick={()=>void validateCoupon()} className="rounded-lg bg-[#E76F32] px-4 text-xs font-black text-white disabled:opacity-50">{couponBusy?'جارٍ التحقق':'تطبيق'}</button></div>
+            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code} — خصم {money(discountAmount)} ر.س</p>}
+          </section>
           {!customerDataLoaded ? (
             <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>
           ) : customerLoggedIn ? (
@@ -625,7 +704,8 @@ export default function StorefrontPage() {
                 {customerAuthMode==='signup' && <label className="block text-xs font-bold text-[#e9e2d2]">الاسم الكامل<input value={customerName} onChange={e=>setCustomerName(e.target.value)} autoComplete="name" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="اكتب اسمك"/></label>}
                 <label className="block text-xs font-bold text-[#e9e2d2]">رقم الجوال<input value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} autoComplete="tel" inputMode="tel" dir="ltr" className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="05xxxxxxxx"/></label>
                 <label className="block text-xs font-bold text-[#e9e2d2]">{customerAuthMode==='signup'?'أنشئ كلمة مرور':'كلمة المرور'}<input type="password" minLength={8} autoComplete={customerAuthMode==='signup'?'new-password':'current-password'} value={customerPassword} onChange={e=>setCustomerPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="8 أحرف على الأقل"/></label>
-                {customerAuthMode==='login' && <a href="/account#forgot" className="inline-block text-[11px] font-bold text-[#f5d66b] underline">نسيت كلمة المرور؟</a>}
+                {customerAuthMode==='signup' && <label className="block text-xs font-bold text-[#e9e2d2]">تأكيد كلمة المرور<input type="password" minLength={8} autoComplete="new-password" value={customerConfirmPassword} onChange={e=>setCustomerConfirmPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-[#10100d] px-3 py-2.5 text-sm text-white outline-none" placeholder="أعد كتابة كلمة المرور"/></label>}
+                {customerAuthMode==='login' && <a href="/forgot-password" className="inline-block text-[11px] font-bold text-[#f5d66b] underline">نسيت كلمة المرور؟</a>}
                 {customerAuthError && <p role="alert" className="rounded-lg bg-red-950/50 p-2.5 text-xs text-red-200">{customerAuthError}</p>}
                 <button type="button" disabled={customerAuthBusy} onClick={authenticateCustomer} className="w-full rounded-lg bg-[#f5c542] py-3 text-sm font-black text-[#17140b] disabled:opacity-50">{customerAuthBusy?'جارٍ تجهيز حسابك...':customerAuthMode==='signup'?'إنشاء الحساب والمتابعة':'تسجيل الدخول والمتابعة'}</button>
               </div>
@@ -642,7 +722,7 @@ export default function StorefrontPage() {
         </div>
       </div></div>}
 
-      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-3xl font-black tabular-nums">{orderResult.order_number ?? "—"}</div></div><a href="/account/orders" className="mt-5 block w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">عرض طلباتي</a><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
+      {orderResult && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4"><div className="w-full max-w-md bg-[#f8f6f1] p-8 text-center text-[#201e1a]"><div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#e4eee4] text-[#3f6746]"><Check size={28}/></div><div className="mt-5 text-[10px] font-black tracking-[.2em] text-[#a65e36]">ORDER RECEIVED</div><h2 className="mt-2 text-2xl font-black">وصل طلبك إلى الفرع</h2><p className="mt-2 text-sm text-[#777064]">الطلب الآن بانتظار موافقة الموظف. ستتغير حالته هنا تلقائياً عند المتابعة.</p><div className="mt-5 border border-[#ded8cd] bg-white p-4"><div className="text-xs text-[#777064]">رقم الطلب</div><div className="mt-1 text-3xl font-black tabular-nums">{orderResult.order_number ?? "—"}</div></div><a href={`/orders/${orderResult.id}`} className="mt-5 block w-full bg-[#20201c] py-3.5 text-sm font-bold text-white">تتبع حالة الطلب</a><a href="/account/orders" className="mt-3 block text-xs font-bold text-[#777064]">عرض جميع طلباتي</a><button onClick={()=>setOrderResult(null)} className="mt-3 text-xs font-bold text-[#777064]">العودة للمنيو</button></div></div>}
     </main>
   );
 }

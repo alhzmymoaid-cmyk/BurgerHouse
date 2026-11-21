@@ -490,7 +490,7 @@ export async function handleOwnerAdminRequest({
 
   const actor = authCheck.profile;
   const action = body?.action;
-  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON']);
+  const catalogActions = new Set(['UPSERT_PRODUCT','DELETE_PRODUCT','DEACTIVATE_PRODUCT','UPSERT_CATEGORY','DELETE_CATEGORY','DEACTIVATE_CATEGORY','UPSERT_ADDON','DELETE_ADDON','DEACTIVATE_ADDON','UPDATE_SITE_COPY']);
   if (actor.role === 'branch_manager' && !(Array.isArray(actor.permissions) && actor.permissions.includes('catalog_manage'))) {
     return { status: 403, body: { error: 'CATALOG_MANAGEMENT_PERMISSION_REQUIRED', message_ar: 'حسابك لا يملك صلاحية إدارة المنيو.' } };
   }
@@ -784,6 +784,21 @@ export async function handleOwnerAdminRequest({
 
     if (error) return { status: 400, body: { error: error.message } };
     return { status: 200, body: { ok: true, staff: data } };
+  }
+
+  if (action === 'UPDATE_SITE_COPY') {
+    const allowedKeys = ['heroKickerAr','heroTitleAr','heroTitleAccentAr','heroLeadAr','heroCtaAr','heroBranchesCtaAr','announcementAr','footerDescriptionAr','menuTitleAr','menuSubtitleAr'];
+    const incoming = body.copy && typeof body.copy === 'object' ? body.copy : {};
+    const copy = Object.fromEntries(allowedKeys.filter((key) => Object.prototype.hasOwnProperty.call(incoming, key)).map((key) => [key, String(incoming[key] || '').trim().slice(0, 220)]));
+    if (!Object.keys(copy).length) return { status: 400, body: { error: 'SITE_COPY_EMPTY' } };
+    const { data: current, error: readError } = await serviceSupabase.from('system_settings').select('draft_theme,published_theme').eq('id', 1).single();
+    if (readError || !current) return { status: 400, body: { error: readError?.message || 'SITE_SETTINGS_NOT_FOUND' } };
+    const nextDraft = { ...(current.draft_theme || {}), ...copy };
+    const nextPublished = { ...(current.published_theme || {}), ...copy };
+    const { data, error } = await serviceSupabase.from('system_settings').update({ draft_theme: nextDraft, published_theme: nextPublished, updated_at: new Date().toISOString(), updated_by: actor.id }).eq('id', 1).select('draft_theme,published_theme').single();
+    if (error) return { status: 400, body: { error: error.message } };
+    await serviceSupabase.from('audit_logs').insert({ actor_id: actor.id, actor_name: actor.full_name, actor_role: actor.role, action: 'UPDATE_SITE_COPY', target_type: 'system_settings', target_id: '1', metadata: { changed_fields: Object.keys(copy) } });
+    return { status: 200, body: { ok: true, settings: data } };
   }
 
   if (action === 'UPDATE_THEME_CONFIG') {

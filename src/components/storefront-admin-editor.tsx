@@ -30,25 +30,42 @@ export default function StorefrontAdminEditor(){
   const [busy,setBusy]=useState(false);
   const [uploading,setUploading]=useState(false);
   const [error,setError]=useState('');
+  const [loadError,setLoadError]=useState('');
+  const [requestedAdmin,setRequestedAdmin]=useState(false);
   const [message,setMessage]=useState('');
   const [copyForm,setCopyForm]=useState<any>({heroKickerAr:'',heroTitleAr:'',heroTitleAccentAr:'',heroLeadAr:'',heroCtaAr:'',heroBranchesCtaAr:'',announcementAr:'',footerDescriptionAr:'',menuTitleAr:'',menuSubtitleAr:''});
 
   const load=useCallback(async()=>{
+    const adminRequested = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1';
+    if(adminRequested){setRequestedAdmin(true);setEnabled(true);}
+    setLoadError('');
     try{
-      const {data:{user}}=await createSupabaseBrowserClient().auth.getUser();
-      if(!user)return;
+      const {data:{user},error:authError}=await createSupabaseBrowserClient().auth.getUser();
+      if(authError)throw new Error(authError.message);
+      if(!user){
+        if(adminRequested)setLoadError('انتهت جلسة الدخول أو لم يتم تسجيل الدخول. سجّل الدخول بحساب الإدارة ثم أعد فتح إدارة المنيو.');
+        return;
+      }
       const response=await fetch('/api/admin/catalog',{cache:'no-store',credentials:'same-origin'});
-      if(!response.ok)return;
-      const result=await response.json();
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const message=result.message_ar||result.message||result.error||`فشل تحميل إدارة المنيو (HTTP ${response.status}).`;
+        setLoadError(message);
+        return;
+      }
       const canManage = ['super_admin','owner'].includes(result.profile?.role)
         || (result.profile?.role === 'branch_manager' && Array.isArray(result.profile?.permissions) && result.profile.permissions.includes('catalog_manage'));
-      if(!canManage)return;
+      if(!canManage){
+        setProfile(result.profile||null);
+        setLoadError('حسابك لا يملك صلاحية إدارة المنتجات والمنيو. يلزم تفعيل صلاحية catalog_manage من مدير النظام.');
+        return;
+      }
       setProfile(result.profile);
       setData(result);
       setCopyForm({heroKickerAr:'طازج من المطبخ إلى يدك',heroTitleAr:'اختَر وجبتك.',heroTitleAccentAr:'ونحن نجهّز الباقي.',heroLeadAr:'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.',heroCtaAr:'ابدأ طلبك',heroBranchesCtaAr:'مواقع الفروع',announcementAr:'تحضير طازج عند الطلب • استلام مباشر من فروعنا',footerDescriptionAr:'نكهات صُنعت على اللهب، ومكونات نختارها بعناية. اطلب مسبقاً واستلم من الفرع.',menuTitleAr:'قائمة برجر هاوس',menuSubtitleAr:'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.',...(result.settings?.published_theme||{})});
-      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1') { setEnabled(true); setOpen(true); }
-    }catch{
-      setProfile(null);
+      if(adminRequested){setEnabled(true);setOpen(true);}
+    }catch(error:any){
+      setLoadError(error?.message||'تعذر الاتصال بخدمة إدارة المنيو.');
     }
   },[]);
   useEffect(()=>{void load();},[load]);
@@ -157,7 +174,14 @@ export default function StorefrontAdminEditor(){
   };
 
   const canManageCatalog = Boolean(profile && (['super_admin','owner'].includes(profile.role) || (profile.role === 'branch_manager' && Array.isArray(profile.permissions) && profile.permissions.includes('catalog_manage'))));
-  if(!canManageCatalog)return null;
+  if(!canManageCatalog){
+    if(!requestedAdmin)return null;
+    return <div dir="rtl" className="fixed inset-x-3 bottom-4 z-[120] mx-auto max-w-xl rounded-2xl border border-red-400/40 bg-[#171216] p-4 text-[#FAFAFA] shadow-2xl">
+      <b className="text-sm text-red-200">تعذر فتح إدارة المنتجات والمنيو</b>
+      <p role="alert" className="mt-2 text-xs leading-6 text-[#E4E4E7]">{loadError||'لم يتم تحميل صلاحيات إدارة المنيو.'}</p>
+      <div className="mt-3 flex flex-wrap gap-2"><a href="/menu-studio" className="rounded-lg bg-[#F2B705] px-4 py-2.5 text-xs font-black text-[#09090B]">صفحة تشخيص إدارة المنيو</a><a href="/auth/login" className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-bold">تسجيل الدخول</a></div>
+    </div>;
+  }
 
   return <>
     {!enabled?<button type="button" onClick={()=>setEnabled(true)} className="fixed bottom-24 right-4 z-[85] rounded-xl border border-[#F2B705]/50 bg-[#141417] px-4 py-3 text-xs font-bold text-[#F2B705] shadow-xl">تعديل المتجر والمنيو</button>

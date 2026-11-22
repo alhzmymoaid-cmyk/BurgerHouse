@@ -320,3 +320,8 @@ body { color-scheme:dark; }
 .bh-staff-login button[type="submit"] { background:#F5B800 !important; color:#0A0A0C !important; }
 .bh-owner-shell [class*="disabled:bg"],.bh-superadmin [class*="disabled:bg"] { color:#9E9BA3 !important; }
 .bh-catalog-studio { min-height:100vh; }
+
+.bh-staff-shell [class*="bg-red-50"],.bh-owner-shell [class*="bg-red-50"],.bh-superadmin [class*="bg-red-50"],.bh-catalog-studio [class*="bg-red-50"],.bh-staff-login [class*="bg-red-50"] { background:rgba(239,68,68,.12) !important; color:#FCA5A5 !important; border-color:rgba(239,68,68,.3) !important; }
+.bh-staff-shell [class*="bg-emerald-50"],.bh-owner-shell [class*="bg-emerald-50"],.bh-superadmin [class*="bg-emerald-50"],.bh-catalog-studio [class*="bg-emerald-50"] { background:rgba(34,197,94,.12) !important; color:#86EFAC !important; border-color:rgba(34,197,94,.3) !important; }
+.bh-staff-shell [class*="bg-amber-50"],.bh-owner-shell [class*="bg-amber-50"],.bh-superadmin [class*="bg-amber-50"],.bh-catalog-studio [class*="bg-amber-50"] { background:rgba(245,184,0,.12) !important; color:#FCD34D !important; border-color:rgba(245,184,0,.3) !important; }
+.bh-owner-shell button:disabled,.bh-owner-shell a[aria-disabled="true"],.bh-superadmin button:disabled,.bh-staff-shell button:disabled { background:#27272E !important; color:#9E9BA3 !important; border-color:rgba(255,255,255,.10) !important; opacity:1 !important; }

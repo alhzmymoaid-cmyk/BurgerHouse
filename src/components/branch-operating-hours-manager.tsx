@@ -98,9 +98,9 @@ export default function BranchOperatingHoursManager() {
       {loading ? <p className="mt-5 text-xs text-[#b8b1a1]">جارٍ تحميل إعدادات الفرع...</p> : (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <label className="space-y-2 text-xs font-bold text-[#d8cfbb]">
+            <label className="space-y-2 text-xs font-bold !text-[#F3F0E8]">
               وقت فتح الفرع
-              <input type="time" value={openTime} onChange={(event) => setOpenTime(event.target.value)} className="w-full rounded-xl border border-white/10 bg-[#24231d] px-3 py-3 text-sm text-white outline-none focus:border-[#F2B705]" />
+              <input type="time" value={openTime} onChange={(event) => setOpenTime(event.target.value)} className="w-full rounded-xl border border-[#77766f] bg-[#24231d] px-3 py-3 text-sm !text-white outline-none focus:border-[#F2B705]" style={{ colorScheme: 'dark', color: '#FFFFFF', backgroundColor: '#24231d' }} />
             </label>
             <label className="space-y-2 text-xs font-bold text-[#d8cfbb]">
               وقت إغلاق الفرع
@@ -109,12 +109,12 @@ export default function BranchOperatingHoursManager() {
           </div>
 
           <div className="mt-5">
-            <p className="mb-3 text-xs font-bold text-[#d8cfbb]">أيام الإغلاق الأسبوعية</p>
+            <p className="mb-3 text-xs font-bold !text-[#F3F0E8]">أيام الإغلاق الأسبوعية</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {DAYS.map((day) => {
                 const checked = closedDays.includes(day.id);
-                return <label key={day.id} className={checked ? 'flex cursor-pointer items-center gap-2 rounded-xl border border-[#F2B705]/50 bg-[#F2B705]/10 px-3 py-3 text-xs font-bold text-[#F2B705]' : 'flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-[#24231d] px-3 py-3 text-xs font-bold text-[#d8cfbb]'}>
-                  <input type="checkbox" checked={checked} onChange={() => toggleDay(day.id)} className="accent-[#F2B705]" />
+                return <label key={day.id} className={checked ? 'flex cursor-pointer items-center gap-2 rounded-xl border border-[#F2B705] bg-[#3a2e0c] px-3 py-3 text-xs font-bold !text-[#FFD95A]' : 'flex cursor-pointer items-center gap-2 rounded-xl border border-[#77766f] bg-[#24231d] px-3 py-3 text-xs font-bold !text-[#F3F0E8]'}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleDay(day.id)} className="h-5 w-5 accent-[#F2B705]" />
                   {day.label}
                 </label>;
               })}
@@ -126,8 +126,8 @@ export default function BranchOperatingHoursManager() {
             <input type="checkbox" checked={accepting} onChange={(event) => setAccepting(event.target.checked)} className="h-5 w-5 accent-[#F2B705]" />
           </label>
 
-          <p className="mt-3 text-[10px] leading-5 text-[#aaa391]">تنطبق أوقات الفتح والإغلاق على جميع أيام العمل، مع استثناء الأيام المحددة كإجازة. إذا كان وقت الإغلاق بعد منتصف الليل، اختر الوقت الفعلي مثل 02:00.</p>
-          {message && <p role="status" className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3 text-xs font-bold text-[#F2D98B]">{message}</p>}
+          <p className="mt-3 text-[11px] leading-6 text-[#D0CBBE]">تنطبق أوقات الفتح والإغلاق على جميع أيام العمل، مع استثناء الأيام المحددة كإجازة. إذا كان وقت الإغلاق بعد منتصف الليل، اختر الوقت الفعلي مثل 02:00.</p>
+          {message && <p role="status" className="mt-3 rounded-lg border border-[#8B7438] bg-[#292313] p-3 text-xs font-bold !text-[#FFE6A0]">{message}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#F2B705] px-5 py-3 text-xs font-black text-[#17140b] disabled:opacity-50">{saving ? 'جارٍ الحفظ...' : 'حفظ إعدادات الفرع'}</button>
             <button type="button" onClick={() => void load()} disabled={saving} className="rounded-xl border border-white/10 px-4 py-3 text-xs font-bold text-[#e5dcc8] disabled:opacity-50">إعادة تحميل</button>

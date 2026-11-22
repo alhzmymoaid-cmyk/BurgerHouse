@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 type Coupon = {
   id: string;
@@ -51,7 +51,7 @@ export default function BranchCouponManager() {
 
   useEffect(() => { void loadCoupons(); }, [loadCoupons]);
 
-  const createCoupon = async (event: React.FormEvent) => {
+  const createCoupon = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError('');

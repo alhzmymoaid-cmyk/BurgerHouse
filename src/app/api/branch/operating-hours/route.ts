@@ -44,13 +44,13 @@ export async function PATCH(request: NextRequest) {
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (Object.prototype.hasOwnProperty.call(body, 'open_time')) {
-    if (typeof body.open_time !== 'string' || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(body.open_time)) {
+    if (typeof body.open_time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.open_time)) {
       return NextResponse.json({ error: 'INVALID_OPEN_TIME' }, { status: 400 });
     }
     update.open_time = body.open_time;
   }
   if (Object.prototype.hasOwnProperty.call(body, 'close_time')) {
-    if (typeof body.close_time !== 'string' || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(body.close_time)) {
+    if (typeof body.close_time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.close_time)) {
       return NextResponse.json({ error: 'INVALID_CLOSE_TIME' }, { status: 400 });
     }
     update.close_time = body.close_time;

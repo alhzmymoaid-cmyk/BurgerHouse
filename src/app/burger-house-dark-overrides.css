@@ -223,3 +223,100 @@ body { color-scheme:dark; }
 
 /* Keep the close affordance clear of the price badge in RTL layouts. */
 .bh-storefront .bh-product-dialog .bh-product-content > div:first-child { padding-left:3.25rem !important; }
+
+
+/* Final contrast pass: staff operations, branch tools, owner studio, sovereign admin and catalog studio. */
+:root {
+  --bh-bg:#0A0A0C; --bh-surface:#151519; --bh-card:#1C1C22;
+  --bh-line:rgba(255,255,255,.10); --bh-text:#F6F3EC; --bh-muted:#B4B4BE;
+  --bh-yellow:#F5B800; --bh-yellow-hot:#FFCA28;
+}
+.bh-staff-shell,.bh-owner-shell,.bh-superadmin,.bh-catalog-studio,.bh-staff-login {
+  background:#0A0A0C !important; color:#F6F3EC !important;
+}
+.bh-staff-shell [class*="bg-white"],.bh-staff-shell [class*="bg-[#f"],
+.bh-staff-shell [class*="bg-[#e"],.bh-staff-shell [class*="bg-[#d"],
+.bh-owner-shell [class*="bg-white"],.bh-owner-shell [class*="bg-[#f"],
+.bh-owner-shell [class*="bg-[#e"],.bh-owner-shell [class*="bg-[#d"],
+.bh-superadmin [class*="bg-white"],.bh-superadmin [class*="bg-[#f"],
+.bh-superadmin [class*="bg-[#e"],.bh-superadmin [class*="bg-[#d"],
+.bh-catalog-studio [class*="bg-white"],.bh-catalog-studio [class*="bg-[#f"],
+.bh-catalog-studio [class*="bg-[#e"],.bh-catalog-studio [class*="bg-[#d"],
+.bh-staff-login [class*="bg-white"],.bh-staff-login [class*="bg-[#f"],
+.bh-staff-login [class*="bg-[#e"],.bh-staff-login [class*="bg-[#d"] {
+  background:#151519 !important; color:#F6F3EC !important; border-color:rgba(255,255,255,.10) !important;
+}
+.bh-staff-shell [class*="text-[#2"],.bh-staff-shell [class*="text-[#3"],
+.bh-staff-shell [class*="text-[#4"],.bh-staff-shell [class*="text-[#5"],
+.bh-staff-shell [class*="text-[#6"],.bh-staff-shell [class*="text-[#7"],
+.bh-staff-shell [class*="text-[#8"],.bh-owner-shell [class*="text-[#2"],
+.bh-owner-shell [class*="text-[#3"],.bh-owner-shell [class*="text-[#4"],
+.bh-owner-shell [class*="text-[#5"],.bh-owner-shell [class*="text-[#6"],
+.bh-owner-shell [class*="text-[#7"],.bh-owner-shell [class*="text-[#8"],
+.bh-superadmin [class*="text-[#2"],.bh-superadmin [class*="text-[#3"],
+.bh-superadmin [class*="text-[#4"],.bh-superadmin [class*="text-[#5"],
+.bh-superadmin [class*="text-[#6"],.bh-superadmin [class*="text-[#7"],
+.bh-superadmin [class*="text-[#8"],.bh-catalog-studio [class*="text-[#2"],
+.bh-catalog-studio [class*="text-[#3"],.bh-catalog-studio [class*="text-[#4"],
+.bh-catalog-studio [class*="text-[#5"],.bh-catalog-studio [class*="text-[#6"],
+.bh-catalog-studio [class*="text-[#7"],.bh-catalog-studio [class*="text-[#8"] {
+  color:#B4B4BE !important;
+}
+.bh-staff-shell h1,.bh-staff-shell h2,.bh-staff-shell h3,.bh-staff-shell h4,
+.bh-staff-shell strong,.bh-staff-shell b,.bh-owner-shell h1,.bh-owner-shell h2,
+.bh-owner-shell h3,.bh-owner-shell h4,.bh-owner-shell strong,.bh-owner-shell b,
+.bh-superadmin h1,.bh-superadmin h2,.bh-superadmin h3,.bh-superadmin h4,
+.bh-superadmin strong,.bh-superadmin b,.bh-catalog-studio h1,.bh-catalog-studio h2,
+.bh-catalog-studio h3,.bh-catalog-studio h4,.bh-catalog-studio strong,.bh-catalog-studio b {
+  color:#F6F3EC !important;
+}
+.bh-staff-shell input,.bh-staff-shell select,.bh-staff-shell textarea,
+.bh-owner-shell input,.bh-owner-shell select,.bh-owner-shell textarea,
+.bh-superadmin input,.bh-superadmin select,.bh-superadmin textarea,
+.bh-catalog-studio input,.bh-catalog-studio select,.bh-catalog-studio textarea,
+.bh-staff-login input {
+  background:#101014 !important; border:1px solid rgba(255,255,255,.15) !important;
+  color:#F6F3EC !important; color-scheme:dark;
+}
+.bh-staff-shell input::placeholder,.bh-staff-shell textarea::placeholder,
+.bh-owner-shell input::placeholder,.bh-owner-shell textarea::placeholder,
+.bh-superadmin input::placeholder,.bh-superadmin textarea::placeholder,
+.bh-catalog-studio input::placeholder,.bh-catalog-studio textarea::placeholder,
+.bh-staff-login input::placeholder { color:#9E9BA3 !important; opacity:1; }
+.bh-staff-shell button[class*="bg-[#f5c542]"],.bh-staff-shell button[class*="bg-[#F2B705]"],
+.bh-staff-shell button[class*="bg-[#a65e36]"],.bh-owner-shell button[class*="bg-[#F2B705]"],
+.bh-owner-shell a[class*="bg-[#F2B705]"],.bh-superadmin button[class*="bg-[#F2B705]"],
+.bh-superadmin a[class*="bg-[#F2B705]"],.bh-catalog-studio button[class*="bg-[#F2B705]"] {
+  background:#F5B800 !important; color:#0A0A0C !important; border-color:#F5B800 !important; font-weight:800 !important;
+}
+.bh-staff-shell .bh-staff-order-card { background:#151519 !important; color:#F6F3EC !important; border:1px solid rgba(255,255,255,.10) !important; border-radius:18px !important; overflow:hidden; }
+.bh-staff-shell .bh-staff-order-card > div:first-child { background:#1C1C22 !important; border-color:rgba(255,255,255,.10) !important; }
+.bh-staff-shell .bh-staff-order-card [class*="bg-[#f7f5ef]"],
+.bh-staff-shell .bh-staff-order-card [class*="bg-[#fbfaf7]"],
+.bh-staff-shell .bh-staff-order-card [class*="bg-[#fffaf0]"],
+.bh-staff-shell .bh-staff-order-card [class*="bg-white"] {
+  background:#101014 !important; border-color:rgba(255,255,255,.10) !important; color:#F6F3EC !important;
+}
+.bh-staff-shell .bh-staff-order-card [class*="text-[#2"],
+.bh-staff-shell .bh-staff-order-card [class*="text-[#3"],
+.bh-staff-shell .bh-staff-order-card [class*="text-[#5"],
+.bh-staff-shell .bh-staff-order-card [class*="text-[#6"],
+.bh-staff-shell .bh-staff-order-card [class*="text-[#7"],
+.bh-staff-shell .bh-staff-order-card [class*="text-[#8"] { color:#B4B4BE !important; }
+.bh-staff-shell .bh-staff-order-card [data-order-status="completed"],
+.bh-staff-shell .bh-staff-order-card [data-order-status="ready_for_pickup"] { background:rgba(34,197,94,.15) !important; color:#86EFAC !important; border-color:rgba(34,197,94,.35) !important; }
+.bh-staff-shell .bh-staff-order-card [data-order-status="cancelled"],
+.bh-staff-shell .bh-staff-order-card [data-order-status="rejected"] { background:rgba(239,68,68,.15) !important; color:#FCA5A5 !important; border-color:rgba(239,68,68,.35) !important; }
+.bh-staff-shell .bh-staff-order-card [data-order-status="new"],
+.bh-staff-shell .bh-staff-order-card [data-order-status="pending_confirmation"],
+.bh-staff-shell .bh-staff-order-card [data-order-status="accepted"],
+.bh-staff-shell .bh-staff-order-card [data-order-status="preparing"] { background:rgba(245,184,0,.15) !important; color:#FCD34D !important; border-color:rgba(245,184,0,.35) !important; }
+.bh-staff-shell nav[aria-label="تصفية الطلبات"] button { background:#18181D !important; color:#E4E4E7 !important; border:1px solid rgba(255,255,255,.10) !important; }
+.bh-staff-shell nav[aria-label="تصفية الطلبات"] button[aria-pressed="true"],
+.bh-staff-shell nav[aria-label="تصفية الطلبات"] button[data-active="true"] { background:#F5B800 !important; color:#0A0A0C !important; }
+.bh-staff-shell details { background:#151519 !important; border:1px solid rgba(255,255,255,.10) !important; color:#F6F3EC !important; }
+.bh-staff-shell details summary { color:#F6F3EC !important; }
+.bh-staff-login a { color:#F5B800 !important; }
+.bh-staff-login button[type="submit"] { background:#F5B800 !important; color:#0A0A0C !important; }
+.bh-owner-shell [class*="disabled:bg"],.bh-superadmin [class*="disabled:bg"] { color:#9E9BA3 !important; }
+.bh-catalog-studio { min-height:100vh; }

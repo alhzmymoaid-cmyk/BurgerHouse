@@ -9,13 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        obsidian: '#0B0A09',
-        espresso: '#141210',
-        slateCard: '#1C1916',
-        emberGold: '#D49A3A',
-        flameSear: '#B84A27',
-        ivoryCream: '#F5EFE6',
-        mutedStone: '#9E9488',
+        obsidian: '#0A0A0C',
+        charcoal: '#151519',
+        slateCard: '#1C1C22',
+        ivoryCream: '#F6F3EC',
+        mutedStone: '#B4B4BE',
+        emberGold: '#F5B800',
+        emberGoldHover: '#FFCA28',
+        flameSear: '#EF4444',
       },
       fontFamily: {
         arabic: ['Tajawal', 'Cairo', 'sans-serif'],

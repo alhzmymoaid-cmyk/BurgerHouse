@@ -27,6 +27,7 @@ export default function BranchOperatingHoursManager() {
   const [closeTime, setCloseTime] = useState('02:00');
   const [closedDays, setClosedDays] = useState<number[]>([]);
   const [accepting, setAccepting] = useState(true);
+  const [acceptingChanged, setAcceptingChanged] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -44,6 +45,7 @@ export default function BranchOperatingHoursManager() {
       setCloseTime(row.close_time || '02:00');
       setClosedDays(Array.isArray(row.closed_days) ? row.closed_days : []);
       setAccepting(Boolean(row.is_accepting_orders));
+      setAcceptingChanged(false);
     } catch (error: any) {
       setMessage(error?.message || 'تعذر تحميل أوقات العمل.');
     } finally {
@@ -64,13 +66,15 @@ export default function BranchOperatingHoursManager() {
           open_time: openTime,
           close_time: closeTime,
           closed_days: closedDays,
-          is_accepting_orders: accepting,
+          ...(acceptingChanged ? { is_accepting_orders: accepting } : {}),
         }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || result.error || 'تعذر حفظ التغييرات.');
       setBranch(result.branch);
-      setMessage('تم حفظ أوقات العمل وحالة استقبال الطلبات للفرع.');
+      setAccepting(Boolean(result.branch.is_accepting_orders));
+      setAcceptingChanged(false);
+      setMessage('تم حفظ إعدادات الفرع بنجاح.');
     } catch (error: any) {
       setMessage(error?.message || 'تعذر حفظ التغييرات.');
     } finally {
@@ -104,7 +108,7 @@ export default function BranchOperatingHoursManager() {
             </label>
             <label className="space-y-2 text-xs font-bold text-[#d8cfbb]">
               وقت إغلاق الفرع
-              <input type="time" value={closeTime} onChange={(event) => setCloseTime(event.target.value)} className="w-full rounded-xl border border-white/10 bg-[#24231d] px-3 py-3 text-sm text-white outline-none focus:border-[#F2B705]" />
+              <input type="time" value={closeTime} onChange={(event) => setCloseTime(event.target.value)} className="w-full rounded-xl border border-[#77766f] bg-[#24231d] px-3 py-3 text-sm !text-white outline-none focus:border-[#F2B705]" style={{ colorScheme: 'dark', color: '#FFFFFF', backgroundColor: '#24231d' }} />
             </label>
           </div>
 
@@ -123,7 +127,7 @@ export default function BranchOperatingHoursManager() {
 
           <label className="mt-5 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#24231d] p-4">
             <span><span className="block text-xs font-black">استقبال الطلبات</span><span className="mt-1 block text-[10px] text-[#aaa391]">يمكن إيقاف الطلبات مؤقتًا دون تغيير أوقات العمل.</span></span>
-            <input type="checkbox" checked={accepting} onChange={(event) => setAccepting(event.target.checked)} className="h-5 w-5 accent-[#F2B705]" />
+            <input type="checkbox" checked={accepting} onChange={(event) => { setAccepting(event.target.checked); setAcceptingChanged(true); }} className="h-5 w-5 accent-[#F2B705]" />
           </label>
 
           <p className="mt-3 text-[11px] leading-6 text-[#D0CBBE]">تنطبق أوقات الفتح والإغلاق على جميع أيام العمل، مع استثناء الأيام المحددة كإجازة. إذا كان وقت الإغلاق بعد منتصف الليل، اختر الوقت الفعلي مثل 02:00.</p>

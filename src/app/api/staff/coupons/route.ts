@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_ORIGIN' }, { status: 403 });
   }
   const access = await requireBranchManager();
-  if (access.response) return access.response;
+  if (!access.ok) return access.response;
   const body = await request.json().catch(() => ({}));
   const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
   const description = typeof body.description_ar === 'string' ? body.description_ar.trim() : '';

@@ -16,7 +16,7 @@ const config: Config = {
         mutedStone: '#B4B4BE',
         emberGold: '#F5B800',
         emberGoldHover: '#FFCA28',
-        flameSear: '#EF4444',
+        flameSear: '#F5B800',
       },
       fontFamily: {
         arabic: ['Tajawal', 'Cairo', 'sans-serif'],

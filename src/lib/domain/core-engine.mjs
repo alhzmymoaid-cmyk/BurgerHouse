@@ -317,22 +317,40 @@ export function isBranchOpenAtTime(branch, dateObj = new Date()) {
   if (!branch || !branch.is_active || !branch.is_accepting_orders) {
     return { open: false, reason: 'BRANCH_NOT_ACCEPTING_ORDERS' };
   }
-  const day = dateObj.getDay();
-  if (Array.isArray(branch.closed_days) && branch.closed_days.includes(day)) {
-    return { open: false, reason: 'BRANCH_CLOSED_TODAY' };
-  }
+
+  // All branch schedules use Saudi Arabia local time, independent of the
+  // serverless runtime's UTC timezone.
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Riyadh',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(dateObj);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const currentDay = weekdayIndex[values.weekday];
+  const currentMinutes = Number(values.hour) * 60 + Number(values.minute);
+
   const [openH, openM] = (branch.open_time || '12:00').split(':').map(Number);
   const [closeH, closeM] = (branch.close_time || '02:00').split(':').map(Number);
-  const currentMinutes = dateObj.getHours() * 60 + dateObj.getMinutes();
   const openMinutes = openH * 60 + openM;
   const closeMinutes = closeH * 60 + closeM;
+  const overnight = closeMinutes <= openMinutes;
 
-  let isWithinHours = false;
-  if (closeMinutes > openMinutes) {
-    isWithinHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-  } else {
-    isWithinHours = currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+  // After midnight, an overnight schedule still belongs to the day on which
+  // that shift opened. This keeps weekly closed days consistent with checkout.
+  const scheduleDay = overnight && currentMinutes <= closeMinutes
+    ? (currentDay + 6) % 7
+    : currentDay;
+  if (Array.isArray(branch.closed_days) && branch.closed_days.includes(scheduleDay)) {
+    return { open: false, reason: 'BRANCH_CLOSED_TODAY' };
   }
+
+  const isWithinHours = overnight
+    ? currentMinutes >= openMinutes || currentMinutes <= closeMinutes
+    : currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+
   if (!isWithinHours) {
     return { open: false, reason: 'OUTSIDE_OPERATING_HOURS' };
   }

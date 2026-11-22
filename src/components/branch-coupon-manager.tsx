@@ -100,50 +100,50 @@ export default function BranchCouponManager() {
   };
 
   return (
-    <section className="rounded-2xl border border-[#e5e1d8] bg-white p-4 sm:p-5" aria-labelledby="branch-coupons-title">
+    <section className="rounded-2xl border border-white/10 bg-[#151519] p-4 text-[#F6F3EC] sm:p-5" aria-labelledby="branch-coupons-title">
       <div className="mb-4">
-        <h3 id="branch-coupons-title" className="text-base font-black text-[#24221d]">كوبونات الخصم</h3>
-        <p className="mt-1 text-xs leading-6 text-[#777064]">أنشئ كوبونًا خاصًا بفرعك وحدد شروط استخدامه. لا يتأثر الكود بالأحرف الكبيرة أو الصغيرة.</p>
+        <h3 id="branch-coupons-title" className="text-base font-black text-[#F6F3EC]">كوبونات الخصم</h3>
+        <p className="mt-1 text-xs leading-6 text-[#B4B4BE]">أنشئ كوبونًا خاصًا بفرعك وحدد شروط استخدامه. لا يتأثر الكود بالأحرف الكبيرة أو الصغيرة.</p>
       </div>
       <form onSubmit={createCoupon} className="grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-bold text-[#49443b]">كود الخصم
-          <input required minLength={3} maxLength={32} pattern="[A-Za-z0-9_-]{3,32}" value={code} onChange={(e)=>setCode(e.target.value.toUpperCase())} placeholder="WELCOME20" dir="ltr" className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm font-bold tracking-wider text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">كود الخصم
+          <input required minLength={3} maxLength={32} pattern="[A-Za-z0-9_-]{3,32}" value={code} onChange={(e)=>setCode(e.target.value.toUpperCase())} placeholder="WELCOME20" dir="ltr" className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark] font-bold tracking-wider"/>
         </label>
-        <label className="text-xs font-bold text-[#49443b]">نص الخصم الظاهر للعميل
-          <input required maxLength={100} value={description} onChange={(e)=>setDescription(e.target.value)} placeholder="خصم خاص لعملائنا" className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">نص الخصم الظاهر للعميل
+          <input required maxLength={100} value={description} onChange={(e)=>setDescription(e.target.value)} placeholder="خصم خاص لعملائنا" className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
-        <label className="text-xs font-bold text-[#49443b]">نسبة الخصم (%)
-          <input required type="number" min="0.01" max="100" step="0.01" value={discount} onChange={(e)=>setDiscount(e.target.value)} className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">نسبة الخصم (%)
+          <input required type="number" min="0.01" max="100" step="0.01" value={discount} onChange={(e)=>setDiscount(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
-        <label className="text-xs font-bold text-[#49443b]">الحد الأدنى للطلب (ر.س)
-          <input required type="number" min="0" step="0.01" value={minimum} onChange={(e)=>setMinimum(e.target.value)} className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">الحد الأدنى للطلب (ر.س)
+          <input required type="number" min="0" step="0.01" value={minimum} onChange={(e)=>setMinimum(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
-        <label className="text-xs font-bold text-[#49443b]">أقصى قيمة للخصم (ر.س)
-          <input required type="number" min="0.01" step="0.01" value={maximum} onChange={(e)=>setMaximum(e.target.value)} className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">أقصى قيمة للخصم (ر.س)
+          <input required type="number" min="0.01" step="0.01" value={maximum} onChange={(e)=>setMaximum(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
-        <label className="text-xs font-bold text-[#49443b]">بداية الخصم
-          <input required type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+        <label className="text-xs font-bold text-[#F6F3EC]">بداية الخصم
+          <input required type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
         <label className="text-xs font-bold text-[#49443b] sm:col-span-2">نهاية الخصم
-          <input required type="datetime-local" min={startsAt} value={endsAt} onChange={(e)=>setEndsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#ded8cd] bg-[#fbfaf7] px-3 py-3 text-sm text-[#211f1a] outline-none focus:border-[#b88746]"/>
+          <input required type="datetime-local" min={startsAt} value={endsAt} onChange={(e)=>setEndsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-[#101014] px-3 py-3 text-sm text-[#F6F3EC] placeholder:text-[#9E9BA3] outline-none focus:border-[#F5B800] focus:ring-2 focus:ring-[#F5B800]/20 [color-scheme:dark]"/>
         </label>
-        <button disabled={saving} type="submit" className="rounded-xl bg-[#171713] px-4 py-3 text-sm font-black text-[#f5c542] disabled:opacity-50 sm:col-span-2">{saving ? 'جارٍ إنشاء الكوبون...' : 'إضافة كود الخصم'}</button>
+        <button disabled={saving} type="submit" className="rounded-xl bg-[#F5B800] px-4 py-3 text-sm font-black text-[#0A0A0C] disabled:opacity-60 sm:col-span-2">{saving ? 'جارٍ إنشاء الكوبون...' : 'إضافة كود الخصم'}</button>
       </form>
 
-      {message && <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-xs font-bold text-emerald-700">{message}</p>}
-      {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}
+      {message && <p role="status" className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-bold text-emerald-300">{message}</p>}
+      {error && <p role="alert" className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-300">{error}</p>}
 
-      <div className="mt-5 border-t border-[#eeeae2] pt-4">
-        <div className="mb-3 flex items-center justify-between"><h4 className="text-sm font-black text-[#29251f]">أكواد فرعك</h4><button type="button" onClick={()=>void loadCoupons()} className="text-xs font-bold text-[#8d6735]">تحديث</button></div>
-        {loading ? <p className="py-4 text-center text-xs text-[#777064]">جارٍ تحميل الكوبونات...</p> : coupons.length === 0 ? <p className="py-4 text-center text-xs text-[#777064]">لا توجد كوبونات لهذا الفرع حتى الآن.</p> : (
+      <div className="mt-5 border-t border-white/10 pt-4">
+        <div className="mb-3 flex items-center justify-between"><h4 className="text-sm font-black text-[#F6F3EC]">أكواد فرعك</h4><button type="button" onClick={()=>void loadCoupons()} className="text-xs font-bold text-[#F5B800]">تحديث</button></div>
+        {loading ? <p className="py-4 text-center text-xs text-[#B4B4BE]">جارٍ تحميل الكوبونات...</p> : coupons.length === 0 ? <p className="py-4 text-center text-xs text-[#777064]">لا توجد كوبونات لهذا الفرع حتى الآن.</p> : (
           <div className="space-y-2">
-            {coupons.map((coupon) => <article key={coupon.id} className="flex flex-col gap-3 rounded-xl border border-[#e8e3da] bg-[#fbfaf7] p-3 sm:flex-row sm:items-center sm:justify-between">
+            {coupons.map((coupon) => <article key={coupon.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#1C1C22] p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2"><b dir="ltr" className="font-mono text-sm tracking-wider text-[#25221c]">{coupon.code}</b><span className={coupon.is_active ? 'rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700' : 'rounded-full bg-stone-200 px-2 py-1 text-[10px] font-bold text-stone-600'}>{coupon.is_active ? 'نشط' : 'متوقف'}</span></div>
-                <p className="mt-1 text-xs text-[#6e675b]">{coupon.description_ar} · خصم {money(Number(coupon.discount_value))}% حتى {money(Number(coupon.max_discount))} ر.س</p>
-                <p className="mt-1 text-[10px] text-[#898274]">الحد الأدنى {money(Number(coupon.minimum_order))} ر.س · مستخدم {coupon.used_count} مرة · ينتهي {new Date(coupon.ends_at || '').toLocaleString('ar-SA')}</p>
+                <div className="flex flex-wrap items-center gap-2"><b dir="ltr" className="font-mono text-sm font-bold tracking-wider text-[#F5B800]">{coupon.code}</b><span className={coupon.is_active ? 'rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700' : 'rounded-full border border-white/10 bg-[#101014] px-2 py-1 text-[10px] font-bold text-[#B4B4BE]'}>{coupon.is_active ? 'نشط' : 'متوقف'}</span></div>
+                <p className="mt-1 text-xs text-[#B4B4BE]">{coupon.description_ar} · خصم {money(Number(coupon.discount_value))}% حتى {money(Number(coupon.max_discount))} ر.س</p>
+                <p className="mt-1 text-[10px] text-[#9E9BA3]">الحد الأدنى {money(Number(coupon.minimum_order))} ر.س · مستخدم {coupon.used_count} مرة · ينتهي {new Date(coupon.ends_at || '').toLocaleString('ar-SA')}</p>
               </div>
-              <button type="button" onClick={()=>void toggleCoupon(coupon)} className="shrink-0 rounded-lg border border-[#d7cdbb] px-3 py-2 text-xs font-bold text-[#514733]">{coupon.is_active ? 'إيقاف الكوبون' : 'تفعيل الكوبون'}</button>
+              <button type="button" onClick={()=>void toggleCoupon(coupon)} className="shrink-0 rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-400">{coupon.is_active ? 'إيقاف الكوبون' : 'تفعيل الكوبون'}</button>
             </article>)}
           </div>
         )}

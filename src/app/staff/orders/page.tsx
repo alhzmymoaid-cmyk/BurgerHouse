@@ -3,6 +3,7 @@
 import BranchCatalogControls from '@/components/branch-catalog-controls';
 
 import PromoManager from '@/components/promo-manager';
+import BranchCouponManager from '@/components/branch-coupon-manager';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -349,6 +350,7 @@ export default function StaffLiveOrdersPage() {
           <div className="mt-4 space-y-4">
             <BranchCatalogControls />
             <PromoManager />
+            <BranchCouponManager />
           </div>
         </details>
       )}

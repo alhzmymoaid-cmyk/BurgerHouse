@@ -695,7 +695,7 @@ export default function StorefrontPage() {
           <section className="rounded-xl border border-white/10 bg-[#202019] p-4">
             <label className="mb-2 block text-xs font-bold text-[#e9e2d2]" htmlFor="bh-coupon">رمز الخصم</label>
             <div className="flex gap-2"><input id="bh-coupon" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponPreview(null);}} placeholder="أدخل رمز الخصم" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white outline-none" dir="ltr"/><button type="button" disabled={couponBusy||!couponCode.trim()} onClick={()=>void validateCoupon()} className="rounded-lg bg-[#E76F32] px-4 text-xs font-black text-white disabled:opacity-50">{couponBusy?'جارٍ التحقق':'تطبيق'}</button></div>
-            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code} — خصم {money(discountAmount)} ر.س</p>}
+            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code}{couponPreview.description_ar ? ` · ${couponPreview.description_ar}` : ''} — خصم {money(discountAmount)} ر.س</p>}
           </section>
           {!customerDataLoaded ? (
             <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>

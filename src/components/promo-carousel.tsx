@@ -91,7 +91,7 @@ export default function PromoCarousel({ banners = [], branchId, products = [], o
           };
           const categoryId = banner.target_category_id || (banner.id === 'bh-demo-new-meal' ? 'cat-meals' : 'cat-wagyu');
           return (
-            <button key={banner.id} type="button" className="bh-promo-card relative block shrink-0 snap-center overflow-hidden rounded-2xl text-start" onClick={action} aria-label={banner.title_ar || 'عرض برجر هاوس'}>
+            <button key={banner.id} type="button" className="bh-promo-card group relative block shrink-0 snap-center overflow-hidden rounded-2xl text-start" onClick={action} aria-label={banner.title_ar || 'عرض برجر هاوس'}>
               <SafeFoodImage src={banner.image_url} categoryId={categoryId} alt="" className="h-full w-full object-cover" />
             </button>
           );

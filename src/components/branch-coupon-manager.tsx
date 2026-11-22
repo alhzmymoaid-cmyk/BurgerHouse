@@ -143,7 +143,7 @@ export default function BranchCouponManager() {
                 <p className="mt-1 text-xs text-[#B4B4BE]">{coupon.description_ar} · خصم {money(Number(coupon.discount_value))}% حتى {money(Number(coupon.max_discount))} ر.س</p>
                 <p className="mt-1 text-[10px] text-[#9E9BA3]">الحد الأدنى {money(Number(coupon.minimum_order))} ر.س · مستخدم {coupon.used_count} مرة · ينتهي {new Date(coupon.ends_at || '').toLocaleString('ar-SA')}</p>
               </div>
-              <button type="button" onClick={()=>void toggleCoupon(coupon)} className="shrink-0 rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-400">{coupon.is_active ? 'إيقاف الكوبون' : 'تفعيل الكوبون'}</button>
+              <button type="button" onClick={()=>void toggleCoupon(coupon)} className={coupon.is_active ? "shrink-0 rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-400" : "shrink-0 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-400"}>{coupon.is_active ? 'إيقاف الكوبون' : 'تفعيل الكوبون'}</button>
             </article>)}
           </div>
         )}

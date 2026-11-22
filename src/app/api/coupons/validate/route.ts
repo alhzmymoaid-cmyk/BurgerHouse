@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const subtotal = Number(body.subtotal);
   if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !branchId || !Number.isFinite(subtotal) || subtotal < 0) return NextResponse.json({ error: 'INVALID_COUPON_REQUEST', message_ar: 'تحقق من رمز الخصم والطلب.' }, { status: 400 });
   const service = createSupabaseServiceRoleClient();
-  const { data: coupon, error } = await service.from('coupons').select('id,code,description_ar,discount_type,discount_value,minimum_order,max_discount,max_uses,used_count,starts_at,ends_at,branch_id,is_active').ilike('code', code).maybeSingle();
+  const { data: coupon, error } = await service.from('coupons').select('id,code,description_ar,discount_type,discount_value,minimum_order,max_discount,max_uses,used_count,starts_at,ends_at,branch_id,is_active').eq('code', code).maybeSingle();
   if (error) return NextResponse.json({ error: 'COUPON_LOOKUP_FAILED' }, { status: 500 });
   const now = Date.now();
   if (!coupon || !coupon.is_active || new Date(coupon.starts_at).getTime() > now || (coupon.ends_at && new Date(coupon.ends_at).getTime() <= now) || (coupon.branch_id && coupon.branch_id !== branchId) || (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses)) {

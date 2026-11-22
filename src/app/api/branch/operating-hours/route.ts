@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
     if (!Array.isArray(body.closed_days) || body.closed_days.some((day: unknown) => !Number.isInteger(day) || Number(day) < 0 || Number(day) > 6)) {
       return NextResponse.json({ error: 'INVALID_CLOSED_DAYS' }, { status: 400 });
     }
-    update.closed_days = [...new Set(body.closed_days as number[])].sort((a, b) => a - b);
+    update.closed_days = Array.from(new Set(body.closed_days as number[])).sort((a, b) => a - b);
   }
   if (Object.prototype.hasOwnProperty.call(body, 'is_accepting_orders')) {
     if (typeof body.is_accepting_orders !== 'boolean') {

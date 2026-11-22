@@ -4,19 +4,19 @@ import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
 
 export const runtime = 'nodejs';
 
-async function requireBranchManager(): Promise<{ response?: NextResponse; profile?: any; service?: any }> {
+async function requireBranchManager(): Promise<{ ok: false; response: NextResponse } | { ok: true; profile: any; service: any }> {
   const auth = createSupabaseServerClient();
   const checked = await requireAuthenticatedProfile(auth, ['branch_manager']);
-  if (!checked.ok) return { response: NextResponse.json({ error: checked.code }, { status: checked.status }) };
+  if (!checked.ok) return { ok: false, response: NextResponse.json({ error: checked.code }, { status: checked.status }) };
   if (!checked.profile?.assigned_branch_id) {
-    return { response: NextResponse.json({ error: 'BRANCH_NOT_ASSIGNED' }, { status: 403 }) };
+    return { ok: false, response: NextResponse.json({ error: 'BRANCH_NOT_ASSIGNED' }, { status: 403 }) };
   }
-  return { profile: checked.profile, service: createSupabaseServiceRoleClient() };
+  return { ok: true, profile: checked.profile, service: createSupabaseServiceRoleClient() };
 }
 
 export async function GET() {
   const access = await requireBranchManager();
-  if (access.response) return access.response;
+  if (!access.ok) return access.response;
   const { data, error } = await access.service
     .from('coupons')
     .select('id,code,description_ar,discount_type,discount_value,minimum_order,max_discount,starts_at,ends_at,is_active,used_count,created_at')

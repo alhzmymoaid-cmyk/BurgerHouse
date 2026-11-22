@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './burger-house-refresh.css';
 import './enterprise-theme.css';
+import './burger-house-dark-overrides.css';
 import SmartPwaInstallBanner from '@/components/install-prompt';
 
 export const viewport: Viewport = { themeColor: '#0A0A0C', colorScheme: 'dark', viewportFit: 'cover' };

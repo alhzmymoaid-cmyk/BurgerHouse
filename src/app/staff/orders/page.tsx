@@ -346,7 +346,7 @@ export default function StaffLiveOrdersPage() {
       </header>
       {actorProfile?.role === 'branch_manager' && (
         <details className="mb-5 rounded-2xl border border-[#d8d0c1] bg-white p-4">
-          <summary className="cursor-pointer text-sm font-black text-[#4b3a1d]">إدارة الفرع: توفر المنيو والإعلانات</summary>
+          <summary className="cursor-pointer text-sm font-black text-[#4b3a1d]">إدارة الفرع: المنيو والإعلانات وكوبونات الخصم</summary>
           <div className="mt-4 space-y-4">
             <BranchCatalogControls />
             <PromoManager />

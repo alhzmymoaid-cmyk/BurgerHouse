@@ -220,3 +220,6 @@ body { color-scheme:dark; }
 .bh-install-card p,.bh-install-card small { color:#B4B4BE !important; }
 .bh-install-action,.bh-install-step > span { background:#F5B800 !important; color:#0A0A0C !important; }
 .bh-install-close { background:#1C1C22 !important; color:#F6F3EC !important; }
+
+/* Keep the close affordance clear of the price badge in RTL layouts. */
+.bh-storefront .bh-product-dialog .bh-product-content > div:first-child { padding-left:3.25rem !important; }

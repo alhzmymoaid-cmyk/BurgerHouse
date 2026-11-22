@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
 import SafeFoodImage from '@/components/safe-food-image';
@@ -53,6 +53,7 @@ export default function StorefrontPage() {
   const [loading, setLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const categoryRailRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [branchId, setBranchId] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -166,6 +167,18 @@ export default function StorefrontPage() {
     .map((category) => ({ ...category, products: availableProducts.filter((product) => product.category_id === category.id) }))
     .filter((group) => group.products.length > 0 && catalog?.branch_categories?.find((entry: any) => entry.branch_id === branchId && entry.category_id === group.id)?.is_active !== false), [categories, availableProducts, catalog, branchId]);
 
+
+  useEffect(() => {
+    const rail = categoryRailRef.current;
+    if (!rail) return;
+    const activeButton = Array.from(rail.querySelectorAll<HTMLButtonElement>('button[data-category-id]'))
+      .find((button) => button.dataset.categoryId === activeCategory);
+    if (!activeButton) return;
+    const railRect = rail.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const horizontalDelta = buttonRect.left + buttonRect.width / 2 - (railRect.left + rail.clientWidth / 2);
+    rail.scrollTo({ left: rail.scrollLeft + horizontalDelta, behavior: 'smooth' });
+  }, [activeCategory]);
 
 
 
@@ -602,9 +615,9 @@ export default function StorefrontPage() {
             <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{siteCopy.menuTitleAr || 'قائمة برجر هاوس'}</h2><p className="mt-2 text-sm text-[#777064]">{siteCopy.menuSubtitleAr || 'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.'}</p></div>
             <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a84f32]"/></div>
           </div>
-          <div className="bh-category-rail mb-9 flex gap-2 overflow-x-auto pb-2">
-            <button onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>كل الأصناف</button>
-            {categories.map((category)=> <button key={category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B]':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#1A1A20] px-5 py-3 text-xs font-bold text-[#E4E4E7] hover:border-[#F5B800]'}>{category.name_ar}</button>)}
+          <div ref={categoryRailRef} className="bh-category-rail sticky z-30 -mx-4 mb-9 flex gap-2 overflow-x-auto border-y border-white/[0.08] bg-[#09090B]/95 px-4 py-3 pb-3 backdrop-blur-md lg:-mx-8 lg:px-8" style={{top:'calc(68px + env(safe-area-inset-top))'}}>
+            <button type="button" data-category-id="all" aria-pressed={activeCategory==='all'} onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'is-active whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B] transition-all duration-200':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#18181D] px-5 py-3 text-xs font-bold text-[#A1A1AA] transition-all duration-200 hover:border-[#F5B800]'}>كل الأصناف</button>
+            {categories.map((category)=> <button type="button" key={category.id} data-category-id={category.id} aria-pressed={activeCategory===category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'is-active whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B] transition-all duration-200':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#18181D] px-5 py-3 text-xs font-bold text-[#A1A1AA] transition-all duration-200 hover:border-[#F5B800]'}>{category.name_ar}</button>)}
           </div>
 
           {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>

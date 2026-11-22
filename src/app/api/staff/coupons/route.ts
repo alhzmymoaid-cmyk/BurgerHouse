@@ -4,7 +4,7 @@ import { requireAuthenticatedProfile } from '@/lib/supabase/auth-guard.mjs';
 
 export const runtime = 'nodejs';
 
-async function requireBranchManager() {
+async function requireBranchManager(): Promise<{ response?: NextResponse; profile?: any; service?: any }> {
   const auth = createSupabaseServerClient();
   const checked = await requireAuthenticatedProfile(auth, ['branch_manager']);
   if (!checked.ok) return { response: NextResponse.json({ error: checked.code }, { status: checked.status }) };

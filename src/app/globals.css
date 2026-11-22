@@ -5,12 +5,12 @@
 :root {
   color-scheme: dark;
   --bh-bg:#0A0A0C;
-  --bh-surface:#141417;
-  --bh-card:#1B1B1F;
-  --bh-line:rgba(255,255,255,.08);
+  --bh-surface:#151519;
+  --bh-card:#1C1C22;
+  --bh-line:rgba(255,255,255,.10);
   --bh-text:#F6F3EC;
-  --bh-muted:#9E9BA3;
-  --bh-yellow:#F2B705;
+  --bh-muted:#B4B4BE;
+  --bh-yellow:#F5B800;
   --bh-yellow-hot:#FFCA28;
   --bh-green:#22C55E;
   --bh-red:#EF4444;

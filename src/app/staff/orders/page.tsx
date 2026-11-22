@@ -367,7 +367,7 @@ export default function StaffLiveOrdersPage() {
         <div className="rounded-2xl border border-[#cce5d2] bg-[#f3fbf4] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#4e7957]">جاهزة للاستلام</p><p className="mt-2 text-3xl font-black tabular-nums text-[#267a43]">{orders.filter(o=>o.status==='ready_for_pickup').length}</p></div>
       </div>
       <nav aria-label="تصفية الطلبات" className="mb-5 flex gap-2 overflow-x-auto pb-2">
-        {statusFilters.map((filter) => <button key={filter.id} onClick={() => setStatusFilter(filter.id)} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-black transition ${statusFilter===filter.id?'bg-[#20231b] text-white shadow-md':'border border-[#ddd8cc] bg-white text-[#6e695e] hover:bg-[#f1eee7]'}`}>{filter.label}{filter.id==='all' ? ` · ${orders.length}` : ` · ${orders.filter(o=>o.status===filter.id).length}`}</button>)}
+        {statusFilters.map((filter) => <button key={filter.id} onClick={() => setStatusFilter(filter.id)} aria-pressed={statusFilter===filter.id} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-black transition ${statusFilter===filter.id?'bg-[#20231b] text-white shadow-md':'border border-[#ddd8cc] bg-white text-[#6e695e] hover:bg-[#f1eee7]'}`}>{filter.label}{filter.id==='all' ? ` · ${orders.length}` : ` · ${orders.filter(o=>o.status===filter.id).length}`}</button>)}
       </nav>
       {errorBanner && (
         <div className="mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">

@@ -563,18 +563,10 @@ export default function StorefrontPage() {
       {activeView === 'menu' && <>
         <section className="bh-v2-hero" aria-labelledby="bh-home-title">
           <div className="bh-v2-hero-copy">
-            <div className="bh-v2-eyebrow"><span/> BURGER HOUSE <i>·</i> CRAFTED OVER FIRE</div>
             <p className="bh-v2-kicker">{siteCopy.heroKickerAr || 'طازج من المطبخ إلى يدك'}</p>
             <h1 id="bh-home-title">{siteCopy.heroTitleAr || 'اختَر وجبتك.'}<br/><em>{siteCopy.heroTitleAccentAr || 'ونحن نجهّز الباقي.'}</em></h1>
-            <p className="bh-v2-lead">{siteCopy.heroLeadAr || 'برجر يُحضّر عند الطلب، وإضافات تختارها بنفسك. حدّد فرع الاستلام واطلب خلال دقائق.'}</p>
             <div className="bh-v2-hero-actions">
               <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>{siteCopy.heroCtaAr || 'ابدأ طلبك'} <ArrowLeft size={17}/></button>
-              <button type="button" onClick={() => setActiveView('branches')}><MapPin size={16}/> {siteCopy.heroBranchesCtaAr || 'مواقع الفروع'}</button>
-            </div>
-            <div className="bh-v2-branch-status">
-              <span className={activeBranch?.is_accepting_orders ? 'bh-v2-status-dot is-open' : 'bh-v2-status-dot'}/>
-              <div><b>{activeBranch?.name_ar || 'اختر فرع الاستلام'}</b><small>{activeBranch?.is_accepting_orders ? 'يستقبل الطلبات الآن' : 'تحقق من توفر الطلبات في الفرع'}</small></div>
-              <button type="button" onClick={() => setActiveView('branches')}>تغيير الفرع</button>
             </div>
           </div>
           <div className="bh-v2-hero-media">
@@ -620,7 +612,7 @@ export default function StorefrontPage() {
             {categories.map((category)=> <button type="button" key={category.id} data-category-id={category.id} aria-pressed={activeCategory===category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'is-active whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B] transition-all duration-200':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#18181D] px-5 py-3 text-xs font-bold text-[#A1A1AA] transition-all duration-200 hover:border-[#F5B800]'}>{category.name_ar}</button>)}
           </div>
 
-          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="h-[390px] animate-pulse bg-[#e8e3da]"/>)}</div>
+          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="bh-product-skeleton h-[260px] animate-pulse rounded-2xl bg-[#16161A]"/>)}</div>
           : catalogError ? <div className="border border-[#d8d0c4] bg-white/60 p-8 text-center"><p className="font-bold">المنيو غير متاح حالياً</p><p className="mt-2 text-sm text-[#777064]">{catalogError}</p><button onClick={()=>location.reload()} className="mt-4 text-sm font-bold text-[#a84f32]">إعادة المحاولة</button></div>
           : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
           : <div className="space-y-14">
@@ -703,7 +695,7 @@ export default function StorefrontPage() {
           <section className="rounded-xl border border-white/10 bg-[#202019] p-4">
             <label className="mb-2 block text-xs font-bold text-[#e9e2d2]" htmlFor="bh-coupon">رمز الخصم</label>
             <div className="flex gap-2"><input id="bh-coupon" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponPreview(null);}} placeholder="أدخل رمز الخصم" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#10100d] px-3 py-3 text-sm text-white outline-none" dir="ltr"/><button type="button" disabled={couponBusy||!couponCode.trim()} onClick={()=>void validateCoupon()} className="rounded-lg bg-[#E76F32] px-4 text-xs font-black text-white disabled:opacity-50">{couponBusy?'جارٍ التحقق':'تطبيق'}</button></div>
-            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code} — خصم {money(discountAmount)} ر.س</p>}
+            {couponPreview && <p className="mt-2 text-xs font-bold text-emerald-300">تم تطبيق {couponPreview.code}{couponPreview.description_ar ? ` · ${couponPreview.description_ar}` : ''} — خصم {money(discountAmount)} ر.س</p>}
           </section>
           {!customerDataLoaded ? (
             <div className="rounded-xl border border-white/10 bg-[#202019] p-4 text-xs text-[#c9c2b3]">جارٍ تحميل بيانات حسابك...</div>

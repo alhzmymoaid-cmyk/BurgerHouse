@@ -554,3 +554,25 @@ body { background:var(--bh-bg)!important; color:var(--bh-text)!important; font-f
   .bh-storefront #menu-section .bh-v2-product-bottom { display:flex!important; align-items:center!important; justify-content:space-between!important; flex-wrap:wrap!important; gap:7px!important; margin-top:10px!important; }
   .bh-storefront #menu-section .bh-v2-product-bottom button { padding:8px 10px!important; font-size:10px!important; }
 }
+
+
+/* Final product surface enforcement: loading placeholders and every card layer stay charcoal. */
+.bh-storefront #menu-section .bh-product-skeleton {
+  min-height: 220px;
+  background: #16161A !important;
+  background-color: #16161A !important;
+  background-image: linear-gradient(90deg, #16161A 0%, #202025 48%, #16161A 100%) !important;
+}
+.bh-storefront #menu-section .bh-v2-product-grid .bh-v2-product-card,
+.bh-storefront #menu-section article.bh-v2-product-card,
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-info {
+  background: #16161A !important;
+  background-color: #16161A !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.09) !important;
+}
+.bh-storefront #menu-section .bh-v2-product-card > .bh-v2-product-photo {
+  background: #111114 !important;
+  background-color: #111114 !important;
+}
+.bh-storefront .bh-v2-hero { min-height: clamp(320px, 43svh, 520px); }

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const subtotal = Number(body.subtotal);
   if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !branchId || !Number.isFinite(subtotal) || subtotal < 0) return NextResponse.json({ error: 'INVALID_COUPON_REQUEST', message_ar: 'تحقق من رمز الخصم والطلب.' }, { status: 400 });
   const service = createSupabaseServiceRoleClient();
-  const { data: coupon, error } = await service.from('coupons').select('id,code,discount_type,discount_value,minimum_order,max_uses,used_count,starts_at,ends_at,branch_id,is_active').ilike('code', code).maybeSingle();
+  const { data: coupon, error } = await service.from('coupons').select('id,code,description_ar,discount_type,discount_value,minimum_order,max_discount,max_uses,used_count,starts_at,ends_at,branch_id,is_active').eq('code', code).maybeSingle();
   if (error) return NextResponse.json({ error: 'COUPON_LOOKUP_FAILED' }, { status: 500 });
   const now = Date.now();
   if (!coupon || !coupon.is_active || new Date(coupon.starts_at).getTime() > now || (coupon.ends_at && new Date(coupon.ends_at).getTime() <= now) || (coupon.branch_id && coupon.branch_id !== branchId) || (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses)) {
@@ -23,10 +23,11 @@ export async function POST(request: NextRequest) {
   }
   if (subtotal < Number(coupon.minimum_order)) return NextResponse.json({ error: 'COUPON_MINIMUM_NOT_MET', message_ar: 'قيمة الطلب أقل من الحد الأدنى لهذا الخصم.' }, { status: 422 });
   if (coupon.discount_type === 'percent' && Number(coupon.discount_value) > 100) return NextResponse.json({ error: 'COUPON_INVALID_DISCOUNT' }, { status: 422 });
-  const discount = Number((coupon.discount_type === 'percent' ? subtotal * Number(coupon.discount_value) / 100 : Math.min(subtotal, Number(coupon.discount_value))).toFixed(2));
+  const rawDiscount = coupon.discount_type === 'percent' ? subtotal * Number(coupon.discount_value) / 100 : Math.min(subtotal, Number(coupon.discount_value));
+  const discount = Number(Math.min(rawDiscount, Number(coupon.max_discount ?? subtotal), subtotal).toFixed(2));
   const { data: settings } = await service.from('system_settings').select('vat_percentage').eq('id', 1).single();
   const vatRate = Number(settings?.vat_percentage ?? 15) / 100;
   const vat = Number(((subtotal - discount) * vatRate).toFixed(2));
   const total = Number((subtotal - discount + vat).toFixed(2));
-  return NextResponse.json({ ok: true, code: coupon.code, discount_amount: discount, vat_amount: vat, total_amount: total }, { headers: { 'Cache-Control': 'private, no-store' } });
+  return NextResponse.json({ ok: true, code: coupon.code, description_ar: coupon.description_ar || '', discount_amount: discount, vat_amount: vat, total_amount: total }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

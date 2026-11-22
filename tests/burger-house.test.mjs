@@ -1337,3 +1337,33 @@ test('12. Direct PostgreSQL RPC Security: auth.uid() Enforcement, p_actor_uid Re
   assert.equal(validCashierRpc.error, null);
   assert.equal(validCashierRpc.data.status, 'accepted');
 });
+
+test('branch operating hours use Riyadh time and attribute overnight hours to the opening weekday', () => {
+  const branch = {
+    is_active: true,
+    is_accepting_orders: true,
+    open_time: '18:00',
+    close_time: '02:00',
+    closed_days: []
+  };
+
+  // 16:30 UTC is 19:30 in Riyadh: the branch must be open.
+  assert.deepEqual(
+    isBranchOpenAtTime(branch, new Date('2026-11-22T16:30:00.000Z')),
+    { open: true, reason: 'OPEN' }
+  );
+
+  // 22:00 UTC on Sunday is 01:00 Monday in Riyadh, still part of Sunday's shift.
+  branch.closed_days = [0];
+  assert.deepEqual(
+    isBranchOpenAtTime(branch, new Date('2026-11-22T22:00:00.000Z')),
+    { open: false, reason: 'BRANCH_CLOSED_TODAY' }
+  );
+
+  // Saturday's shift remains closed at 01:00 Sunday if Saturday is the weekly off-day.
+  branch.closed_days = [6];
+  assert.deepEqual(
+    isBranchOpenAtTime(branch, new Date('2026-11-21T22:00:00.000Z')),
+    { open: false, reason: 'BRANCH_CLOSED_TODAY' }
+  );
+});

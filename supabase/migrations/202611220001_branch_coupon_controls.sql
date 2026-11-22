@@ -3,6 +3,8 @@ ALTER TABLE public.coupons
   ADD COLUMN IF NOT EXISTS description_ar text NOT NULL DEFAULT '';
 
 ALTER TABLE public.coupons
+  DROP CONSTRAINT IF EXISTS coupons_max_discount_check;
+ALTER TABLE public.coupons
   ADD CONSTRAINT coupons_max_discount_check CHECK (max_discount IS NULL OR max_discount > 0);
 
 CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_case_insensitive_uidx

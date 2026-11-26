@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs"
+    "test": "node tests/typecheck-and-lint.cjs && python3 tests/sql_relational_and_rls_runner.py && node --test tests/burger-house.test.mjs tests/pwa-install.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",

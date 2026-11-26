@@ -60,7 +60,7 @@ export default function SovereignSuperAdminVaultPage(){
     finally{setBusy(false);}
   };
 
-  if(accessDenied)return <main dir="rtl" className="bh-superadmin flex min-h-screen items-center justify-center p-6"><section className="max-w-md rounded-2xl border border-red-500/25 bg-[#141417] p-8 text-center"><ShieldCheck size={30} className="mx-auto text-red-300"/><h1 className="mt-4 text-xl font-bold">لا يمكن فتح هذه الصفحة</h1><p className="mt-3 text-sm text-[#9E9BA3]">{accessDenied}</p><a href="/auth/login" className="mt-5 inline-block rounded-lg bg-[#F2B705] px-5 py-3 text-xs font-bold text-[#0A0A0C]">تسجيل دخول الإدارة</a></section></main>;
+  if(accessDenied)return <main dir="rtl" className="bh-superadmin flex min-h-screen items-center justify-center p-6"><section className="max-w-md rounded-2xl border border-red-500/25 bg-[#141417] p-8 text-center"><ShieldCheck size={30} className="mx-auto text-red-300"/><h1 className="mt-4 text-xl font-bold">لا يمكن فتح هذه الصفحة</h1><p className="mt-3 text-sm text-[#9E9BA3]">{accessDenied}</p><a href="/bh-sovereign-vault/login" className="mt-5 inline-block rounded-lg bg-[#F2B705] px-5 py-3 text-xs font-bold text-[#0A0A0C]">تسجيل دخول الإدارة</a></section></main>;
 
   const activeBlocks=(vaultData?.blocked_entities||[]).filter((item:any)=>item.is_active);
   const settings=vaultData?.settings||{};

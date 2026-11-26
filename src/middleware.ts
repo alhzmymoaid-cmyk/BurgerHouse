@@ -23,11 +23,14 @@ export async function middleware(request: NextRequest) {
   const isSovereignLogin = pathname === '/bh-sovereign-vault/login';
 
   const isStaffRoute = pathname.startsWith('/staff/') && !isStaffLogin;
-  const isOwnerRoute = (pathname.startsWith('/owner-studio/') && !isOwnerLogin)
+  const isOwnerPath = pathname === '/owner-studio' || pathname.startsWith('/owner-studio/');
+  const isOwnerRoute = (isOwnerPath && !isOwnerLogin)
     || pathname.startsWith('/api/admin/owner')
     || pathname.startsWith('/api/media/upload');
-  const isCatalogRoute = pathname.startsWith('/catalog-studio/') && !isCatalogLogin;
-  const isSovereignRoute = (pathname.startsWith('/bh-sovereign-vault/') && !isSovereignLogin)
+  const isCatalogPath = pathname === '/catalog-studio' || pathname.startsWith('/catalog-studio/');
+  const isCatalogRoute = isCatalogPath && !isCatalogLogin;
+  const isSovereignPath = pathname === '/bh-sovereign-vault' || pathname.startsWith('/bh-sovereign-vault/');
+  const isSovereignRoute = (isSovereignPath && !isSovereignLogin)
     || pathname.startsWith('/api/admin/sovereign');
   const isOrderStatusMutation = pathname.startsWith('/api/orders/') && pathname.endsWith('/status');
 

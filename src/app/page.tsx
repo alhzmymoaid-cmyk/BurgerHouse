@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
-import SafeFoodImage from '@/components/safe-food-image';
 import StorefrontAdminEditor from '@/components/storefront-admin-editor';
+import StorefrontMaintenance from '@/components/storefront/storefront-maintenance';
+import StorefrontHero from '@/components/storefront/storefront-hero';
+import { StorefrontBranchPicker, StorefrontMenu, StorefrontProductSheet, StorefrontCartDrawer } from '@/components/storefront/storefront-commerce';
 import {
-  ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
-  Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
-  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download, Heart
+  ArrowLeft, Check, ChevronDown, Clock3, MapPin, Menu, ShoppingBag, X,
+  Phone, Navigation, PackageCheck, Utensils, ShieldCheck, Download
 } from 'lucide-react';
 
 type Size = { id: string; name_ar: string; price_delta: number; is_default?: boolean };
@@ -440,17 +441,11 @@ export default function StorefrontPage() {
   };
 
   if (catalog?.settings && (catalog.settings.site_online === false || catalog.settings.maintenance_mode === true)) {
-    const message = catalog.settings.maintenance_message_ar || 'نعتذر عن استقبال الطلبات حاليًا. نعود إليكم قريبًا.';
     return (
-      <main dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0A0A0C] px-5 py-12 text-[#F6F3EC]">
-        <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#141417] p-8 text-center">
-          <img src="/brand-mark.svg" alt="BURGER HOUSE" className="mx-auto h-16 w-16"/>
-          <p className="mt-6 text-[10px] font-bold tracking-[.2em] text-[#F2B705]">BURGER HOUSE</p>
-          <h1 className="mt-3 text-2xl font-bold">{catalog.settings.site_online === false ? 'نعود إليكم قريبًا' : 'نجهّز لكم تجربة أفضل'}</h1>
-          <p className="mt-3 text-sm leading-7 text-[#9E9BA3]">{message}</p>
-          <a href="https://wa.me/966535717670" className="mt-6 inline-flex rounded-lg bg-[#F2B705] px-6 py-3 text-xs font-bold text-[#0A0A0C]">تواصل معنا</a>
-        </section>
-      </main>
+      <StorefrontMaintenance
+        siteOnline={catalog.settings.site_online !== false}
+        message={catalog.settings.maintenance_message_ar || 'نعتذر عن استقبال الطلبات حاليًا. نعود إليكم قريبًا.'}
+      />
     );
   }
 
@@ -465,6 +460,12 @@ export default function StorefrontPage() {
           <a href="/" className="flex items-center gap-3" aria-label="Burger House">
             <img src="/brand-logo.svg" alt="BURGER HOUSE — Good Food, Great Mood" className="h-12 w-auto max-w-[220px] object-contain"/>
           </a>
+
+          <button type="button" onClick={() => setActiveView('branches')} className="bh-header-location" aria-label="تغيير فرع الاستلام">
+            <MapPin size={17}/>
+            <span><small>استلام من</small><b>{activeBranch?.name_ar || 'اختر الفرع'}</b></span>
+            <ChevronDown size={14}/>
+          </button>
 
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
             <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>المنيو</button>
@@ -591,88 +592,37 @@ export default function StorefrontPage() {
       )}
 
       {activeView === 'menu' && <>
-        <section className="bh-v2-hero" aria-labelledby="bh-home-title">
-          <div className="bh-v2-hero-copy">
-            <p className="bh-v2-kicker">{siteCopy.heroKickerAr || 'طازج من المطبخ إلى يدك'}</p>
-            <h1 id="bh-home-title">{siteCopy.heroTitleAr || 'اختَر وجبتك.'}<br/><em>{siteCopy.heroTitleAccentAr || 'ونحن نجهّز الباقي.'}</em></h1>
-            <div className="bh-v2-hero-actions">
-              <button type="button" onClick={() => document.getElementById('menu-section')?.scrollIntoView({behavior:'smooth'})}>{siteCopy.heroCtaAr || 'ابدأ طلبك'} <ArrowLeft size={17}/></button>
-            </div>
-          </div>
-          <div className="bh-v2-hero-media">
-            <SafeFoodImage src="/images/hero-wagyu-smash.jpg" categoryId="cat-wagyu" alt="برجر واغيو سماش من برجر هاوس" loading="eager"/>
-            <div className="bh-v2-media-caption"><span>MADE TO ORDER</span><b>طازج. ساخن. على ذوقك.</b></div>
-            <div className="bh-v2-media-index">01 <i>/</i> 03</div>
-          </div>
-        </section>
-
-        <section className="bh-v2-promise-strip" aria-label="مميزات الطلب">
-          <div><span>01</span><b>اختيارك بالكامل</b><small>حجم وإضافات كما تحب</small></div>
-          <div><span>02</span><b>تحضير عند الطلب</b><small>يبدأ بعد تأكيد الفرع</small></div>
-          <div><span>03</span><b>استلام واضح</b><small>تابع حالة طلبك خطوة بخطوة</small></div>
-        </section>
+        <StorefrontHero
+          copy={siteCopy}
+          onStartOrder={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
+        />
 
 
 
-        <section className="bh-branch-picker border-b border-[#ded8cd] bg-[#ebe7df]">
-          <div className="bh-branch-picker-inner mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-            <div className="bh-branch-picker-copy"><div className="bh-section-eyebrow">استلام من الفرع</div><div className="mt-1 text-lg font-black">أين تفضّل استلام طلبك؟</div><p className="mt-1 text-xs">اختر الفرع الأقرب لك قبل تصفح الأصناف.</p></div>
-            <div className="bh-branch-picker-controls flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="bh-branch-select-shell relative min-w-[240px]">
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/>
-                <select aria-label="اختر فرع الاستلام" value={branchId} onChange={(e) => { setBranchId(e.target.value); setLocationMessage(''); }} className="bh-branch-select w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
-                  {branches.filter((branch) => branch.is_active).map((branch) => <option key={branch.id} value={branch.id}>{branch.name_ar}{branch.is_accepting_orders ? '' : ' — لا يستقبل طلبات'}</option>)}
-                </select>
-                <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={15}/>
-                <div className="bh-active-branch-meta"><span>{activeBranch?.address_ar || 'حدد فرع الاستلام'}</span><span>{activeBranch?.open_time && activeBranch?.close_time ? `${activeBranch.open_time} – ${activeBranch.close_time}` : 'مواعيد الفرع'}</span></div>
-              </div>
-              <button type="button" disabled={locationBusy} onClick={detectNearestBranch} className="bh-nearest-branch-button inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36] disabled:cursor-wait disabled:opacity-60"><Navigation size={14}/> {locationBusy ? 'جارٍ تحديد موقعك…' : 'استخدم موقعي'}</button>
-            </div>
-            {locationMessage && <p className="bh-location-feedback" role="status">{locationMessage}</p>}
-          </div>
-        </section>
+        <StorefrontBranchPicker branches={branches} branchId={branchId} activeBranch={activeBranch} locationBusy={locationBusy} locationMessage={locationMessage} onBranchChange={(id)=>{setBranchId(id);setLocationMessage('');}} onDetectLocation={detectNearestBranch} />
 
         <PromoCarousel banners={catalog?.promo_banners || []} branchId={branchId} products={products} onOpenProduct={(product) => openProduct(product as Product)} onSelectCategory={setActiveCategory} />
 
-        <section id="menu-section" className="mx-auto max-w-7xl px-4 py-14 lg:px-8 lg:py-20">
-          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><div className="text-[10px] font-black tracking-[.24em] text-[#a84f32]">THE MENU</div><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{siteCopy.menuTitleAr || 'قائمة برجر هاوس'}</h2><p className="mt-2 text-sm text-[#777064]">{siteCopy.menuSubtitleAr || 'اختر صنفك، حدّد سنقل أو دبل، وأضف لمستك الخاصة.'}</p></div>
-            <div className="relative w-full sm:max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="w-full border border-[#d8d0c4] bg-[#fbfaf7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#a84f32]"/></div>
-          </div>
-          <div ref={categoryRailRef} className="bh-category-rail sticky z-30 -mx-4 mb-9 flex gap-2 overflow-x-auto border-y border-white/[0.08] bg-[#09090B]/95 px-4 py-3 pb-3 backdrop-blur-md lg:-mx-8 lg:px-8" style={{top:'calc(68px + env(safe-area-inset-top))'}}>
-            <button type="button" data-category-id="all" aria-pressed={activeCategory==='all'} onClick={()=>setActiveCategory('all')} className={activeCategory==='all'?'is-active whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B] transition-all duration-200':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#18181D] px-5 py-3 text-xs font-bold text-[#A1A1AA] transition-all duration-200 hover:border-[#F5B800]'}>كل الأصناف</button>
-            {categories.map((category)=> <button type="button" key={category.id} data-category-id={category.id} aria-pressed={activeCategory===category.id} onClick={()=>setActiveCategory(category.id)} className={activeCategory===category.id?'is-active whitespace-nowrap rounded-xl border border-[#F5B800] bg-[#F5B800] px-5 py-3 text-xs font-bold text-[#09090B] transition-all duration-200':'whitespace-nowrap rounded-xl border border-white/[0.08] bg-[#18181D] px-5 py-3 text-xs font-bold text-[#A1A1AA] transition-all duration-200 hover:border-[#F5B800]'}>{category.name_ar}</button>)}
-          </div>
-
-          {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((i)=><div key={i} className="bh-product-skeleton h-[260px] animate-pulse rounded-2xl bg-[#16161A]"/>)}</div>
-          : catalogError ? <div className="border border-[#d8d0c4] bg-white/60 p-8 text-center"><p className="font-bold">المنيو غير متاح حالياً</p><p className="mt-2 text-sm text-[#777064]">{catalogError}</p><button onClick={()=>location.reload()} className="mt-4 text-sm font-bold text-[#a84f32]">إعادة المحاولة</button></div>
-          : availableProducts.length === 0 ? <div className="py-16 text-center text-sm text-[#777064]">لا توجد أصناف مطابقة في هذا القسم.</div>
-          : <div className="space-y-14">
-            {categoryGroups.map((group) => <section key={group.id}>
-              <div className="mb-5 flex items-end justify-between border-b border-[#e1d9cd] pb-4"><div><div className="text-[10px] font-black tracking-[.18em] text-[#a84f32]">BURGER HOUSE MENU</div><h3 className="mt-1 text-xl font-black sm:text-2xl">{group.name_ar}</h3></div><div className="flex items-center gap-3"><button type="button" onClick={()=>setShowFavoritesOnly(v=>!v)} className={showFavoritesOnly?'rounded-full bg-[#17191B] px-3 py-2 text-[10px] font-bold text-[#F2EBDD]':'rounded-full border border-[#d9d1c5] px-3 py-2 text-[10px] font-bold text-[#5f594f]'}>{showFavoritesOnly?'عرض كل المنتجات':'المفضلة'} ({favoriteIds.length})</button><span className="text-[11px] font-semibold text-[#81786d]">{group.products.length} أصناف</span></div></div>
-              <div className="bh-v2-product-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {group.products.map((product)=>{
-                  const override=catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id);
-                  return <article key={product.id} className="bh-v2-product-card">
-                    <button type="button" onClick={()=>openProduct(product)} aria-label={`تخصيص ${product.name_ar}`} className="bh-v2-product-photo">
-                      <SafeFoodImage src={product.image_url} categoryId={product.category_id} alt={product.name_ar} loading="lazy" className="h-full w-full object-cover"/>
-                      {product.is_featured && <span className="bh-v2-product-tag">اختيار البيت</span>}
-                    </button>
-                    <div className="bh-v2-product-info">
-                      <div className="mb-2 flex justify-end"><button type="button" onClick={()=>void toggleFavorite(product.id)} disabled={favoriteBusy===product.id} aria-label={favoriteIds.includes(product.id)?'إزالة من المفضلة':'إضافة إلى المفضلة'} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-[#242428] text-[#F5B800] disabled:opacity-50"><Heart size={17} fill={favoriteIds.includes(product.id)?'currentColor':'none'}/></button></div>
-                      <div className="bh-v2-product-title"><h4>{product.name_ar}</h4><span>{money(Number(override?.custom_base_price ?? product.base_price))} <small>ر.س</small></span></div>
-                      <p>{product.description_ar}</p>
-                      <div className="bh-v2-product-bottom">
-                        <span><Clock3 size={13}/> {product.prep_minutes || activeBranch?.prep_time_minutes || 15} دقيقة</span>
-                        <button type="button" onClick={()=>openProduct(product)}>خصّص طلبك <Plus size={15}/></button>
-                      </div>
-                    </div>
-                  </article>;
-                })}
-              </div>
-            </section>)}
-          </div>}
-        </section>
+        <StorefrontMenu
+          categories={categories}
+          groups={categoryGroups}
+          loading={loading}
+          error={catalogError}
+          activeCategory={activeCategory}
+          search={search}
+          showFavoritesOnly={showFavoritesOnly}
+          favoriteIds={favoriteIds}
+          favoriteBusy={favoriteBusy}
+          branchId={branchId}
+          activeBranch={activeBranch}
+          railRef={categoryRailRef}
+          basePrice={(product)=>Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id)?.custom_base_price ?? product.base_price)}
+          onCategory={setActiveCategory}
+          onSearch={setSearch}
+          onToggleFavorites={()=>setShowFavoritesOnly(value=>!value)}
+          onToggleFavorite={(id)=>void toggleFavorite(id)}
+          onOpenProduct={openProduct}
+        />
       
 
 
@@ -699,27 +649,40 @@ export default function StorefrontPage() {
         <div className="border-t border-white/10 py-4 text-center text-[10px] text-[#827d73]">© {new Date().getFullYear()} BURGER HOUSE. جميع الحقوق محفوظة.</div>
       </footer>
 
-      {selectedProduct && <div className="bh-product-overlay fixed inset-0 z-[70] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-5" onClick={()=>setSelectedProduct(null)}>
-        <div className="bh-product-dialog relative max-h-[94vh] w-full max-w-4xl overflow-y-auto bg-[#171713] text-[#f7f3e9] sm:max-h-[90vh] sm:rounded-2xl" onClick={(e)=>e.stopPropagation()}>
-          <button onClick={()=>setSelectedProduct(null)} aria-label="إغلاق تفاصيل المنتج" className="absolute left-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white backdrop-blur-md"><X size={19}/></button>
-          <div className="bh-product-layout grid md:grid-cols-[.95fr_1.05fr]">
-            <div className="bh-product-visual relative h-52 w-full overflow-hidden rounded-t-3xl bg-[#242117] sm:h-60"><SafeFoodImage src={selectedProduct.image_url} categoryId={selectedProduct.category_id} alt={selectedProduct.name_ar} className="h-full w-full object-cover"/><div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#131317] via-transparent to-transparent"/><div className="absolute bottom-4 right-5"><span className="text-[10px] font-black tracking-[.2em] text-[#f5c542]">BURGER HOUSE · FRESHLY MADE</span></div></div>
-            <div className="bh-product-content flex flex-col p-5 sm:p-7">
-              <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-5"><div className="min-w-0"><span className="text-[10px] font-black tracking-[.16em] text-[#f5c542]">تفاصيل الصنف</span><h2 className="mt-2 text-2xl font-black leading-tight text-white">{selectedProduct.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#aaa493]">{selectedProduct.description_ar}</p></div><div className="shrink-0 rounded-xl border border-[#665522] bg-[#292312] px-3 py-2 text-center"><span className="block text-[10px] text-[#c8b879]">السعر</span><b className="mt-1 block text-lg text-[#ffd65b]">{money(Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0))}</b><span className="text-[10px] text-[#c8b879]">ر.س</span></div></div>
-              {!!selectedProduct.sizes?.length&&<section className="bh-choice-section mt-5"><div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black text-white">{selectedProduct.category_id === 'cat-drinks' ? 'اختر حجم المشروب' : selectedProduct.category_id === 'cat-sides' ? 'اختر حجم الحصة' : 'اختر حجم البرجر'}</h3><span className="text-[10px] text-[#aaa493]">اختيار واحد</span></div><div className="grid grid-cols-2 gap-2">{selectedProduct.sizes.map((size)=><label key={size.id} className={selectedSize===size.id?'bh-option-card is-selected flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#d6ad36] bg-[#302914] p-3 text-xs font-bold':'bh-option-card flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#202019] p-3 text-xs font-bold'}><span>{size.name_ar}</span><span className="shrink-0 text-[#ffd65b]">{Number(size.price_delta)>0?'+':''}{money(Number(size.price_delta))} ر.س</span><input type="radio" className="sr-only" checked={selectedSize===size.id} onChange={()=>setSelectedSize(size.id)}/></label>)}</div></section>}
-              {!!selectedProduct.allowed_addon_ids?.length&&<section className="bh-choice-section mt-5"><div className="mb-3 flex items-end justify-between"><div><h3 className="text-sm font-black text-white">خلّها على ذوقك</h3><p className="mt-1 text-[11px] text-[#aaa493]">إضافات اختيارية لوجبتك</p></div><span className="text-[10px] text-[#aaa493]">يمكنك اختيار أكثر من إضافة</span></div><div className="grid gap-2 sm:grid-cols-2">{selectedProduct.allowed_addon_ids.map((id)=>addonFor(id)).filter(Boolean).map((addon)=> <label key={addon!.id} className={selectedAddons.includes(addon!.id)?'bh-addon-option is-selected flex min-h-[62px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#d6ad36] bg-[#302914] px-3 py-3':'bh-addon-option flex min-h-[62px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#202019] px-3 py-3'}><span className="flex min-w-0 items-center gap-3"><input type="checkbox" checked={selectedAddons.includes(addon!.id)} onChange={(e)=>setSelectedAddons((current)=>e.target.checked?[...current,addon!.id]:current.filter((item)=>item!==addon!.id))} className="h-4 w-4 shrink-0 accent-[#f5c542]"/><span className="text-xs font-bold leading-5 text-[#f5f0df]">{addon!.name_ar}</span></span><b className="shrink-0 rounded-lg bg-black/25 px-2 py-1 text-[11px] text-[#ffd65b]">+{money(Number(addon!.price))}</b></label>)}</div></section>}
-              <label className="mt-5 block text-xs font-bold text-[#e9e2d2]">ملاحظات خاصة <span className="font-normal text-[#888373]">(اختياري)</span><input value={itemNote} onChange={(e)=>setItemNote(e.target.value)} placeholder="مثلاً: بدون مخلل أو صوص على الجانب" className="mt-2 w-full rounded-xl border border-white/10 bg-[#10100d] px-4 py-3 text-sm text-white outline-none placeholder:text-[#777363] focus:border-[#b89a42]"/></label>
-              <div className="bh-product-actions mt-6 flex items-center gap-3 border-t border-white/10 pt-5"><div className="flex h-12 shrink-0 items-center gap-4 rounded-xl border border-white/10 bg-[#202019] px-3"><button aria-label="تقليل الكمية" onClick={()=>setQuantity(Math.max(1,quantity-1))}><Minus size={15}/></button><b className="min-w-4 text-center text-sm">{quantity}</b><button aria-label="زيادة الكمية" onClick={()=>setQuantity(Math.min(20,quantity+1))}><Plus size={15}/></button></div><button onClick={addToCart} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f5c542] px-4 text-sm font-black text-[#17140b] transition hover:bg-[#ffd65b]">أضف للسلة <span>·</span> {money((Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find((size)=>size.id===selectedSize)?.price_delta || 0) + selectedAddons.reduce((sum,id)=>sum+Number(addonFor(id)?.price||0),0))*quantity)} ر.س</button></div>
-            </div>
-          </div>
-        </div>
-      </div>}
+      <StorefrontProductSheet
+        product={selectedProduct}
+        sizes={selectedProduct?.sizes || []}
+        addons={addons}
+        selectedSize={selectedSize}
+        selectedAddons={selectedAddons}
+        quantity={quantity}
+        note={itemNote}
+        basePrice={selectedProduct ? Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===selectedProduct.id)?.custom_base_price ?? selectedProduct.base_price) + Number(selectedProduct.sizes?.find(size=>size.id===selectedSize)?.price_delta || 0) : 0}
+        addonPrice={selectedAddons.reduce((sum,id)=>sum+Number(addonFor(id)?.price||0),0)}
+        onClose={()=>setSelectedProduct(null)}
+        onSize={setSelectedSize}
+        onAddons={setSelectedAddons}
+        onQuantity={setQuantity}
+        onNote={setItemNote}
+        onAdd={addToCart}
+      />
 
-      {cartOpen && <div className="bh-cart-overlay fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm" onClick={()=>setCartOpen(false)}><aside className="bh-cart-drawer absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col bg-[#171713] text-[#f7f3e9] shadow-2xl" onClick={(e)=>e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 sm:px-6"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">YOUR ORDER</span><div className="mt-1 text-xl font-black text-white">سلة طلبك <span className="mr-1 text-sm font-semibold text-[#aaa493]">({cartCount})</span></div></div><button onClick={()=>setCartOpen(false)} aria-label="إغلاق السلة" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5"><X/></button></div>
-        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">{cart.length===0?<div className="flex h-full flex-col items-center justify-center py-16 text-center"><div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#55471f] bg-[#282313] text-[#f5c542]"><ShoppingBag size={30}/></div><h3 className="mt-5 text-lg font-black text-white">سلتك تنتظر اختيارك</h3><p className="mt-2 text-sm text-[#aaa493]">أضف وجبتك المفضلة ونجهزها لك طازجة.</p><button onClick={()=>setCartOpen(false)} className="mt-6 rounded-xl bg-[#f5c542] px-6 py-3 text-sm font-black text-[#17140b]">استكشف المنيو</button></div>:cart.map((line)=><article key={line.key} className="bh-cart-item flex gap-2 rounded-lg border border-white/10 bg-[#202019] p-2"><SafeFoodImage src={line.product.image_url} categoryId={line.product.category_id} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover"/><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="text-xs font-bold leading-5 text-white">{line.product.name_ar}</div><b className="shrink-0 text-xs text-[#ffd65b]">{money(linePrice(line))} ر.س</b></div>{line.size?.name_ar&&<div className="mt-1 text-[11px] text-[#c8b879]">{line.size.name_ar}</div>}{line.addonIds.length>0&&<div className="mt-2 flex flex-wrap gap-1">{line.addonIds.map((id)=><span key={id} className="rounded-md bg-[#302914] px-2 py-1 text-[10px] text-[#e6d28e]">{addonFor(id)?.name_ar}</span>)}</div>}{line.note&&<div className="mt-2 line-clamp-2 text-[10px] leading-5 text-[#aaa493]">ملاحظة: {line.note}</div>}<div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-[#aaa493]">الكمية</span><div className="flex h-8 items-center gap-3 rounded-lg border border-white/10 bg-[#11110e] px-2"><button aria-label="تقليل الكمية" onClick={()=>updateQuantity(line.key,-1)}><Minus size={13}/></button><span className="min-w-3 text-center text-xs font-bold">{line.quantity}</span><button aria-label="زيادة الكمية" onClick={()=>updateQuantity(line.key,1)}><Plus size={13}/></button></div></div></div></article>)}</div>
-        {cart.length>0&&<div className="bh-cart-summary border-t border-white/10 bg-[#11110e] p-5 sm:p-6"><div className="space-y-2 text-xs text-[#aaa493]"><div className="flex justify-between"><span>المجموع</span><span>{money(subtotal)} ر.س</span></div><div className="flex justify-between"><span>ضريبة القيمة المضافة</span><span>{money(vat)} ر.س</span></div></div><div className="mt-4 flex items-end justify-between border-t border-white/10 pt-4"><span className="text-sm font-bold text-white">الإجمالي شامل الضريبة</span><strong className="text-2xl font-black text-[#ffd65b]">{money(total)} <small className="text-xs">ر.س</small></strong></div><button onClick={()=>{setCartOpen(false);setCheckoutOpen(true);}} className="mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-[#f5c542] py-4 text-sm font-black text-[#17140b] transition hover:bg-[#ffd65b]">متابعة وإتمام الطلب <ArrowLeft size={17}/></button><p className="mt-3 text-center text-[10px] text-[#8d8878]">استلام من الفرع · الدفع عند الاستلام</p></div>}
-      </aside></div>}
+      <StorefrontCartDrawer
+        open={cartOpen}
+        cart={cart}
+        count={cartCount}
+        subtotal={subtotal}
+        vat={vat}
+        total={total}
+        suggested={availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4).length ? availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4) : availableProducts.filter(product=>!cart.some(line=>line.product.id===product.id)).slice(0,4)}
+        suggestedPrice={(product)=>Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id)?.custom_base_price ?? product.base_price)}
+        linePrice={linePrice}
+        addonName={(id)=>addonFor(id)?.name_ar}
+        onClose={()=>setCartOpen(false)}
+        onQuantity={updateQuantity}
+        onCheckout={()=>{setCartOpen(false);setCheckoutOpen(true);}}
+        onOpenSuggested={(product)=>{setCartOpen(false);openProduct(product);}}
+      />
 
       {checkoutOpen && <div className="bh-checkout-overlay fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>setCheckoutOpen(false)}><div className="bh-checkout-dialog max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-[#171713] p-5 text-[#f7f3e9] shadow-2xl sm:rounded-2xl sm:p-7" onClick={(e)=>e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4"><div><span className="text-[10px] font-black tracking-[.18em] text-[#f5c542]">FINAL STEP</span><div className="mt-1 text-xl font-black text-white">إتمام الطلب</div><div className="mt-1 text-xs text-[#aaa493]">راجع بياناتك وفرع الاستلام قبل التأكيد.</div></div><button onClick={()=>setCheckoutOpen(false)} aria-label="إغلاق إتمام الطلب" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10"><X/></button></div>

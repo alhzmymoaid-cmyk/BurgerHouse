@@ -2,35 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Burger House design-system foundation */
 :root {
   color-scheme: dark;
-  --bh-bg:#0A0A0C;
-  --bh-surface:#151519;
-  --bh-card:#1C1C22;
-  --bh-line:rgba(255,255,255,.10);
-  --bh-text:#F6F3EC;
-  --bh-muted:#B4B4BE;
-  --bh-yellow:#F5B800;
-  --bh-yellow-hot:#FFCA28;
-  --bh-green:#22C55E;
-  --bh-red:#EF4444;
-  --bh-amber:#F59E0B;
-}
-* { box-sizing:border-box; }
-html { scroll-behavior:smooth; background:var(--bh-bg); }
-body { margin:0; overflow-x:hidden; background:var(--bh-bg); color:var(--bh-text); font-family:"IBM Plex Sans Arabic","Cairo",sans-serif; font-feature-settings:"tnum"; }
-h1,h2,h3,h4,.display-type { font-family:"IBM Plex Sans Arabic","Cairo",sans-serif; }
-button,input,select,textarea { font:inherit; }
-button { -webkit-tap-highlight-color:transparent; }
-::selection { background:var(--bh-yellow); color:#0A0A0C; }
-:focus-visible { outline:2px solid var(--bh-yellow)!important; outline-offset:3px; }
-a { text-decoration:none; }
-@media print {
-  body { background:#fff!important;color:#000!important; }
-  header,button,a,.no-print { display:none!important; }
-  article { break-inside:avoid;border:1px solid #bbb!important;box-shadow:none!important; }
-  main,section,div { color:#000!important; }
+  --bh-bg: #0f0f11;
+  --bh-surface: #18181c;
+  --bh-card: #1e1e24;
+  --bh-card-raised: #24242b;
+  --bh-line: rgba(255, 255, 255, .10);
+  --bh-text: #f4f4f5;
+  --bh-muted: #a1a1aa;
+  --bh-accent: #f59e0b;
+  --bh-accent-strong: #fbbf24;
+  --bh-success: #34d399;
+  --bh-danger: #f87171;
+  --bh-warning: #95612e;
+  --bh-radius-card: 1.25rem;
+  --bh-radius-control: .875rem;
+  --bh-shadow-card: 0 14px 36px rgba(46, 36, 24, .08);
 }
 
-/* Core storefront tokens; detailed component rules live in enterprise-theme.css. */
-.bh-storefront { min-height:100vh;background:var(--bh-bg)!important;color:var(--bh-text)!important; }
+* { box-sizing: border-box; }
+html { min-height: 100%; scroll-behavior: smooth; background: var(--bh-bg); }
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bh-bg);
+  color: var(--bh-text);
+  font-family: "IBM Plex Sans Arabic", "Cairo", sans-serif;
+  font-feature-settings: "tnum";
+}
+h1, h2, h3, h4, button, input, select, textarea {
+  font-family: "IBM Plex Sans Arabic", "Cairo", sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+::selection { background: var(--bh-accent); color: #17140e; }
+:focus-visible { outline: 2px solid var(--bh-accent-strong) !important; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  header, button, a, .no-print { display: none !important; }
+  article { break-inside: avoid; border: 1px solid #bbb !important; box-shadow: none !important; }
+  main, section, div { color: #000 !important; }
+}
+.bh-storefront { min-height: 100vh; background: var(--bh-bg); color: var(--bh-text); }
+.bh-surface { background: var(--bh-surface); border: 1px solid var(--bh-line); border-radius: var(--bh-radius-card); box-shadow: var(--bh-shadow-card); }
+.bh-control { min-height: 2.875rem; border: 1px solid var(--bh-line); border-radius: var(--bh-radius-control); transition: background-color .18s ease, border-color .18s ease, transform .18s ease; }
+.bh-control:active { transform: translateY(1px); }

@@ -7,11 +7,9 @@ import StorefrontAdminEditor from '@/components/storefront-admin-editor';
 import StorefrontMaintenance from '@/components/storefront/storefront-maintenance';
 import StorefrontHero from '@/components/storefront/storefront-hero';
 import { StorefrontBranchPicker, StorefrontMenu, StorefrontProductSheet, StorefrontCartDrawer } from '@/components/storefront/storefront-commerce';
-import SafeFoodImage from '@/components/safe-food-image';
 import {
-  ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
-  Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
-  Phone, Navigation, PackageCheck, Utensils, Truck, ShieldCheck, Download, Heart
+  ArrowLeft, Check, Clock3, MapPin, Menu, ShoppingBag, X,
+  Phone, Navigation, PackageCheck, Utensils, ShieldCheck, Download
 } from 'lucide-react';
 
 type Size = { id: string; name_ar: string; price_delta: number; is_default?: boolean };
@@ -670,7 +668,7 @@ export default function StorefrontPage() {
         subtotal={subtotal}
         vat={vat}
         total={total}
-        suggested={availableProducts.filter(product=>!cart.some(line=>line.product.id===product.id)).slice(0,4)}
+        suggested={availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4).length ? availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4) : availableProducts.filter(product=>!cart.some(line=>line.product.id===product.id)).slice(0,4)}
         linePrice={linePrice}
         addonName={(id)=>addonFor(id)?.name_ar}
         onClose={()=>setCartOpen(false)}

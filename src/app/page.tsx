@@ -5,6 +5,7 @@ import { createSupabaseCustomerBrowserClient } from '@/lib/supabase/client';
 import PromoCarousel from '@/components/promo-carousel';
 import SafeFoodImage from '@/components/safe-food-image';
 import StorefrontAdminEditor from '@/components/storefront-admin-editor';
+import StorefrontMaintenance from '@/components/storefront/storefront-maintenance';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,
@@ -440,17 +441,11 @@ export default function StorefrontPage() {
   };
 
   if (catalog?.settings && (catalog.settings.site_online === false || catalog.settings.maintenance_mode === true)) {
-    const message = catalog.settings.maintenance_message_ar || 'نعتذر عن استقبال الطلبات حاليًا. نعود إليكم قريبًا.';
     return (
-      <main dir="rtl" className="flex min-h-screen items-center justify-center bg-[#0A0A0C] px-5 py-12 text-[#F6F3EC]">
-        <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#141417] p-8 text-center">
-          <img src="/brand-mark.svg" alt="BURGER HOUSE" className="mx-auto h-16 w-16"/>
-          <p className="mt-6 text-[10px] font-bold tracking-[.2em] text-[#F2B705]">BURGER HOUSE</p>
-          <h1 className="mt-3 text-2xl font-bold">{catalog.settings.site_online === false ? 'نعود إليكم قريبًا' : 'نجهّز لكم تجربة أفضل'}</h1>
-          <p className="mt-3 text-sm leading-7 text-[#9E9BA3]">{message}</p>
-          <a href="https://wa.me/966535717670" className="mt-6 inline-flex rounded-lg bg-[#F2B705] px-6 py-3 text-xs font-bold text-[#0A0A0C]">تواصل معنا</a>
-        </section>
-      </main>
+      <StorefrontMaintenance
+        siteOnline={catalog.settings.site_online !== false}
+        message={catalog.settings.maintenance_message_ar || 'نعتذر عن استقبال الطلبات حاليًا. نعود إليكم قريبًا.'}
+      />
     );
   }
 

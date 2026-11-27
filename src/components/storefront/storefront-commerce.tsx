@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { Clock3, Heart, MapPin, Minus, Navigation, Plus, Search, ShoppingBag, X } from 'lucide-react';
 import SafeFoodImage from '@/components/safe-food-image';
 

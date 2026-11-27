@@ -327,8 +327,8 @@ export default function StaffLiveOrdersPage() {
     .map((row) => catalogProducts.find((product) => product.id === row.product_id)?.name_ar || row.product_id);
 
   return (
-    <div dir="rtl" className="bh-staff-shell min-h-screen bg-[#f1efe9] p-3 text-[#201e1a] sm:p-6">
-      <header className="mb-6 overflow-hidden rounded-3xl border border-[#30332b] bg-[#151812] text-[#f7f1df] shadow-[0_18px_55px_rgba(0,0,0,.12)]">
+    <div dir="rtl" className="bh-staff-shell bh-kds-shell min-h-screen bg-[#f1efe9] p-3 text-[#201e1a] sm:p-6">
+      <header className="bh-kds-header mb-6 overflow-hidden rounded-3xl border border-[#30332b] bg-[#151812] text-[#f7f1df] shadow-[0_18px_55px_rgba(0,0,0,.12)]">
         <div className="flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-4">
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f5c542]"><img src="/brand-mark.svg" alt="" className="h-10 w-10"/></div>
@@ -362,13 +362,13 @@ export default function StaffLiveOrdersPage() {
 
       {unavailableProducts.length > 0 && <section className="mb-5 rounded-xl border border-amber-500/25 bg-amber-950/20 p-4" aria-label="الأصناف المتوقفة في الفرع"><div className="text-xs font-bold text-amber-300">أصناف متوقفة حاليًا في الفرع</div><div className="mt-2 flex flex-wrap gap-2">{unavailableProducts.map((name,index)=><span key={name+index} className="rounded-md border border-amber-500/20 bg-[#1B1B1F] px-3 py-2 text-[11px] text-[#F6F3EC]">{name}</span>)}</div></section>}
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="bh-kds-stats mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-[#e2dfd6] bg-white p-4 shadow-sm"><p className="text-[10px] font-bold text-[#858477]">إجمالي الطلبات</p><p className="mt-2 text-3xl font-black tabular-nums">{orders.length}</p></div>
         <div className="rounded-2xl border border-[#f0dfb7] bg-[#fffaf0] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#96743b]">تحتاج قبولًا</p><p className="mt-2 text-3xl font-black tabular-nums text-[#a65e36]">{orders.filter(o=>['new','pending_confirmation'].includes(o.status)).length}</p></div>
         <div className="rounded-2xl border border-[#f0dfb7] bg-[#fffaf0] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#96743b]">قيد التجهيز</p><p className="mt-2 text-3xl font-black tabular-nums text-[#a66c22]">{orders.filter(o=>o.status==='preparing').length}</p></div>
         <div className="rounded-2xl border border-[#cce5d2] bg-[#f3fbf4] p-4 shadow-sm"><p className="text-[10px] font-bold text-[#4e7957]">جاهزة للاستلام</p><p className="mt-2 text-3xl font-black tabular-nums text-[#267a43]">{orders.filter(o=>o.status==='ready_for_pickup').length}</p></div>
       </div>
-      <nav aria-label="تصفية الطلبات" className="mb-5 flex gap-2 overflow-x-auto pb-2">
+      <nav aria-label="تصفية الطلبات" className="bh-kds-filters mb-5 flex gap-2 overflow-x-auto pb-2">
         {statusFilters.map((filter) => <button key={filter.id} onClick={() => setStatusFilter(filter.id)} aria-pressed={statusFilter===filter.id} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-black transition ${statusFilter===filter.id?'bg-[#20231b] text-white shadow-md':'border border-[#ddd8cc] bg-white text-[#6e695e] hover:bg-[#f1eee7]'}`}>{filter.label}{filter.id==='all' ? ` · ${orders.length}` : ` · ${orders.filter(o=>o.status===filter.id).length}`}</button>)}
       </nav>
       {errorBanner && (
@@ -377,7 +377,7 @@ export default function StaffLiveOrdersPage() {
         </div>
       )}
 
-      <div className="grid items-start gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+      <div className="bh-kds-board grid items-start gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         {orders
           .filter((order) => (statusFilter === 'all' || order.status === statusFilter) && (
             !searchQuery ||

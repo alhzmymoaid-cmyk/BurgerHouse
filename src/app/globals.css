@@ -4,18 +4,18 @@
 
 /* Burger House design-system foundation */
 :root {
-  color-scheme: light;
-  --bh-bg: #faf7f1;
-  --bh-surface: #fffdf9;
-  --bh-card: #ffffff;
-  --bh-card-raised: #f5f0e8;
-  --bh-line: rgba(43, 38, 30, .11);
-  --bh-text: #292722;
-  --bh-muted: #766e63;
-  --bh-accent: #d84b35;
-  --bh-accent-strong: #e65a40;
-  --bh-success: #24764e;
-  --bh-danger: #c73c32;
+  color-scheme: dark;
+  --bh-bg: #0f0f11;
+  --bh-surface: #18181c;
+  --bh-card: #1e1e24;
+  --bh-card-raised: #24242b;
+  --bh-line: rgba(255, 255, 255, .10);
+  --bh-text: #f4f4f5;
+  --bh-muted: #a1a1aa;
+  --bh-accent: #f59e0b;
+  --bh-accent-strong: #fbbf24;
+  --bh-success: #34d399;
+  --bh-danger: #f87171;
   --bh-warning: #95612e;
   --bh-radius-card: 1.25rem;
   --bh-radius-control: .875rem;

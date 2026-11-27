@@ -3,7 +3,7 @@ import './globals.css';
 import './burger-house.css';
 import SmartPwaInstallBanner from '@/components/install-prompt';
 
-export const viewport: Viewport = { themeColor: '#FAF7F1', colorScheme: 'light', viewportFit: 'cover' };
+export const viewport: Viewport = { themeColor: '#101113', colorScheme: 'dark', viewportFit: 'cover' };
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',

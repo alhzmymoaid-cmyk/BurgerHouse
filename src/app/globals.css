@@ -4,22 +4,22 @@
 
 /* Burger House design-system foundation */
 :root {
-  color-scheme: dark;
-  --bh-bg: #101113;
-  --bh-surface: #17191c;
-  --bh-card: #1e2125;
-  --bh-card-raised: #25292e;
-  --bh-line: rgba(255, 255, 255, .10);
-  --bh-text: #f7f1e8;
-  --bh-muted: #aaa49a;
-  --bh-accent: #e6b65b;
-  --bh-accent-strong: #f2c66d;
-  --bh-success: #49b88a;
-  --bh-danger: #e46b64;
-  --bh-warning: #e6a94b;
+  color-scheme: light;
+  --bh-bg: #faf7f1;
+  --bh-surface: #fffdf9;
+  --bh-card: #ffffff;
+  --bh-card-raised: #f5f0e8;
+  --bh-line: rgba(43, 38, 30, .11);
+  --bh-text: #292722;
+  --bh-muted: #766e63;
+  --bh-accent: #d84b35;
+  --bh-accent-strong: #e65a40;
+  --bh-success: #24764e;
+  --bh-danger: #c73c32;
+  --bh-warning: #95612e;
   --bh-radius-card: 1.25rem;
   --bh-radius-control: .875rem;
-  --bh-shadow-card: 0 14px 36px rgba(0, 0, 0, .22);
+  --bh-shadow-card: 0 14px 36px rgba(46, 36, 24, .08);
 }
 
 * { box-sizing: border-box; }

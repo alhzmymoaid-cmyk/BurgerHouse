@@ -87,6 +87,8 @@ export default function StorefrontPage() {
 
   const [activeView, setActiveView] = useState<'menu' | 'branches'>('menu');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('');
   const [captcha, setCaptcha] = useState<any>(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
@@ -396,17 +398,45 @@ export default function StorefrontPage() {
 
 
 
-  const detectNearestBranch = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+  const detectNearestBranch = async () => {
+    setLocationMessage('');
+    if (!navigator.geolocation) {
+      setLocationMessage('المتصفح لا يدعم تحديد الموقع. اختر الفرع يدويًا.');
+      return;
+    }
+    setLocationBusy(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 120000
+        });
+      });
       const response = await fetch('/api/branches/nearest', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: coords.latitude, longitude: coords.longitude })
-      }).catch(() => null);
-      if (!response?.ok) return;
-      const result = await response.json();
-      if (result.recommended_branch?.id) setBranchId(result.recommended_branch.id);
-    }, () => undefined, { enableHighAccuracy: false, timeout: 8000 });
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message_ar || 'تعذر تحديد أقرب فرع حاليًا.');
+      if (!result.recommended_branch?.id) throw new Error('لم نعثر على فرع مناسب لموقعك. اختر الفرع يدويًا.');
+      setBranchId(result.recommended_branch.id);
+      setLocationMessage('تم اختيار أقرب فرع: ' + (result.recommended_branch.name_ar || 'الفرع المناسب لموقعك'));
+    } catch (error: any) {
+      const message = error?.code === 1
+        ? 'لم تسمح بالوصول إلى موقعك. فعّل إذن الموقع أو اختر الفرع يدويًا.'
+        : error?.code === 3
+          ? 'انتهت مهلة تحديد الموقع. حاول مرة أخرى أو اختر الفرع يدويًا.'
+          : error?.message || 'تعذر تحديد موقعك. اختر الفرع يدويًا.';
+      setLocationMessage(message);
+    } finally {
+      setLocationBusy(false);
+    }
   };
 
   if (catalog?.settings && (catalog.settings.site_online === false || catalog.settings.maintenance_mode === true)) {
@@ -590,14 +620,15 @@ export default function StorefrontPage() {
             <div className="bh-branch-picker-controls flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="bh-branch-select-shell relative min-w-[240px]">
                 <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/>
-                <select aria-label="اختر فرع الاستلام" value={branchId} onChange={(e) => setBranchId(e.target.value)} className="bh-branch-select w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
+                <select aria-label="اختر فرع الاستلام" value={branchId} onChange={(e) => { setBranchId(e.target.value); setLocationMessage(''); }} className="bh-branch-select w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
                   {branches.filter((branch) => branch.is_active).map((branch) => <option key={branch.id} value={branch.id}>{branch.name_ar}{branch.is_accepting_orders ? '' : ' — لا يستقبل طلبات'}</option>)}
                 </select>
                 <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={15}/>
                 <div className="bh-active-branch-meta"><span>{activeBranch?.address_ar || 'حدد فرع الاستلام'}</span><span>{activeBranch?.open_time && activeBranch?.close_time ? `${activeBranch.open_time} – ${activeBranch.close_time}` : 'مواعيد الفرع'}</span></div>
               </div>
-              <button onClick={detectNearestBranch} className="bh-nearest-branch-button inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36]"><Navigation size={14}/> استخدم موقعي</button>
+              <button type="button" disabled={locationBusy} onClick={detectNearestBranch} className="bh-nearest-branch-button inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36] disabled:cursor-wait disabled:opacity-60"><Navigation size={14}/> {locationBusy ? 'جارٍ تحديد موقعك…' : 'استخدم موقعي'}</button>
             </div>
+            {locationMessage && <p className="bh-location-feedback" role="status">{locationMessage}</p>}
           </div>
         </section>
 

@@ -27,12 +27,12 @@ export function StorefrontBranchPicker(props: {
   onBranchChange: (id: string) => void; onDetectLocation: () => void;
 }) {
   const { branches, branchId, activeBranch, locationBusy, locationMessage, onBranchChange, onDetectLocation } = props;
-  return <section className="border-b border-[#e9e1d6] bg-[#f2ece3]">
+  return <section className="bh-branch-picker border-b border-white/10 bg-[#18181c]">
     <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-      <div><p className="text-[10px] font-black tracking-[.16em] text-[#c84935]">استلام من الفرع</p><h2 className="mt-1 text-lg font-black text-[#292722]">أين تفضّل استلام طلبك؟</h2><p className="mt-1 text-xs text-[#766e63]">اختر الفرع الأقرب لك قبل تصفح الأصناف.</p></div>
+      <div className="bh-branch-picker-copy"><p className="text-[10px] font-black tracking-[.16em] text-[#fbbf24]">طريقة الاستلام</p><h2 className="mt-1 text-lg font-black text-[#f4f4f5]">استلامك يبدأ من هنا</h2><p className="mt-1 text-xs text-[#a1a1aa]">التوصيل المنزلي غير متاح حالياً؛ اختر فرع الاستلام المناسب.</p><div className="bh-fulfillment-switch"><span className="is-active">استلام من الفرع</span><span className="is-disabled" aria-disabled="true">التوصيل غير متاح</span></div></div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <label className="relative min-w-[240px]"><MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#bd4936]"/><select aria-label="اختر فرع الاستلام" value={branchId} onChange={e=>onBranchChange(e.target.value)} className="min-h-12 w-full appearance-none rounded-xl border border-[#ded4c7] bg-white px-10 py-3 text-sm font-bold text-[#292722] outline-none focus:border-[#d84b35]">{branches.filter(b=>b.is_active).map(b=><option key={b.id} value={b.id}>{b.name_ar}{b.is_accepting_orders?'':' — لا يستقبل طلبات'}</option>)}</select></label>
-        <button type="button" disabled={locationBusy} onClick={onDetectLocation} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#e3b8ae] bg-[#fff8f5] px-4 text-xs font-bold text-[#b84030] transition hover:bg-[#ffede7] disabled:opacity-60"><Navigation size={15}/>{locationBusy?'جارٍ تحديد موقعك…':'استخدم موقعي'}</button>
+        <button type="button" disabled={locationBusy} onClick={onDetectLocation} className="bh-nearest-branch-button inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 text-xs font-bold text-amber-300 transition hover:bg-amber-500/15 disabled:opacity-60"><Navigation size={15}/>{locationBusy?'جارٍ تحديد موقعك…':'استخدم موقعي'}</button>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[#766e63] sm:basis-full sm:justify-end"><span>{activeBranch?.address_ar || 'لم يتم تحديد الفرع'}</span>{activeBranch?.open_time && activeBranch?.close_time && <span>ساعات العمل: {activeBranch.open_time} – {activeBranch.close_time}</span>}{activeBranch?.is_accepting_orders !== undefined && <span className={activeBranch.is_accepting_orders?'text-emerald-700':'text-amber-700'}>{activeBranch.is_accepting_orders?'يستقبل الطلبات':'لا يستقبل الطلبات حاليًا'}</span>}</div>
       {locationMessage && <p className="basis-full text-xs font-semibold text-[#a43b2e]" role="status">{locationMessage}</p>}
@@ -49,7 +49,7 @@ export function StorefrontMenu(props: {
   railRef?: React.RefObject<HTMLDivElement>;
 }) {
   const p=props;
-  return <section id="menu-section" className="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
+  return <section id="menu-section" className="bh-storefront-menu mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
     <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><p className="text-[10px] font-black tracking-[.22em] text-[#c84935]">THE MENU</p><h2 className="mt-2 text-3xl font-black tracking-tight text-[#292722] sm:text-4xl">قائمة برجر هاوس</h2><p className="mt-2 text-sm text-[#766e63]">اختر صنفك، حدّد الحجم والإضافات، واستمتع بوجبتك.</p></div>
       <label className="relative w-full sm:max-w-xs"><Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]"/><input value={p.search} onChange={e=>p.onSearch(e.target.value)} placeholder="ابحث عن برجر أو مقبلات أو مشروب" className="min-h-12 w-full rounded-xl border border-[#e4dbcf] bg-white py-3 pl-4 pr-10 text-sm text-[#292722] outline-none placeholder:text-[#989084] focus:border-[#d84b35]"/></label>

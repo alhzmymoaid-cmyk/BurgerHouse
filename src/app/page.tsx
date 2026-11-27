@@ -669,6 +669,7 @@ export default function StorefrontPage() {
         vat={vat}
         total={total}
         suggested={availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4).length ? availableProducts.filter(product=>(product.category_id==='cat-sides'||product.category_id==='cat-drinks')&&!cart.some(line=>line.product.id===product.id)).slice(0,4) : availableProducts.filter(product=>!cart.some(line=>line.product.id===product.id)).slice(0,4)}
+        suggestedPrice={(product)=>Number(catalog?.branch_overrides?.find((entry:any)=>entry.branch_id===branchId&&entry.product_id===product.id)?.custom_base_price ?? product.base_price)}
         linePrice={linePrice}
         addonName={(id)=>addonFor(id)?.name_ar}
         onClose={()=>setCartOpen(false)}

@@ -47,7 +47,7 @@ export function StorefrontMenu(props: {
   favoriteIds:string[]; favoriteBusy:string|null; branchId:string; activeBranch?:StorefrontBranch;
   basePrice:(product:StorefrontProduct)=>number; onCategory:(id:string)=>void; onSearch:(value:string)=>void;
   onToggleFavorites:()=>void; onToggleFavorite:(id:string)=>void; onOpenProduct:(product:StorefrontProduct)=>void;
-  railRef?: React.RefObject<HTMLDivElement|null>;
+  railRef?: React.RefObject<HTMLDivElement>;
 }) {
   const p=props;
   return <section id="menu-section" className="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">

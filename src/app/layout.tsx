@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import './burger-house.css';
 import SmartPwaInstallBanner from '@/components/install-prompt';
 
-export const viewport: Viewport = { themeColor: '#faf7f1', colorScheme: 'light', viewportFit: 'cover' };
+const arabicFont = IBM_Plex_Sans_Arabic({ subsets: ['arabic'], weight: ['400','500','600','700'], variable: '--font-ibm-plex', display: 'swap' });
+
+export const viewport: Viewport = { themeColor: '#0f0f11', colorScheme: 'dark', viewportFit: 'cover' };
 
 export const metadata: Metadata = {
   title: 'BURGER HOUSE | برجر هاوس',
@@ -19,9 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl">
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=4" />
-        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="min-h-screen antialiased">
+      <body className={`${arabicFont.variable} min-h-screen antialiased`}>
         {children}
         <SmartPwaInstallBanner />
       </body>

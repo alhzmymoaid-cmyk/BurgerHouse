@@ -461,6 +461,12 @@ export default function StorefrontPage() {
             <img src="/brand-logo.svg" alt="BURGER HOUSE — Good Food, Great Mood" className="h-12 w-auto max-w-[220px] object-contain"/>
           </a>
 
+          <button type="button" onClick={() => setActiveView('branches')} className="bh-header-location" aria-label="تغيير فرع الاستلام">
+            <MapPin size={17}/>
+            <span><small>استلام من</small><b>{activeBranch?.name_ar || 'اختر الفرع'}</b></span>
+            <ChevronDown size={14}/>
+          </button>
+
           <nav className="hidden items-center gap-8 text-[13px] font-bold text-[#555047] md:flex">
             <button onClick={() => setActiveView('menu')} className={activeView === 'menu' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>المنيو</button>
             <button onClick={() => setActiveView('branches')} className={activeView === 'branches' ? 'text-[#a84f32]' : 'hover:text-[#a84f32]'}>فروعنا</button>

@@ -236,3 +236,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
 }
+
+.bh-location-feedback { flex-basis:100%; margin-top:2px; color:var(--bh-gold-bright)!important; font-size:11px!important; line-height:1.7!important; }
+.bh-nearest-branch-button:disabled { transform:none!important; box-shadow:none!important; }

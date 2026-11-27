@@ -585,17 +585,18 @@ export default function StorefrontPage() {
 
 
         <section className="bh-branch-picker border-b border-[#ded8cd] bg-[#ebe7df]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-            <div><div className="text-xs font-extrabold text-[#a65e36]">استلام من الفرع</div><div className="mt-1 text-sm font-bold">اختر الفرع الذي يناسبك</div></div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-[240px]">
+          <div className="bh-branch-picker-inner mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+            <div className="bh-branch-picker-copy"><div className="bh-section-eyebrow">استلام من الفرع</div><div className="mt-1 text-lg font-black">أين تفضّل استلام طلبك؟</div><p className="mt-1 text-xs">اختر الفرع الأقرب لك قبل تصفح الأصناف.</p></div>
+            <div className="bh-branch-picker-controls flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="bh-branch-select-shell relative min-w-[240px]">
                 <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={16}/>
-                <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className="w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
+                <select aria-label="اختر فرع الاستلام" value={branchId} onChange={(e) => setBranchId(e.target.value)} className="bh-branch-select w-full appearance-none border border-[#d3cbbf] bg-[#f8f6f1] py-3 pr-10 pl-9 text-sm font-bold outline-none focus:border-[#a65e36]">
                   {branches.filter((branch) => branch.is_active).map((branch) => <option key={branch.id} value={branch.id}>{branch.name_ar}{branch.is_accepting_orders ? '' : ' — لا يستقبل طلبات'}</option>)}
                 </select>
                 <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8175]" size={15}/>
+                <div className="bh-active-branch-meta"><span>{activeBranch?.address_ar || 'حدد فرع الاستلام'}</span><span>{activeBranch?.open_time && activeBranch?.close_time ? `${activeBranch.open_time} – ${activeBranch.close_time}` : 'مواعيد الفرع'}</span></div>
               </div>
-              <button onClick={detectNearestBranch} className="inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36]"><Navigation size={14}/> أقرب فرع لي</button>
+              <button onClick={detectNearestBranch} className="bh-nearest-branch-button inline-flex items-center justify-center gap-2 border border-[#c9c0b3] px-4 py-3 text-xs font-bold text-[#514b42] hover:border-[#a65e36]"><Navigation size={14}/> استخدم موقعي</button>
             </div>
           </div>
         </section>
@@ -646,12 +647,12 @@ export default function StorefrontPage() {
 
       </>}
 
-      {activeView === 'branches' && <section className="mx-auto min-h-[65vh] max-w-7xl px-4 py-14 lg:px-8">
+      {activeView === 'branches' && <section className="bh-branches-page mx-auto min-h-[65vh] max-w-7xl px-4 py-14 lg:px-8">
         <div className="text-[10px] font-black tracking-[.24em] text-[#a65e36]">OUR LOCATIONS</div><h1 className="mt-2 text-4xl font-black">فروعنا</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#777064]">اختر الفرع المناسب لاستلام طلبك. تختلف ساعات العمل والتوفر حسب الفرع.</p>
-        <div className="mt-9 grid gap-5 md:grid-cols-2">{branches.filter((branch)=>branch.is_active).map((branch)=> <article key={branch.id} className="border border-[#ded8cd] bg-[#fbfaf7] p-6">
-          <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-black">{branch.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#777064]">{branch.address_ar}</p></div><span className={branch.is_accepting_orders?'bg-[#e5eee5] px-3 py-1 text-[10px] font-bold text-[#426348]':'bg-[#eee8e1] px-3 py-1 text-[10px] font-bold text-[#8a6b54]'}>{branch.is_accepting_orders?'يستقبل الطلبات':'متوقف مؤقتاً'}</span></div>
+        <div className="mt-9 grid gap-5 md:grid-cols-2">{branches.filter((branch)=>branch.is_active).map((branch)=> <article key={branch.id} className="bh-branch-card border border-[#ded8cd] bg-[#fbfaf7] p-6">
+          <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-black">{branch.name_ar}</h2><p className="mt-2 text-sm leading-7 text-[#777064]">{branch.address_ar}</p></div><span className={branch.is_accepting_orders?'bh-branch-status is-open bg-[#e5eee5] px-3 py-1 text-[10px] font-bold text-[#426348]':'bh-branch-status is-closed bg-[#eee8e1] px-3 py-1 text-[10px] font-bold text-[#8a6b54]'}>{branch.is_accepting_orders?'يستقبل الطلبات':'متوقف مؤقتاً'}</span></div>
           <div className="mt-5 flex flex-wrap gap-4 border-t border-[#e4ded4] pt-4 text-xs text-[#6d665b]"><span className="flex items-center gap-1.5"><Clock3 size={14}/> {branch.open_time} – {branch.close_time}</span><span className="flex items-center gap-1.5"><Phone size={14}/> {branch.phone || '—'}</span></div>
-          <div className="mt-5 flex gap-2"><button onClick={()=>{setBranchId(branch.id);setActiveView('menu');window.scrollTo({top:0,behavior:'smooth'});}} className="bg-[#20201c] px-4 py-2.5 text-xs font-bold text-white">اختيار هذا الفرع</button>{branch.map_url&&<a href={branch.map_url} target="_blank" rel="noreferrer" className="border border-[#d8d0c4] px-4 py-2.5 text-xs font-bold">الاتجاهات</a>}</div>
+          <div className="bh-branch-actions mt-5 flex gap-2"><button onClick={()=>{setBranchId(branch.id);setActiveView('menu');window.scrollTo({top:0,behavior:'smooth'});}} className="bg-[#20201c] px-4 py-2.5 text-xs font-bold text-white">استلام من هذا الفرع</button>{branch.map_url&&<a href={branch.map_url} target="_blank" rel="noreferrer" className="border border-[#d8d0c4] px-4 py-2.5 text-xs font-bold"><Navigation size={13}/> الاتجاهات</a>}</div>
         </article>)}</div>
       </section>}
 

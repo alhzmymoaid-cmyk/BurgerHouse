@@ -1257,3 +1257,10 @@ html,body,.bh-storefront{background:var(--bh-bg)!important;color:var(--bh-text)!
 .bh-branch-picker select{background:#222228!important;color:#f4f4f5!important;border-color:var(--bh-line)!important}
 .bh-storefront-menu .sticky button[aria-pressed="true"]{background:#f59e0b!important;color:#211704!important;border-color:#f59e0b!important}
 .bh-storefront-menu .sticky button:not([aria-pressed="true"]){background:#1e1e24!important;color:#c4c4cc!important;border-color:var(--bh-line)!important}
+
+.bh-fulfillment-switch{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.bh-fulfillment-switch span{display:inline-flex;min-height:30px;align-items:center;border:1px solid var(--bh-line);border-radius:999px;padding:6px 11px;font-size:10px;font-weight:700}
+.bh-fulfillment-switch .is-active{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fbbf24}
+.bh-fulfillment-switch .is-disabled{background:#18181c;color:#71717a}
+.bh-branch-picker .text-emerald-700{color:#34d399!important}
+.bh-branch-picker .text-amber-700{color:#fbbf24!important}

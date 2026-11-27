@@ -6,6 +6,7 @@ import PromoCarousel from '@/components/promo-carousel';
 import StorefrontAdminEditor from '@/components/storefront-admin-editor';
 import StorefrontMaintenance from '@/components/storefront/storefront-maintenance';
 import StorefrontHero from '@/components/storefront/storefront-hero';
+import SafeFoodImage from '@/components/safe-food-image';
 import {
   ArrowLeft, ArrowUpLeft, Check, ChevronDown, Clock3, Flame, MapPin,
   Menu, Minus, Plus, ShoppingBag, X, Search, ArrowRight, Instagram,

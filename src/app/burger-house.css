@@ -1246,3 +1246,14 @@ html,body,.bh-storefront{background:var(--bh-bg)!important;color:var(--bh-text)!
 .bh-storefront footer{background:#141418!important;color:#d4d4d8!important;border-top:1px solid var(--bh-line)}.bh-storefront footer p,.bh-storefront footer a{color:#a1a1aa!important}
 .bh-storefront button:disabled{cursor:not-allowed!important;filter:saturate(.55);opacity:.55}.bh-storefront button:focus-visible{outline:2px solid var(--bh-accent)!important;outline-offset:3px}
 @media(max-width:640px){.bh-header-location{max-width:122px;padding:7px 9px;gap:6px}.bh-header-location b{max-width:68px}.bh-storefront-menu article{border-radius:16px!important}.bh-storefront [role=dialog]{max-height:94dvh!important}}
+
+/* Phase 2 commerce surfaces — graphite and amber */
+.bh-cart-line-card,.bh-cart-upsell-card{background:#202026!important;border-color:var(--bh-line)!important;color:#f4f4f5!important}
+.bh-cart-line-card b,.bh-cart-line-card strong,.bh-cart-upsell-card p:nth-of-type(2){color:#fbbf24!important}
+.bh-cart-line-card p,.bh-cart-line-card span,.bh-cart-upsell-card p:first-of-type{color:#a1a1aa!important}
+.bh-cart-summary-panel{background:#18181c!important;border-color:var(--bh-line)!important;color:#f4f4f5!important}
+.bh-cart-summary-panel button{background:linear-gradient(135deg,#fbbf24,#ea8a08)!important;color:#211704!important;box-shadow:0 9px 24px rgba(245,158,11,.18)!important}
+.bh-cart-upsell-card button{background:#f59e0b!important;color:#211704!important;border-radius:9px!important}
+.bh-branch-picker select{background:#222228!important;color:#f4f4f5!important;border-color:var(--bh-line)!important}
+.bh-storefront-menu .sticky button[aria-pressed="true"]{background:#f59e0b!important;color:#211704!important;border-color:#f59e0b!important}
+.bh-storefront-menu .sticky button:not([aria-pressed="true"]){background:#1e1e24!important;color:#c4c4cc!important;border-color:var(--bh-line)!important}

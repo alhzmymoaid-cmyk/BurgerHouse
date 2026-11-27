@@ -8,7 +8,7 @@ import StorefrontMaintenance from '@/components/storefront/storefront-maintenanc
 import StorefrontHero from '@/components/storefront/storefront-hero';
 import { StorefrontBranchPicker, StorefrontMenu, StorefrontProductSheet, StorefrontCartDrawer } from '@/components/storefront/storefront-commerce';
 import {
-  ArrowLeft, Check, Clock3, MapPin, Menu, ShoppingBag, X,
+  ArrowLeft, Check, ChevronDown, Clock3, MapPin, Menu, ShoppingBag, X,
   Phone, Navigation, PackageCheck, Utensils, ShieldCheck, Download
 } from 'lucide-react';
 
